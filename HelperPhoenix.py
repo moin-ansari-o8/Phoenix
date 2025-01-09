@@ -3,13 +3,20 @@ import random
 import speech_recognition as sr
 import tkinter as tk
 from PIL import Image, ImageTk
-
-class SpeechEngine:
+import os
+import pyautogui as pg
+import keyboard
+from time import sleep
+import time
+import webbrowser
+import random
+from pytube import YouTube, Search
+class SpeechEngine: # Text-to-Speech Engine
     def __init__(self):
         self.engine = pyttsx3.init('sapi5')
         voices = self.engine.getProperty('voices')
         self.engine.setProperty('voice', voices[1].id)
-        self.engine.setProperty('rate', 175)
+        self.engine.setProperty('rate', 174)
     
     def speak(self, audio):
         # Replace "sir" with a random respectful term
@@ -17,13 +24,13 @@ class SpeechEngine:
         for punctuation in ["", "?", "!", ".", " "]:
             if f"sir{punctuation}" in audio:
                 replacement = random.choice(replacements)
-                audio = audio.replace(f"sir{punctuation}", f"{replacement}{punctuation}")
+                audio = audio.replace(f"sir{punctuation}", f"{replacement}{punctuation}") 
                 break
         self.engine.say(audio)
         print(f"$ : {audio}")
         self.engine.runAndWait()
 
-class VoiceAssistantGUI:
+class VoiceAssistantGUI: # GUI for Voice Assistant
     def __init__(self, root):
         self.root = root
         self.root.overrideredirect(True)
@@ -34,9 +41,12 @@ class VoiceAssistantGUI:
         self.mic_label = tk.Label(self.root, bg='white')
         self.mic_label.pack()
 
-        # Load images for GUI
-        self.listen_img = Image.open("C:\\PHNX\\A_MODULES\\faT_funcS\\listenShow2.png")
-        self.recognize_img = Image.open("C:\\PHNX\\A_MODULES\\faT_funcS\\recogShow.png")
+        # Get the directory of the current script
+        current_dir = os.path.dirname(__file__)
+
+        # Construct relative paths to the images
+        self.listen_img = Image.open(os.path.join(current_dir, "assets", "img", "green.png"))
+        self.recognize_img = Image.open(os.path.join(current_dir, "assets", "img", "red.png"))
 
         # Configure window geometry
         max_width, max_height = 4, 30
@@ -44,14 +54,14 @@ class VoiceAssistantGUI:
         y_offset = self.root.winfo_screenheight() - max_height
         self.root.geometry(f"{max_width}x{max_height}+{x_offset}+{y_offset}")
 
-    def setup_transparency(self):
-        if self.root.tk.call('tk', 'windowingsystem') == 'win32':
-            self.root.attributes('-topmost', 1)
-        elif self.root.tk.call('tk', 'windowingsystem') == 'x11':
-            self.root.attributes('-type', 'dock')
-        elif self.root.tk.call('tk', 'windowingsystem') == 'aqua':
-            self.root.call('::tk::unsupported::MacWindowStyle', 'style', self.root._w, 'help', 'none')
-        self.root.wm_attributes("-transparentcolor", "white")
+    def setup_transparency(self): # Set transparency based on OS
+        if self.root.tk.call('tk', 'windowingsystem') == 'win32': # Windows
+            self.root.attributes('-topmost', 1) # Always on top
+        elif self.root.tk.call('tk', 'windowingsystem') == 'x11': # Linux
+            self.root.attributes('-type', 'dock') # Dock
+        elif self.root.tk.call('tk', 'windowingsystem') == 'aqua': # MacOS
+            self.root.call('::tk::unsupported::MacWindowStyle', 'style', self.root._w, 'help', 'none') # No title bar
+        self.root.wm_attributes("-transparentcolor", "white") # Set white as transparent
 
     def show_listen_image(self):
         mic_img = ImageTk.PhotoImage(self.listen_img.resize((40, 40), Image.LANCZOS).convert("RGBA"))
@@ -95,13 +105,379 @@ class VoiceRecognition:
         
         return query
 
+class Utility:
+    word_to_num_map = {
+        "one": 1,
+        "two": 2,
+        "three": 3,
+        "four": 4,
+        "five": 5,
+        "six": 6,
+        "seven": 7,
+        "eight": 8,
+        "nine": 9,
+        "ten": 10,
+        # Extend as needed
+    }
+    
+    def __init__(self, speech_engine, voice_recognition):
+        self.speech_engine = speech_engine
+        self.voice_recognition = voice_recognition
+
+    def speak(self, message):
+        self.speech_engine.speak(message)
+
+    def take_command(self):
+        return self.voice_recognition.take_command()
+
+    def calC(self):
+        try:
+            self.speak("sir, tell me the first number:")
+            x = self.take_command()
+            self.speak("And the second number?")
+            y = self.take_command()
+            self.speak("Which arithmetic operation should I perform?")
+            operation = self.take_command().lower()
+
+            z = None
+            if 'addition' in operation or 'sum' in operation or 'plus' in operation:
+                z = int(x) + int(y)
+                self.speak(f"The addition result is {z}")
+            elif 'subtraction' in operation or 'minus' in operation:
+                z = int(x) - int(y)
+                self.speak(f"The subtraction result is {z}")
+            elif 'multiplication' in operation:
+                z = int(x) * int(y)
+                self.speak(f"The multiplication result is {z}")
+            elif 'division' in operation:
+                if int(y) == 0:
+                    self.speak("Division by zero is undefined.")
+                else:
+                    z = int(x) / int(y)
+                    self.speak(f"The division result is {z}")
+            elif 'modulo' in operation or 'remainder' in operation:
+                z = int(x) % int(y)
+                self.speak(f"The modulo result is {z}")
+            else:
+                self.speak("I couldn't understand the operation.")
+        except Exception as e:
+            self.speak("I couldn't process the input. Please try again.")
+
+    def press(self, key, times):
+        try:
+            for _ in range(times):
+                pg.press(key)
+                sleep(1)
+            self.speak(f"Pressed the {key} key {times} times.")
+        except Exception as e:
+            self.speak("An error occurred while pressing the key.")
+
+    def bluetooth(self):
+        try:
+            sleep(1)
+            pg.keyDown("win")
+            pg.press("a")
+            pg.keyUp("win")
+            sleep(1)
+            pg.press("right")
+            sleep(1)
+            pg.press("enter")
+            sleep(1)
+            pg.keyDown("win")
+            pg.press("a")
+            pg.keyUp("win")
+            self.speak("Bluetooth has been toggled, sir.")
+        except Exception as e:
+            self.speak("An error occurred while toggling Bluetooth.")
+
+    def hotspot(self):
+        try:
+            pg.press("win")
+            sleep(1)
+            keyboard.write("hotspot")
+            sleep(1)
+            keyboard.press("enter")
+            sleep(5)
+            pg.keyDown("shift")
+            pg.press("tab")
+            pg.keyUp("shift")
+            pg.press("space")
+            self.speak("Hotspot has been toggled. Please check, sir.")
+            sleep(4)
+            pg.keyDown("alt")
+            pg.press("f4")
+            pg.keyUp("alt")
+            self.speak("Hotspot settings window has been closed.")
+        except Exception as e:
+            self.speak("An error occurred while toggling the hotspot.")
+
+    def screenshot(self):
+        try:
+            pg.keyDown("win")
+            pg.press("prntscrn")
+            pg.keyUp("win")
+            self.speak("Screenshot captured, sir.")
+        except Exception as e:
+            self.speak("An error occurred while taking the screenshot.")
+
+    def change_tab(self, n=1):
+        try:
+            pg.keyDown("ctrl")
+            for _ in range(n):
+                pg.press("tab")
+            pg.keyUp("ctrl")
+            self.speak(f"Switched {n} tabs to the right.")
+        except Exception as e:
+            self.speak("An error occurred while changing tabs.")
+
+    def new_tab(self, n=1):
+        try:
+            pg.keyDown("ctrl")
+            for _ in range(n):
+                pg.press("t")
+            pg.keyUp("ctrl")
+            self.speak(f"Opened {n} new tabs.")
+        except Exception as e:
+            self.speak("An error occurred while opening new tabs.")
+
+    def close_tab(self, n=1):
+        try:
+            pg.keyDown("ctrl")
+            for _ in range(n):
+                pg.press("w")
+            pg.keyUp("ctrl")
+            self.speak(f"Closed {n} tabs.")
+        except Exception as e:
+            self.speak("An error occurred while closing tabs.")
+
+    def app_switch(self):
+        try:
+            pg.keyDown("alt")
+            pg.press("tab")
+            self.speak("Which tab should I switch to, sir?")
+            while True:
+                print(">>> Listening for tab switch command...")
+                command = self.take_command().lower()
+                if 'this' in command or 'same' in command or 'opened' in command:
+                    pg.press("enter")
+                    pg.keyUp("alt")
+                    self.speak("Done, sir!")
+                    break
+                elif 'left' in command:
+                    pg.press("left")
+                    pg.keyUp("alt")
+                    self.speak("Switched to the left tab, sir!")
+                    break
+                elif 'right' in command:
+                    right_steps = self.extract_steps(command, 'right')
+                    for _ in range(right_steps):
+                        pg.press("right")
+                    pg.keyUp("alt")
+                    self.speak(f"Switched {right_steps} tabs to the right, sir!")
+                    break
+                else:
+                    self.speak("I didn't understand the command. Please repeat.")
+        except Exception as e:
+            self.speak("An error occurred while switching applications.")
+
+    def extract_steps(self, command, direction): # Extract number of steps from command used in app_switch
+        words = command.split()
+        for word in words:
+            if word.isdigit():
+                return int(word)
+        return 1  # Default to 1 step if no number is found
+
+    def arMcratE(self):
+        """
+        Automates the process of opening Armory Crate application
+        and performing specific actions within it.
+        """
+        self.desKtoP_3()
+        sleep(1)
+        pg.keyDown("win")
+        pg.press("6")  # Assumes Armory Crate is pinned as the 6th item in the taskbar
+        pg.keyUp("win")
+        self.speak("Armory Crate has been opened.")
+
+        # Uncomment and customize this section if specific key navigation is needed.
+        # pg.press("tab", presses=9, interval=0.5)
+        # pg.press("down")
+        # pg.press("enter")
+        # self.speak("Selected the desired option in Armory Crate.")
+
+    def alrM(self):
+        """
+        Sets up an alarm at the specified time.
+        """
+        self.speak("Please enter the alarm time.")
+        print(time.localtime())
+        alarm_time = input("Enter the alarm time in HH:MM format: ")
+
+        try:
+            alarm_hour, alarm_minute = map(int, alarm_time.split(':'))
+            self.speak(f"Alarm set for {alarm_hour}:{alarm_minute}.")
+        except ValueError:
+            self.speak("Invalid time format. Please enter time as HH:MM.")
+            return
+
+        self.speak("The alarm is now active.")
+        while True:
+            current_time = time.localtime()
+            current_hour = current_time.tm_hour
+            current_minute = current_time.tm_min
+
+            if current_hour == alarm_hour and current_minute == alarm_minute:
+                self.speak("Alarm ringing! Wake up, boss!")
+                print("Alarm! Wake up!")
+                break
+            time.sleep(10)  # Check every 10 seconds
+
+    def extracTnumbeR(self, string):
+        """
+        Extracts a number (in digit or word form) from a string based on the format "change tab to X".
+        """
+        match = re.search(r'change tab(?: (?:to|with))? (\w+)', string, re.IGNORECASE)
+        if match:
+            number_str = match.group(1).strip().lower()
+            if number_str.isdigit():
+                return int(number_str)
+            if number_str in self.word_to_num_map:
+                return self.word_to_num_map[number_str]
+            raise ValueError(f"Cannot convert '{number_str}' to a number.")
+        else:
+            return 1
+
+    def mute_speaker(self):
+        """Mute the system volume."""
+        os.system("nircmd.exe mutesysvolume 1")
+        self.speak("System volume has been muted.")
+
+    def unmute_speaker(self):
+        """Unmute the system volume."""
+        os.system("nircmd.exe mutesysvolume 0")
+        self.speak("System volume has been unmuted.")
+
+    def adj_volume(self, string, x=None):
+        """
+        Adjust system volume based on the command.
+        :param string: 'increase', 'decrease', or 'set'.
+        :param x: Value to set the volume (0-100) if 'set' is specified.
+        """
+        if string == "increase":
+            os.system("nircmd.exe changesysvolume 4000")
+            self.speak("Volume has been increased.")
+        elif string == "decrease":
+            os.system("nircmd.exe changesysvolume -4000")
+            self.speak("Volume has been decreased.")
+        elif string == "set":
+            if x is not None:
+                volume = int(x * 655.35)
+                os.system(f"nircmd.exe setsysvolume {volume}")
+                self.speak(f"Volume has been set to {x} percent.")
+            else:
+                self.speak("No volume percentage specified.")
+        else:
+            self.speak("Invalid volume command.")
+
+    def adj_brightness(self,change):
+        direction = "increased" if change > 0 else "decreased"
+        cmd = f'powershell -Command "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, ((Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightness).CurrentBrightness + {change}))"'
+        os.system(cmd)
+        print(f"Brightness has been {direction} by {abs(change)}%")
+
+    def rP(self):
+        rply = [
+            "I'm on it sir", "Roger that sir", "On it sir", "as you speak sir"
+        ]
+        return random.choice(rply)
+
+    def askDesk(self):
+        rply = [
+            "which desktop shall I open, sir?", "which desktop would you like me to open sir?",
+        ]
+        return random.choice(rply)
+
+    def play_song(self,song):
+        search = Search(song)
+        video_url = search.results[0].watch_url
+        print(f"Playing: {video_url}")
+        webbrowser.open(video_url)
+
+    def snG(self):
+        """Searches and plays a random song directly on YouTube."""
+        song_list = [
+            "Pee loon song", "Channa ve", "Tu Jaane na", "Tera ban jaunga", 
+            "Khairiyat", "Tujhe kitna Chahne lage by Jubin", "Vaaste",
+            "Tujhe Bhula diya", "Tum hi Aana", "Bhula diya by Darshan Raval",
+            "Dekhte Dekhte by Atif Aslam", "Dillagi by Rahat fateh ali khan",
+            "Lo safar", "Toota jo kabhi Tara", "Teri Ore", "Falak Tak reverb",
+            "Pehla Nasha by Udit Narayan", "Tum se hi", "Chale Jana Phir",
+            "Tera Pyar", "Kya Mujhe Pyaar Hai", "Tere Nainon Mein",
+            "Hale Dil Tujhko Sunata", "Agar Tum Sath Ho", "Lord Imran Khan's playlist",
+            "Tere Vaaste", "Mareez E Ishq", "Hale Dil", "Zara Zara by Jalraj",
+            "Tere Liye", "Ye Tune Kya Kiya", "Labon Ko", "Pehli Nazar Mein",
+            "Zara Sa", "Wajah Tum Ho", "Mat Aazma Re", "Tu Hai ki Nahi",
+            "Raataaan Lambiyan", "Tune jo Na Kaha", "Thodi der from Half girlfriend",
+            "Zindagi Se", "Best of AP Dhillon"
+        ]
+        # Randomly select a song
+        song_name = random.choice(song_list)
+        print(f"Playing a random song: {song_name}")
+        self.play_song(song_name)
+                
+   
+    # def open_app(self, app_name):
+    #     """
+    #     Open a specific application using its name.
+    #     :param app_name: Name of the application to open.
+    #     """
+    #     app_name = app_name.lower()
+    #     if "chrome" in app_name:
+    #         os.system("start chrome")
+    #         self.speak("Google Chrome has been opened.")
+    #     elif "notepad" in app_name:
+    #         os.system("start notepad")
+    #         self.speak("Notepad has been opened.")
+    #     elif "calculator" in app_name:
+    #         os.system("start calc")
+    #         self.speak("Calculator has been opened.")
+    #     else:
+    #         self.speak("I don't know how to open that application.")
+    
+    # def close_app(self, app_name):
+    #     """
+    #     Close a specific application using its name.
+    #     :param app_name: Name of the application to close.
+    #     """
+    #     app_name = app_name.lower()
+    #     if "chrome" in app_name:
+    #         os.system("taskkill /f /im chrome.exe")
+    #         self.speak("Google Chrome has been closed.")
+    #     elif "notepad" in app_name:
+    #         os.system("taskkill /f /im notepad.exe")
+    #         self.speak("Notepad has been closed.")
+    #     elif "calculator" in app_name:
+    #         os.system("taskkill /f /im calculator.exe")
+    #         self.speak("Calculator has been closed.")
+    #     else:
+    #         self.speak("I don't know how to close that application.")
 # Main Application
 if __name__ == "__main__":
     root = tk.Tk()
     gui = VoiceAssistantGUI(root)
     speech_engine = SpeechEngine()
     recognizer = VoiceRecognition(gui)
-    # Example Usage
-    speech_engine.speak("yoii, what's up?")
-    recognizer.take_command()
-    root.mainloop()
+    utils = Utility(speech_engine, recognizer)
+
+    # Example usage
+    utils.speak("Utility functions are ready.")
+    # utils.calC()  # Example for calculator function
+    # utils.press("enter", 3)  # Example for press function
+    # utils.bluetooth()  # Example for Bluetooth toggle
+    # utils.hotspot()  # Example for hotspot toggle
+    # utils.screenshot()  # Example for hotspot toggle
+    utils.snG()  # Example for hotspot toggle
+    # print(("second".isdigit()))
+
+
+
