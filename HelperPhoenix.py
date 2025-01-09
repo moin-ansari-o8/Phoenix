@@ -80,7 +80,7 @@ class VoiceRecognition:
         with sr.Microphone() as source:
             self.gui.show_listen_image()
             print(">>> Listening...")
-            audio = self.recognizer.listen(source, 0, 6)
+            audio = self.recognizer.listen(source, 0, 5)
         
         try:
             self.recognizer.pause_threshold = 1
@@ -101,8 +101,7 @@ if __name__ == "__main__":
     gui = VoiceAssistantGUI(root)
     speech_engine = SpeechEngine()
     recognizer = VoiceRecognition(gui)
-    
     # Example Usage
     speech_engine.speak("yoii, what's up?")
-    
+    recognizer.take_command()
     root.mainloop()
