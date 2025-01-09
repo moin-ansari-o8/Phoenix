@@ -10,7 +10,10 @@ from time import sleep
 import time
 import webbrowser
 import random
+import re
 from pytube import YouTube, Search
+import psutil
+import datetime
 class SpeechEngine: # Text-to-Speech Engine
     def __init__(self):
         self.engine = pyttsx3.init('sapi5')
@@ -425,7 +428,172 @@ class Utility:
         print(f"Playing a random song: {song_name}")
         self.play_song(song_name)
                 
-   
+    @staticmethod
+    def whTabT():
+        abt_list = ["What about", "How about", "You shall listen", "what about this one:"]
+        return random.choice(abt_list)
+
+    @staticmethod
+    def opN(query1):
+        app_name = ""
+        # Split the query into words
+        words = query1.split()
+        # Check if the first word in the query matches any of the keywords
+        if words[0] in ["open", "launch", "start"]:
+            # Store the next word after x in app_name
+            if len(words) > 2:
+                app_name = words[1] + " " + words[2]
+            else:
+                app_name = words[1]
+        return app_name
+
+    @staticmethod
+    def adjust_volume(query):
+        # Define patterns and keywords
+        inc_vol_keywords = ["increase", "increased"]
+        dec_vol_keywords = ["decrease", "decreased"]
+        # Unified regex pattern for capturing numbers with or without a percentage sign
+        pattern = r'\b\d+%?'
+        # Check if "set" is in query
+        if "set" in query:
+            match = re.search(pattern, query)
+            if match:
+                # Extract numeric value and remove percentage sign if present
+                value = int(re.sub(r'\D', '', match.group()))
+                Utility.adj_volume("set", value)
+        else:
+            # Check for increase or decrease keywords
+            if any(word in query for word in inc_vol_keywords):
+                Utility.adj_volume("increase", None)
+            elif any(word in query for word in dec_vol_keywords):
+                Utility.adj_volume("decrease", None)
+
+    @staticmethod
+    def adjust_brightness(query):
+        # Define patterns and keywords
+        inc_bright_keywords = ["increase", "increased"]
+        dec_bright_keywords = ["decrease", "decreased"]
+        # Unified regex pattern for capturing numbers with or without a percentage sign
+        pattern = r'\b\d+%?'
+        # Check if "by" is in query, indicating a specific adjustment amount
+        if "by" in query:
+            match = re.search(pattern, query)
+            if match:
+                # Extract numeric value and remove percentage sign if present
+                value = int(match.group().rstrip('%'))
+                if any(word in query for word in inc_bright_keywords):
+                    Utility.adj_brightness(value)
+                elif any(word in query for word in dec_bright_keywords):
+                    Utility.adj_brightness(-value)
+        else:
+            # Default adjustment amount is 10%
+            if any(word in query for word in inc_bright_keywords):
+                Utility.adj_brightness(10)
+            elif any(word in query for word in dec_bright_keywords):
+                Utility.adj_brightness(-10)
+
+    @staticmethod
+    def adj_volume(action, value=None):
+        # Example implementation for volume adjustment
+        if action == "set":
+            print(f"Setting volume to {value}%")
+        elif action == "increase":
+            print("Increasing volume")
+        elif action == "decrease":
+            print("Decreasing volume")
+
+    @staticmethod
+    def adj_brightness(value):
+        # Example implementation for brightness adjustment
+        if value > 0:
+            print(f"Increasing brightness by {value}%")
+        else:
+            print(f"Decreasing brightness by {-value}%")
+    
+    def date(self):
+        year = int(datetime.datetime.now().year)
+        month = int(datetime.datetime.now().month)
+        date = int(datetime.datetime.now().day)
+        dy = datetime.datetime.now().strftime("%A")
+        self.speak(f"It's {date} {month} {year}, {dy}.")
+
+    def tim(self):
+        tt = time.strftime("%I:%M %p")
+        self.speak(f"The time is {tt}.")
+
+    def battery(self):
+        battery = psutil.sensors_battery()
+        battery_percentage = int(battery.percent)
+        plugged = battery.power_plugged
+        if plugged:
+            self.speak(f"The device is containing {battery_percentage} percent charge. \nAnd it is being charged.")
+        if not plugged:
+            self.speak(f"The device is containing {battery_percentage} percent charge.")
+            if battery_percentage >= 80 and battery_percentage <= 100:
+                self.speak("Battery is quite good, Sir.")
+            elif battery_percentage >= 60 and battery_percentage < 80:
+                self.speak("Battery is ok, Sir.")
+            elif battery_percentage <= 35:
+                self.speak("Plug in the charger sir!")
+
+    def lastChargeCheck(self):
+        battery = psutil.sensors_battery()
+        plugged = battery.power_plugged
+        battery_percentage = int(battery.percent)
+        if plugged:
+            if battery_percentage == 100:
+                self.speak("Sir, the device is fully charged! Do remember to unplug the charger.")
+            elif battery_percentage < 100 and battery_percentage >= 80:
+                self.speak(f"Sir, device is {battery_percentage}% charged. Do remember to unplug the charger after some time.")
+            elif battery_percentage < 80 and battery_percentage >= 35:
+                self.speak(f"Sir, device is {battery_percentage}% charged. Let the laptop charge for a while and do remember to unplug the charger after some time.")
+        elif not plugged:
+            if battery_percentage < 85 and battery_percentage >= 35:
+                self.speak(f"Sir, device has {battery_percentage}% charge. Let the laptop charge for a while and do remember to unplug the charger after some time.")
+
+    def shutD(self):
+        self.lastChargeCheck()
+        sht1 = [
+            "The PC will shut down in less than a minute.",
+            "The computer will be shutting down in under a minute.",
+            "Your PC is about to shut down in less than 60 seconds.",
+            "The system will power off in less than a minute.",
+            "PC shutdown will occur in less than a minute.",
+            "The computer will turn off in less than a minute.",
+            "The PC will be shutting down shortly, in less than a minute.",
+            "In less than one minute, the PC will shut down.",
+            "Shutdown in progress: PC will turn off in under a minute.",
+            "The PC will be powered down in less than a minute."
+        ]
+        sht2 = [
+            "Alrighty, I'm out! Catch you later sir!",
+            "Time for me to power down. See ya sir!",
+            "Shutting down now. Take care, sir!",
+            "Peace out! I'm logging off.",
+            "I'm off now. See ya soon sir!",
+            "Adios Señor! Until we meet again!",
+            "Take care! See you next time sir!"
+        ]
+        shti1 = random.choice(sht1)
+        shti2 = random.choice(sht2)
+        self.speak(shti1)
+        os.system("shutdown /s")
+        try:
+            os.system("taskkill /F /IM brave.exe")
+        except Exception:
+            print("Brave already closed.")
+        sleep(2)
+        try:
+            os.system("taskkill /F /IM code.exe")
+        except Exception:
+            print("Code already closed.")
+        sleep(2)
+        try:
+            os.system("taskkill /F /IM pyw.exe")
+        except Exception:
+            print("BG Python already closed.")
+        sleep(10)
+        self.speak(shti2)
     # def open_app(self, app_name):
     #     """
     #     Open a specific application using its name.
