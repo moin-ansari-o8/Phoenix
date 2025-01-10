@@ -9,11 +9,17 @@ import keyboard
 from time import sleep
 import time
 import webbrowser
+from plyer import notification
+import sys
+import subprocess
 import random
 import re
 from pytube import YouTube, Search
 import psutil
 import datetime
+import pygame
+import pyaudio
+import wave
 class SpeechEngine: # Text-to-Speech Engine
     def __init__(self):
         self.engine = pyttsx3.init('sapi5')
@@ -109,23 +115,22 @@ class VoiceRecognition:
         return query
 
 class Utility:
-    word_to_num_map = {
-        "one": 1,
-        "two": 2,
-        "three": 3,
-        "four": 4,
-        "five": 5,
-        "six": 6,
-        "seven": 7,
-        "eight": 8,
-        "nine": 9,
-        "ten": 10,
-        # Extend as needed
+    MONTH_DICT = {
+        "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+        "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
     }
-    
-    def __init__(self, speech_engine, voice_recognition):
+
+    WORD_TO_NUM = {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+        "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
+        "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50
+    }
+    def __init__(self, speech_engine, voice_recognition,sleep_time=1):
         self.speech_engine = speech_engine
         self.voice_recognition = voice_recognition
+        self.sleep_time = sleep_time  # Default sleep time (can be adjusted)
 
     def speak(self, message):
         self.speech_engine.speak(message)
@@ -272,7 +277,7 @@ class Utility:
                     self.speak("Switched to the left tab, sir!")
                     break
                 elif 'right' in command:
-                    right_steps = self.extract_steps(command, 'right')
+                    right_steps = self._extract_steps(command, 'right')
                     for _ in range(right_steps):
                         pg.press("right")
                     pg.keyUp("alt")
@@ -283,7 +288,7 @@ class Utility:
         except Exception as e:
             self.speak("An error occurred while switching applications.")
 
-    def extract_steps(self, command, direction): # Extract number of steps from command used in app_switch
+    def _extract_steps(self, command, direction): # Extract number of steps from command used in app_switch
         words = command.split()
         for word in words:
             if word.isdigit():
@@ -542,14 +547,14 @@ class Utility:
         battery_percentage = int(battery.percent)
         if plugged:
             if battery_percentage == 100:
-                self.speak("Sir, the device is fully charged! Do remember to unplug the charger.")
+                self.speak("Sir, the device is fully charged!")
             elif battery_percentage < 100 and battery_percentage >= 80:
                 self.speak(f"Sir, device is {battery_percentage}% charged. Do remember to unplug the charger after some time.")
             elif battery_percentage < 80 and battery_percentage >= 35:
-                self.speak(f"Sir, device is {battery_percentage}% charged. Let the laptop charge for a while and do remember to unplug the charger after some time.")
+                self.speak(f"Sir, device is {battery_percentage}% charged. Let the laptop charge for a while.")
         elif not plugged:
             if battery_percentage < 85 and battery_percentage >= 35:
-                self.speak(f"Sir, device has {battery_percentage}% charge. Let the laptop charge for a while and do remember to unplug the charger after some time.")
+                self.speak(f"Sir, device has {battery_percentage}% charge. Let the laptop charge for a while.")
 
     def shutD(self):
         self.lastChargeCheck()
@@ -566,7 +571,7 @@ class Utility:
             "The PC will be powered down in less than a minute."
         ]
         sht2 = [
-            "Alrighty, I'm out! Catch you later sir!",
+            "Alrighty, I'm out! See you later sir!",
             "Time for me to power down. See ya sir!",
             "Shutting down now. Take care, sir!",
             "Peace out! I'm logging off.",
@@ -594,6 +599,452 @@ class Utility:
             print("BG Python already closed.")
         sleep(10)
         self.speak(shti2)
+
+    def sleeP(self):
+        slp = ["PC is going to sleep mode."]
+        slpi = random.choice(slp)
+        pg.keyDown("win")
+        sleep(1)
+        pg.press("d")
+        sleep(1)
+        pg.keyUp("win")
+        sleep(2)
+        pg.leftClick()
+        sleep(1)
+        pg.keyDown("alt")
+        sleep(1)
+        pg.press("f4")
+        sleep(1)
+        pg.keyUp("alt")
+        sleep(1)
+        pg.press("left")
+        pg.press("left")
+        self.speak(slpi)
+        sleep(2)
+        pg.press("enter")
+
+    def hibernatE(self):
+        self.lastChargeCheck()
+        hib = ["Alrighty, I'm out! Catch you later sir !",
+               "Time for me to power down. See ya sir !",
+               "Shutting down now. Take care, sir !",
+               "Peace out! I'm logging off.",
+               "Later, sir ! I'm signing off.",
+               "I'm off now. See ya soon sir !",
+               "Adios Señor! Until we meet again!",
+               "Take care! See you next time sir !",
+               "I'm outta here. Goodbye sir !"]
+        hibi = random.choice(hib)
+        self.speak(hibi)
+        os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
+
+    def restarT(self):
+        res = ["Restarting the pc."]
+        resi = random.choice(res)
+        pg.keyDown("win")
+        sleep(1)
+        pg.press("d")
+        sleep(1)
+        pg.keyUp("win")
+        sleep(2)
+        pg.leftClick()
+        sleep(1)
+        pg.keyDown("alt")
+        sleep(1)
+        pg.press("f4")
+        sleep(1)
+        pg.keyUp("alt")
+        sleep(1)
+        pg.press("right")
+        self.speak(resi)
+        sleep(2)
+        pg.press("enter")
+
+    def restart_phoenix(self):
+        try:
+            subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
+            print("All background python programs closed.")
+        except Exception:
+            print("No python program found.")
+        self.desKtoP_3()
+        path = "C:\\PHNX\\NORMAL PHOENIX\\main.bat"
+        os.startfile(path)
+        sleep(5)
+        sys.exit()
+
+    def maiNdesKtoP(self):
+        self.speak("which Sir?")
+        print("study(0),alpha(1),extra(2),trash(3)")
+        dt = self.take_command().lower()
+        if 'study' in dt or 'zero' in dt or '0' in dt:
+            self.desKtoP_0()
+        elif 'alpha' in dt or '1' in dt or 'one' in dt or 'first' in dt:
+            self.desKtoP_1()
+        elif 'extra' in dt or '2' in dt or 'two' in dt or 'second' in dt:
+            self.desKtoP_2()
+        elif 'trash' in dt or '3' in dt or 'three' in dt or 'third' in dt:
+            self.desKtoP_3()
+        self.speak("Done sir !")
+    
+    def _perform_key_press(self, key_combination, action="press"):
+        """Helper function to perform key actions."""
+        for key in key_combination:
+            if action == "press":
+                pg.press(key)
+            elif action == "down":
+                pg.keyDown(key)
+            elif action == "up":
+                pg.keyUp(key)
+        sleep(self.sleep_time)
+
+    def _click_at_position(self, x, y):
+        """Helper function to click at specific screen coordinates."""
+        pg.leftClick(x, y)
+        sleep(self.sleep_time)
+
+    def desKtoP(self, screen_index):
+        """Generalized method for desk-to-previous method calls."""
+        positions = {
+            0: (466, 945),
+            1: (709, 945),
+            2: (958, 945),
+            3: (1201, 945)
+        }
+
+        # If the screen_index is not valid, we return early
+        if screen_index not in positions:
+            print(f"Invalid screen index: {screen_index}")
+            return
+        
+        sleep(self.sleep_time)
+        self._perform_key_press(["win", "tab"], "down")
+        self._perform_key_press(["win"], "up")
+        self._click_at_position(*positions[screen_index])
+
+    def desKtoP_4(self):
+        """Perform a specific sequence for screen 4."""
+        sleep(self.sleep_time)
+        self._perform_key_press(["win", "ctrl"], "down")
+        self._perform_key_press(["left"] * 5, "press")
+        sleep(self.sleep_time)
+        self._perform_key_press(["right"] * 4, "press")
+        sleep(self.sleep_time)
+        self._perform_key_press(["ctrl", "win"], "up")
+        self._perform_key_press(["enter"], "press")
+        sleep(self.sleep_time)
+   
+    @staticmethod
+    def shoWalLwiN():
+        """Simulates opening Windows Start Menu and performing actions."""
+        pg.keyDown("win")
+        sleep(1)
+        pg.press("tab")
+        sleep(1)
+        pg.keyUp("win")
+        sleep(1)
+        pg.rightClick(900, 400)
+        sleep(1)
+        pg.press("down", presses=3)  # We can do all 3 'down' presses in one line
+        pg.press("enter", presses=2)
+
+    @staticmethod
+    def tM():
+        """Returns a random time-related phrase."""
+        return random.choice(["It's", "The time is", "Time is"])
+
+    @staticmethod
+    def greet(greeting_type):
+        """Returns a random greeting based on the time of day."""
+        greetings = {
+            'morning': ["Good Morning!", "Good Morning!"],
+            'afternoon': ["Good Afternoon!", "Good Afternoon!"],
+            'evening': ["Good Evening!", "Good Evening!"]
+        }
+        return random.choice(greetings.get(greeting_type, []))
+
+    @staticmethod
+    def cmnD():
+        """Returns a system status message."""
+        return "Phoenix is online, Sir."
+
+    @staticmethod
+    def phN():
+        """Returns a system status message indicating Phoenix is online."""
+        return "Phoenix is Online"
+
+    @staticmethod
+    def onL():
+        """Returns a random welcome back message."""
+        return random.choice(["Welcome back Sir", "Nice to see you again sir"])
+
+    @staticmethod
+    def helO():
+        """Returns a random greeting message."""
+        return random.choice([
+            "Hello Sir!",
+            "Hello! How are you sir?",
+            "Hey love! How you doing!",
+            "Hello Sir! I was just thinking of you.",
+            "Hello Sir! How you doing?"
+        ])
+
+    @staticmethod
+    def finRep():
+        """Returns a random response to inquire about well-being."""
+        return random.choice(["Oh, it's great sir.", "Okay sir.", "Fine sir."])
+
+    @staticmethod
+    def wtR():
+        """Returns a random reminder to drink water."""
+        return random.choice([
+            "Be hydrated sir.",
+            "Drink some water sir, be hydrated.",
+            "Do drink water, be hydrated."
+        ])
+
+    @staticmethod
+    def eaT():
+        """Returns a random reminder to eat."""
+        return random.choice([
+            "Have you eaten something sir?",
+            "Did you have your dinner sir?",
+            "Take a rest, eat something."
+        ])
+
+    @staticmethod
+    def wakE():
+        """Returns a random greeting when the user wakes up."""
+        return random.choice([
+            "Hello Sir! I am listening.",
+            "Hello! I am here for you.",
+            "Hey love! Phoenix is here.",
+            "Hello Sir! Phoenix is always here for you.",
+            "Hello Sir! How can I help you?"
+        ])
+
+    @staticmethod
+    def awaK():
+        """Returns a random reminder when the user is still awake."""
+        return random.choice([
+            "Oh, are you still awake?",
+            "You still awake! Don't you have to go to college tomorrow?",
+            "Haven't you slept yet?"
+        ])
+
+    @staticmethod
+    def coffE():
+        """Returns a random reminder to drink coffee."""
+        return random.choice([
+            "Take a break, grab a cup of coffee.",
+            "Have a cup of coffee sir."
+        ])
+
+    @staticmethod
+    def intrOmsC():
+        """Plays a random system intro sound."""
+        intr = ["robo1.wav", "robo2.wav"]
+        x = random.choice(intr)
+        CHUNK = 1024
+        wf = wave.open(f"E:\\MSC\\{x}", 'rb')
+        p = pyaudio.PyAudio()
+        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                        channels=wf.getnchannels(),
+                        rate=wf.getframerate(),
+                        output=True)
+        data = wf.readframes(CHUNK)
+        start_time = time.time()
+        while data:
+            stream.write(data)
+            data = wf.readframes(CHUNK)
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= 3:
+                break
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
+    @staticmethod
+    def rockMsc(volume):
+        """Plays a random rock music track for a fixed duration."""
+        intr = ["rock1.mp3", "rock2.mp3", "rock3.mp3"]
+        x = random.choice(intr)
+        file_path = f"E:\\MSC\\{x}"  # Construct the file path
+        duration = 25  # Set duration to 25 seconds
+        
+        pygame.mixer.init()  # Initialize the mixer
+
+        try:
+            # Load the music
+            pygame.mixer.music.load(file_path)
+            pygame.mixer.music.set_volume(volume)
+            print(f"Volume set to {volume * 100}%")
+            # Play the music
+            pygame.mixer.music.play()
+            print(f"Playing {file_path} for {duration} seconds...")
+            
+            # Wait for the specified duration
+            time.sleep(duration)
+            
+            # Stop the music
+            pygame.mixer.music.stop()
+            print("Music stopped.")
+        
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        
+    def _word_to_number(self,word):
+        """Convert word numbers to integers."""
+        return Utility.WORD_TO_NUM.get(word.lower(), None)
+
+    
+
+    def _parse_time(self, time_str):
+        """
+        Parse time from text input and return it in HH:MM format.
+        
+        Supports various AM/PM formats and ensures proper hour/minute conversion.
+        If an error occurs, fall back to CLI input.
+        """
+        try:
+            # Regex pattern to extract time and AM/PM
+            alarm_pattern = re.compile(
+                r'(\d{1,4})\s?([ap]\.?m\.?)', re.IGNORECASE
+            )
+            match = alarm_pattern.search(time_str)
+
+            if match:
+                # Extract raw time and period (AM/PM)
+                raw_time = match.group(1)
+                period = match.group(2).lower()
+
+                # Convert period to standardized 'am' or 'pm'
+                period = 'am' if 'a' in period else 'pm'
+
+                # Extract hour and minute from raw time
+                if len(raw_time) <= 2:  # If only hour is provided (e.g., "1am")
+                    hour = int(raw_time)
+                    minute = 0
+                else:  # Full time provided (e.g., "1241am")
+                    hour = int(raw_time[:-2])  # Extract hour part
+                    minute = int(raw_time[-2:])  # Extract minute part
+
+                # Adjust hour for 12-hour to 24-hour conversion
+                if period == 'am':
+                    hour = hour if hour < 12 else 0  # 12 AM is 00
+                elif period == 'pm':
+                    hour = hour if hour == 12 else hour + 12  # 12 PM is 12, others add 12
+
+                return hour, minute
+
+            # If parsing fails, raise a ValueError
+            raise ValueError("Time parsing failed")
+        
+        except Exception as e:
+            # Fallback to CLI input if an error occurs
+            self.speak("Invalid time format detected. Please provide the time again.")
+            self.speak("At what time should I set the reminder?")
+            reminder_time = input(" (Provide in HH:MM format) : ")
+
+            # Handle fallback input
+            try:
+                hour, minute = map(int, reminder_time.split(':'))
+                return hour, minute
+            except ValueError:
+                self.speak("The time you entered is still invalid. Please try again.")
+                return None, None
+
+    def _parse_date(self,date_str):
+        """Parse date from text input."""
+        if date_str.lower() in {"today", "to day", "2 day", "to-day", "2-day"}:
+            today = datetime.datetime.now()
+            return today.month, today.day
+
+        match = re.search(r'\d+', date_str)
+        month = None
+        day = None
+        for month_name, month_num in Utility.MONTH_DICT.items():
+            if month_name in date_str.lower():
+                month = month_num
+                break
+
+        if match:
+            day = int(match.group())
+
+        if month and day:
+            return month, day
+        return None, None
+
+    
+    def set_reminder(self):
+        """Set a reminder based on user input."""
+        self.speak("What reminder should I set, sir?")
+        reminder_message = self.take_command().lower()
+
+        self.speak("At what time should I set the reminder? (Provide in HH:MM format)")
+        reminder_time = self.take_command().lower()
+        hour, minute = self._parse_time(reminder_time)
+        if hour is None or minute is None:
+            self.speak("Invalid time format. Please try again using HH:MM format.")
+            return
+
+        self.speak("On which day, sir?")
+        date_str = self.take_command().lower()
+        month, day = self._parse_date(date_str)
+        if month is None or day is None:
+            self.speak("Invalid date format. Please try again.")
+            return
+
+        now = datetime.datetime.now()
+        reminder_datetime = datetime.datetime(now.year, month, day, hour, minute)
+        time_until_reminder = reminder_datetime - now
+
+        if time_until_reminder.total_seconds() <= 0:
+            self.speak("Invalid time. The reminder should be in the future.")
+            return
+
+        self.speak(f"Reminder set for {reminder_datetime.strftime('%Y-%m-%d %H:%M')}.")
+        time_until_reminder_seconds = time_until_reminder.total_seconds()
+        time.sleep(time_until_reminder_seconds)
+
+        notification.notify(
+            title="Reminder",
+            message=reminder_message,
+            app_name="Phoenix",
+            timeout=10  # Notification visible for 10 seconds
+        )
+        self.speak("Reminder notification delivered, sir!")
+
+    def set_timer(self):
+        self.speak("For how long should I set the timer, sir?")
+        timer_duration = self.take_command().lower()
+
+        # Extract the number and unit (minutes or hours) from the command
+        match = re.search(r'(\d+)\s*(minute|hour)', timer_duration)
+        if not match:
+            self.speak("I couldn't understand the duration. Please try again.")
+            return
+
+        duration = int(match.group(1))
+        unit = match.group(2)
+
+        if unit == "minute":
+            duration_seconds = duration * 60
+        elif unit == "hour":
+            duration_seconds = duration * 3600
+        else:
+            self.speak("Invalid time unit. Please specify minutes or hours.")
+            return
+
+        self.speak(f"Timer set for {duration} {unit}(s).")
+        time.sleep(duration_seconds)
+
+        notification.notify(
+            title="Timer",
+            message=f"Your {duration} {unit}(s) timer is up!",
+            app_name="Phoenix",
+            timeout=10  # Notification visible for 10 seconds
+        )
+        self.speak(f"Your {duration} {unit}(s) timer is up, sir!")
     # def open_app(self, app_name):
     #     """
     #     Open a specific application using its name.
@@ -630,13 +1081,21 @@ class Utility:
     #     else:
     #         self.speak("I don't know how to close that application.")
 # Main Application
+def music(Utility): #integrating more function into one 
+    
+    # Playing intro sound (ensure the file path is correct)
+    Utility.intrOmsC()
+
+    # Playing rock music with 50% volume (ensure the file path is correct)
+    Utility.rockMsc(0.5)
+
 if __name__ == "__main__":
     root = tk.Tk()
     gui = VoiceAssistantGUI(root)
     speech_engine = SpeechEngine()
     recognizer = VoiceRecognition(gui)
     utils = Utility(speech_engine, recognizer)
-
+    # recognizer.take_command()
     # Example usage
     utils.speak("Utility functions are ready.")
     # utils.calC()  # Example for calculator function
@@ -644,7 +1103,16 @@ if __name__ == "__main__":
     # utils.bluetooth()  # Example for Bluetooth toggle
     # utils.hotspot()  # Example for hotspot toggle
     # utils.screenshot()  # Example for hotspot toggle
-    utils.snG()  # Example for hotspot toggle
+    # utils.snG()  # Example for hotspot toggle
+    # utils.desKtoP_4()  # Example for hotspot toggle
+    # utils.set_reminder()  
+    # utils.set_timer()  
+    # print(utils._parse_time("1341"))  
+    
+    
+    # music(Utility)
+
+
     # print(("second".isdigit()))
 
 

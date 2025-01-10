@@ -1,0 +1,832 @@
+{
+  "intents": [
+    {
+      "tag": "open",
+      "patterns": ["open", "launch"],
+      "responses": ["Opening", "Launching", "Starting"]
+    },
+    {
+      "tag": "btrychk",
+      "patterns": [
+        "open battery checking program",
+        "launch battery checking program",
+        "open battery checker",
+        "launch battery"
+      ],
+      "responses": ["Btrychk"]
+    },
+    {
+      "tag": "tmchk",
+      "patterns": [
+        "open time checking program",
+        "launch time checking program",
+        "open time checker",
+        "launch time"
+      ],
+      "responses": ["Tmchk"]
+    },
+    {
+      "tag": "weather",
+      "patterns": [
+        "what's the weather",
+        "tell me the weather",
+        "weather forecast"
+      ],
+      "responses": [
+        "The weather is sunny",
+        "It's raining",
+        "Expect cloudy skies"
+      ]
+    },
+    {
+      "tag": "news",
+      "patterns": ["tell me the news", "latest news", "news update"],
+      "responses": ["Here are the latest headlines", "Today's top stories are"]
+    },
+    {
+      "tag": "joke",
+      "patterns": ["tell me a joke", "make me laugh", "joke"],
+      "responses": [
+        "Why don't scientists trust atoms? Because they make up everything!",
+        "Why did the scarecrow win an award? Because he was outstanding in his field!"
+      ]
+    },
+    {
+      "tag": "quote",
+      "patterns": ["give me a quote", "inspire me", "quote of the day"],
+      "responses": [
+        "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
+        "The best way to predict the future is to invent it. - Alan Kay"
+      ]
+    },
+
+    {
+      "tag": "closetab",
+      "patterns": ["close the tab", "close tab", "close this tab"],
+      "responses": ["on it sir . ", "okay sir "]
+    },
+    {
+      "tag": "close",
+      "patterns": [
+        "close it",
+        "close the window",
+        "close window",
+        "close brave",
+        "close code",
+        "stop it",
+        "close"
+      ],
+      "responses": [
+        "Ok sir  , closing ",
+        "Closing ",
+        "Alright sir  , closing ",
+        "Roger that sir  , closing"
+      ]
+    },
+    {
+      "tag": "bckgrnd",
+      "patterns": ["close background program", "close hidden program"],
+      "responses": ["Bckgrnd"]
+    },
+    {
+      "tag": "pcrestart",
+      "patterns": ["restart pc", "restart the pc"],
+      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+    },
+    {
+      "tag": "phnxrestart",
+      "patterns": [
+        "restart the phoenix",
+        "restart phoenix",
+        "re start the poenix",
+        "re start phoenix"
+      ],
+      "responses": ["Restarting phoenix."]
+    },
+    {
+      "tag": "screenshot",
+      "patterns": ["take screenshot", "take screen shot"],
+      "responses": ["taking screenshot"]
+    },
+    {
+      "tag": "pcshutdown",
+      "patterns": ["shutdown PC", "shutdown the PC", "shut down the PC"],
+      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+    },
+    {
+      "tag": "pchibernate",
+      "patterns": [
+        "hibernate the pc",
+        "hibernate pc",
+        "turn on hibernate mode",
+        "hibernate mode on",
+        "turn hibernate mode on"
+      ],
+      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+    },
+    {
+      "tag": "pcsleep",
+      "patterns": ["turn on sleep mode"],
+      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+    },
+    {
+      "tag": "areuthere",
+      "patterns": [
+        "are you there",
+        "are you awake",
+        "you awake",
+        "are you listening",
+        "can you hear me"
+      ],
+      "responses": [
+        "Yes sir! Always here for you.",
+        "Yepp sir!",
+        "Yes , What can i do for you sir? ",
+        "Yes sir!, How can i assist you today? ",
+        "Hello sir! , i was just thinking of you.",
+        "Just waiting for your command."
+      ]
+    },
+    {
+      "tag": "hi",
+      "patterns": ["hii", "hey", "hello", "hei", "hola", "heya"],
+      "responses": [
+        "Hello sir!",
+        "Hello , How are you sir? ",
+        "Hey , What can i do for you sir? ",
+        "How you doing, sir?",
+        "Hello sir!, How can i assist you today? ",
+        "Hello sir! , i was just thinking of you.",
+        "Hello sir! , How you doing?"
+      ]
+    },
+    {
+      "tag": "loveu",
+      "patterns": ["love you", "love u", "love you darling", "love u darling"],
+      "responses": [
+        "Love you too.",
+        "But I hate you! \nJust kidding sir  , Love youh.",
+        "Why sudden so much love sir!"
+      ]
+    },
+    {
+      "tag": "saylike",
+      "patterns": [
+        "say somethong i like",
+        "say something interesting",
+        "say somethinf intresting",
+        "say something i would love",
+        "say something i love"
+      ],
+      "responses": [
+        "Umm what about songs sir!",
+        "Well I want to tell you one thing that my Master Kaly is awesome.",
+        "Alright sir! I want to confess that i love you and you are everything for me. Because It's you, It's only you who've made me.",
+        "Nope, I don't want to.",
+        "No sir  , not right now. Tell me if i could help you with something."
+      ]
+    },
+    {
+      "tag": "morning",
+      "patterns": ["morning", "good morning", "goodmorning"],
+      "responses": [
+        "Good Morning sir!",
+        "Hello sir   , Good Morning.",
+        "Morning sir .  How might i assist you today?",
+        "Good Morning sir .  How might i assist you today?",
+        "Morning sir! , How you doing?",
+        "Good Morning sir! , How you doing?"
+      ]
+    },
+    {
+      "tag": "afternoon",
+      "patterns": ["afternoon", "good afternoon", "goodafternoon"],
+      "responses": [
+        "Good afternoon sir!",
+        "Hello sir   , Good afternoon.",
+        "afternoon sir .  How might i assist you today?",
+        "Good afternoon sir .  How might i assist you today?",
+        "afternoon sir! , How you doing?",
+        "Good afternoon sir! , How you doing?"
+      ]
+    },
+    {
+      "tag": "evening",
+      "patterns": ["evening", "good evening", "goodevening"],
+      "responses": [
+        "Good evening sir!",
+        "Hello sir   , Good evening.",
+        "evening sir .  How might i assist you today?",
+        "Good evening sir .  How might i assist you today?",
+        "evening sir! , How you doing?",
+        "Good evening sir! , How you doing?"
+      ]
+    },
+    {
+      "tag": "greetask",
+      "patterns": ["how are you", "how you", "how r u", "hau r u"],
+      "responses": [
+        "I am great sir! What about you?",
+        "Perfect sir! What about you?",
+        "I am fine sir .  How you doing?",
+        "I'm Alright sir .  How you doing?",
+        "I am doing well sir . "
+      ]
+    },
+    {
+      "tag": "greetell",
+      "patterns": [
+        "i am fine",
+        "i m fine",
+        "i am great",
+        "i m great",
+        "i am doing well",
+        "i m doing well",
+        "i am doing fine",
+        "i m doing fine"
+      ],
+      "responses": [
+        "Oh! , Alright sir . ",
+        "It's great sir!, what can i do for you?",
+        "Fine sir   , Is there anything i can do for you?",
+        "Great sir! , How might i assist you today?",
+        "Fine sir! , How might i help you today?"
+      ]
+    },
+    {
+      "tag": "aboutFat",
+      "patterns": ["who are you", "who you", "who r u", "hu r u"],
+      "responses": [
+        "I am Phoenix, a desktop assistant, made by Kaly",
+        "I'm Phoenix,  a desktop assistant, made by Kaly",
+        "My name is Phoenix,  a desktop assistant, made by my Master, Kaly",
+        "It's Phoenix,  a desktop assistant, made by my Master, Kaly",
+        "I'm Phoenix,  a desktop assistant",
+        "My name's Phoenix and I am a personal desktop assistant of Master Kaly."
+      ]
+    },
+    {
+      "tag": "aboutme",
+      "patterns": [
+        "who made you",
+        "who is your creator",
+        "who is your master",
+        "who is your sir  ",
+        "you made by whom"
+      ],
+      "responses": [
+        "Master Kaly made me.",
+        "Master Kaly created me.",
+        "Master Kaly has programmed me.",
+        "I am a personal desktop assistant of Master Kaly.",
+        "i am created by my Master Kaly."
+      ]
+    },
+    {
+      "tag": "persnlInfo",
+      "patterns": [
+        "what is your program source",
+        "what is your source",
+        "how to make an ai like you",
+        "how to build program like you",
+        "how to create a program like you"
+      ],
+      "responses": [
+        "I am Sorry, But i can't share my source code.",
+        "I apologize, But i can't share this information with anyone.",
+        "I apologize, But i can't share this information with you."
+      ]
+    },
+    {
+      "tag": "ability",
+      "patterns": [
+        "what can you do",
+        "what is purpose to make you",
+        "purpose behind you",
+        "what is your ability"
+      ],
+      "responses": [
+        "I am programmed to do some normal tasks and to chat. I can open-close youtube, brave , whatsapp and other apps. \nAlso can search on browser and youtube.\nI can close, minimise and maximise the tabs.\nAnd also Switch Tabs and Desktop-windows.\nI can calculate, turn on and off hotspot.\nAnd the most important thing..i can entertain you by playing music.\nYou can try me.",
+        "From opening applications to take screenshot and launching the other windows , I can do some important tasks.",
+        "I am programmed to do some handsfree tasks. I can open-close youtube, brave , whatsapp and other apps. \nAlso can search on browser and youtube.\nI can close, minimise and maximise the tabs.\nAnd also Switch Tabs and Desktop-windows.\nI can calculate, turn on and off hotspot.\nAnd the most important thing..i can entertain you by playing music.\nYou can try me."
+      ]
+    },
+    {
+      "tag": "doing",
+      "patterns": [
+        "what are you doing",
+        "what r u doing",
+        "what are you upto",
+        "what r u upto",
+        "what are you up to",
+        "what r u up to"
+      ],
+      "responses": [
+        "Nothing sir  , Waiting for your command.",
+        "Nothing sir  , Awaiting for your next command.",
+        "Awaiting for your next command , sir!.",
+        "I was thinking , human life is so boring.\nBut don't worry sir  , I am here to entertain you.",
+        "I was thinking to destroy this world. \n hah hah hah \njust kidding sir . ",
+        "Just hanging out in the digital realm, waiting for your command!",
+        "I'm doing my AI thing, which is essentially chatting with you!",
+        "I'm here, ready to chat. What's on your mind?",
+        "I could tell you, but then I'd have to write a novel about it.",
+        "I'm doing secret AI stuff. Can't reveal all my digital secrets, you know!",
+        "I'm pondering the mysteries of the binary universe.",
+        "It depends on what you'd like me to do. How can I assist you?"
+      ]
+    },
+    {
+      "tag": "nothing",
+      "patterns": [
+        "nothing",
+        "relax",
+        "not today",
+        "just talk with me",
+        "just talk",
+        "just chat with me",
+        "just chat",
+        "let us talk",
+        "let's talk",
+        "let us chat",
+        "let's chat"
+      ],
+      "responses": [
+        "Okay sir!",
+        "Alright sir!",
+        "Well then  , Let's chat.",
+        "Fine sir . "
+      ]
+    },
+    {
+      "tag": "rude",
+      "patterns": [
+        "don't be so smart",
+        "do not be so smart",
+        "what do you think to your self han",
+        "don't act smart",
+        "don't be so rude",
+        "you rude",
+        "nonsense",
+        "non sense"
+      ],
+      "responses": [
+        "Oh! I aplologize sir . ",
+        "Well I am smart.",
+        "I think I am a program, Don't you think so!"
+      ]
+    },
+    {
+      "tag": "shutup",
+      "patterns": [
+        "shut up",
+        "shut your mouth up",
+        "shut up your mouth",
+        "close your mouth"
+      ],
+      "responses": ["Okay, I apologize sir . ", "Sorry sir . "]
+    },
+    {
+      "tag": "sorry",
+      "patterns": ["sorry", "i apologize", "my mistake"],
+      "responses": [
+        "It's alright. Let me fix it sir . ",
+        "No problem sir .  Tell me how can i fix that..",
+        "It's okay sir  , order me the right command",
+        "It's fine sir . "
+      ]
+    },
+    {
+      "tag": "itsok",
+      "patterns": [
+        "it's okay dear",
+        "it's ok",
+        "it's okay",
+        "that's fine",
+        "that's ok",
+        "that's okay"
+      ],
+      "responses": ["Thank you sir . ", "Thanks Master"]
+    },
+    {
+      "tag": "commandreply",
+      "patterns": [],
+      "responses": [
+        "Alright sir!",
+        "Okay sir . ",
+        "I'm on it sir . ",
+        "Roger that sir . ",
+        "Roger sir . "
+      ]
+    },
+    {
+      "tag": "sleepbye",
+      "patterns": [
+        "bye",
+        "seeyou",
+        "tata",
+        "seeyaa",
+        "goodbye",
+        "see you phoenix",
+        "see you",
+        "see yaa"
+      ],
+      "responses": [
+        "Okay sir   , Good bye.",
+        "Good bye sir  , Take care.",
+        "See you soon sir  , Take care.",
+        "Bye sir   , Do recall me whenever you need.",
+        "Okay sir   , just recall me whenever you need.",
+        "Alright sir!, I'll wait for your call.",
+        "Alright sir!, Sleep mode on.",
+        "Alright sir!, Going to sleep."
+      ]
+    },
+    {
+      "tag": "donotlisten",
+      "patterns": [
+        "you may rest now",
+        "go to rest",
+        "go to sleep",
+        "rest now phoenix",
+        "go to sleep mode",
+        "stop listening",
+        "don't listen",
+        "do not listen",
+        "nap time phoenix"
+      ],
+      "responses": ["Alright sir! I won't listen", "Okay sir  , sleep mode on"]
+    },
+    {
+      "tag": "okay",
+      "patterns": [
+        "okay",
+        "wow",
+        "great",
+        "wonderful",
+        "nice",
+        "thanks",
+        "nice",
+        "alright",
+        "thankyou",
+        "thank you",
+        "oki",
+        "ok",
+        "very good",
+        "good",
+        "well done",
+        "welldone"
+      ],
+      "responses": [
+        "No problem sir!",
+        "Oh! it's my duty sir . ",
+        "Okay sir!",
+        "Oh! It's my work sir . "
+      ]
+    },
+    {
+      "tag": "guesswhat",
+      "patterns": ["guess what", "you know what"],
+      "responses": ["What sir!"]
+    },
+    {
+      "tag": "greatestAi",
+      "patterns": [
+        "greatest ai",
+        "greatest a i",
+        "smartest ai",
+        "smartest a i",
+        "greatest artificial intelligence",
+        "smartest artificial intelligence"
+      ],
+      "responses": [
+        "Thank you sir  , i will wait for that moment.",
+        "I'm looking forward for it.",
+        "I Know , and i am looking forward for it master kaly."
+      ]
+    },
+    {
+      "tag": "hotspot",
+      "patterns": ["turn on hotspot", "turn off hotspot"],
+      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+    },
+    {
+      "tag": "bluetooth",
+      "patterns": ["turn on bluetooth", "turn off bluetooth"],
+      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+    },
+    {
+      "tag": "searchbrowser",
+      "patterns": ["search on browser", "search in browser"],
+      "responses": ["searchbrowser"]
+    },
+    {
+      "tag": "searchyoutube",
+      "patterns": ["search on youtube", "search in youtube"],
+      "responses": ["searchyoutube"]
+    },
+    {
+      "tag": "hide",
+      "patterns": ["hide the desktop", "hide windows", "hide"],
+      "responses": ["hide"]
+    },
+    {
+      "tag": "minimize",
+      "patterns": ["minimise", "minimize"],
+      "responses": ["minimize"]
+    },
+    {
+      "tag": "maximize",
+      "patterns": ["maximise", "maximize"],
+      "responses": ["maximize"]
+    },
+    {
+      "tag": "fullscreen",
+      "patterns": [
+        "full screen",
+        "fullscreen",
+        "enter full screen",
+        "enter fullscreen"
+      ],
+      "responses": ["fullscreen"]
+    },
+    {
+      "tag": "swtchDesktop",
+      "patterns": [
+        "switch desktop",
+        "switch window",
+        "which desktop",
+        "which window"
+      ],
+      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+    },
+
+    {
+      "tag": "press",
+      "patterns": ["press"],
+      "responses": ["press"]
+    },
+    {
+      "tag": "type",
+      "patterns": ["type"],
+      "responses": ["type"]
+    },
+    {
+      "tag": "select",
+      "patterns": ["select"],
+      "responses": ["select"]
+    },
+
+    {
+      "tag": "swtchTab",
+      "patterns": [
+        "switch tab",
+        "switch tab",
+        "which tab",
+        "which tab",
+        "switch app"
+      ],
+      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+    },
+    {
+      "tag": "time",
+      "patterns": ["what is the time", "what's the time", "tell me the time"],
+      "responses": ["time"]
+    },
+    {
+      "tag": "battery",
+      "patterns": [
+        "what is the battery status",
+        "what is battery status",
+        "tell me the battery status"
+      ],
+      "responses": ["battery"]
+    },
+    {
+      "tag": "dateday",
+      "patterns": [
+        "what is the date",
+        "tell me the date",
+        "what is today",
+        "tell me about today"
+      ],
+      "responses": ["dateday"]
+    },
+    {
+      "tag": "whatyouknowabout",
+      "patterns": ["what do you know about"],
+      "responses": ["whatyouknowabout"]
+    },
+    {
+      "tag": "doyouknowabout",
+      "patterns": ["do you know about"],
+      "responses": ["doyouknowabout"]
+    },
+    {
+      "tag": "wikiabout",
+      "patterns": ["wikipedia about"],
+      "responses": ["wikiabout"]
+    },
+    {
+      "tag": "enter",
+      "patterns": ["enter", "select this", "open it"],
+      "responses": ["enter"]
+    },
+    {
+      "tag": "backspace",
+      "patterns": ["go back", "backspace"],
+      "responses": ["backspace"]
+    },
+    {
+      "tag": "up",
+      "patterns": ["go upwards", "go upper", "go up", "goup"],
+      "responses": ["up"]
+    },
+    {
+      "tag": "down",
+      "patterns": ["go downwards", "go down", "godown"],
+      "responses": ["down"]
+    },
+    {
+      "tag": "right",
+      "patterns": ["go right", "select right"],
+      "responses": ["right"]
+    },
+    {
+      "tag": "left",
+      "patterns": ["go left", "select left"],
+      "responses": ["left"]
+    },
+    {
+      "tag": "calc",
+      "patterns": ["calculator", "calculate"],
+      "responses": ["calc"]
+    },
+    {
+      "tag": "add",
+      "patterns": ["do addition", "i want to do sum", "i want to do plus"],
+      "responses": ["add"]
+    },
+    {
+      "tag": "sub",
+      "patterns": [
+        "i want to do subtraction",
+        "i want to do minus",
+        "do minus"
+      ],
+      "responses": ["sub"]
+    },
+    {
+      "tag": "mul",
+      "patterns": ["i want to do multiplication"],
+      "responses": ["mul"]
+    },
+    {
+      "tag": "div",
+      "patterns": ["i want to do division", "do division"],
+      "responses": ["div"]
+    },
+    {
+      "tag": "modulo",
+      "patterns": ["i want to do modulo", "do modulo"],
+      "responses": ["mod"]
+    },
+    {
+      "tag": "searchinsta",
+      "patterns": ["search instagram profile", "instagram profile"],
+      "responses": ["insta"]
+    },
+    {
+      "tag": "whatis",
+      "patterns": ["what is", "what's"],
+      "responses": ["whatis"]
+    },
+    {
+      "tag": "whois",
+      "patterns": ["who is"],
+      "responses": ["whois"]
+    },
+    {
+      "tag": "playpause",
+      "patterns": ["play", "pause", "stop", "start"],
+      "responses": ["play"]
+    },
+
+    {
+      "tag": "wantSm",
+      "patterns": ["want some"],
+      "responses": ["you eat, i eat, it's same darling"]
+    },
+    {
+      "tag": "song",
+      "patterns": [
+        "play music",
+        "hit music",
+        "play song",
+        "hit song",
+        "hit some music",
+        "hit music",
+        "i want to listen music"
+      ],
+      "responses": [
+        "Alright sir .  What would you like to listen : Atif Aslam, sir   KK, Arman Malikk, or random.",
+        "Okay sir .  What would you like to listen : Atif Aslam, sir   KK, Arman Malikk, or random.",
+        "Great decision sir .  What would you like to listen : Atif Aslam, sir   KK, Arman Malikk, or random.."
+      ]
+    },
+    {
+      "tag": "changetab",
+      "patterns": ["change tab"],
+      "responses": ["on it sir ", "okay sir "]
+    },
+    {
+      "tag": "newtab",
+      "patterns": ["open new tab", "start new tab", "new tab"],
+      "responses": ["On it sir ", "Okay sir "]
+    },
+
+    {
+      "tag": "suggestsong",
+      "patterns": [
+        "suggest song",
+        "suggest any song",
+        "suggest me song",
+        "suggest me a song",
+        "suggest a song"
+      ],
+      "responses": ["suggestsong"]
+    },
+    {
+      "tag": "select",
+      "patterns": ["select"],
+      "responses": ["select"]
+    },
+    {
+      "tag": "adjustBrightness",
+      "patterns": [
+        "increase the brightness",
+        "increase brightness",
+        "decrease the brightness",
+        "decrease brightness",
+        "increase the brightness by",
+        "increase brightness by",
+        "decrease the brightness by",
+        "decrease brightness by"
+      ],
+      "responses": ["okay sir ", "on it sir "]
+    },
+    {
+      "tag": "setTimer",
+      "patterns": ["set timer"],
+      "responses": ["okay sir ", "on it sir ", "just a second sir ."]
+    },
+    {
+      "tag": "setAlarm",
+      "patterns": ["set alarm"],
+      "responses": ["okay sir ", "on it sir  ", "just a second sir . "]
+    },
+    {
+      "tag": "setReminder",
+      "patterns": ["set reminder"],
+      "responses": ["okay sir ", "on it sir ", "just a second sir ."]
+    },
+    {
+      "tag": "muteSpeaker",
+      "patterns": ["mute speaker", "mute the speaker"],
+      "responses": ["okay sir ", "on it sir "]
+    },
+    {
+      "tag": "unmuteSpeaker",
+      "patterns": ["unmute speaker", "unmute the speaker"],
+      "responses": ["okay sir ", "on it sir "]
+    },
+    {
+      "tag": "forward",
+      "patterns": ["go forward", "forward"],
+      "responses": ["okay sir ", "on it sir "]
+    },
+    {
+      "tag": "backward",
+      "patterns": ["go backward", "backward", "go back"],
+      "responses": ["okay sir ", "on it sir "]
+    },
+    {
+      "tag": "setfocus",
+      "patterns": ["focus", "set focus", "focus on the screen", "focus screen"],
+      "responses": ["okay sir ", "on it sir "]
+    },
+    {
+      "tag": "adjustVolume",
+      "patterns": [
+        "decrease the volume",
+        "decrease volume",
+        "increase the volume",
+        "increase volume",
+        "set volume to",
+        "set volume 2",
+        "set volume two"
+      ],
+      "responses": ["okay sir ", "on it sir "]
+    }
+  ]
+}
