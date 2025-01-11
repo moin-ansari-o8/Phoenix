@@ -120,7 +120,7 @@ class PhoenixAssistant:
             if "switch to chat" in sent:
                 self.chat = True
                 break
-            if "phoenix" in sent and self.loop==False:
+            if ("phoenix" in sent or "finish" in sent) and self.loop==False:
                 sent = self.remove_phoenix_except_folder(sent)
                 if sent:
                     self.handle_command(sent)
@@ -232,9 +232,11 @@ class PhoenixAssistant:
             "type": lambda query: self.utility.type_text(query),
             "swtchTab": self.utility.switch_tab,
             "playpause": lambda query: self.utility.play_pause_action(query),
-            # "playsong": self.utility.set_timer,
-            # "suggestsong": self.utility.set_timer,
-            # "playrdmsong": self.utility.set_timer,
+            "dltsong": self.utility.delete_song,
+            "suggestsong": self.utility.suggest_song,
+            "playsong": self.utility.play_random_song,
+            "addsong": self.utility.add_song,
+            "viewsongs": self.utility.view_songs,
             "setTimer": self.utility.set_timer,
         }
         

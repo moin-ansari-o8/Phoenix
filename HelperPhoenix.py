@@ -15,6 +15,8 @@ import sys
 import subprocess
 import random
 import re
+import random
+import webbrowser
 from pytube import YouTube, Search
 import psutil
 import datetime
@@ -63,10 +65,10 @@ class VoiceAssistantGUI:  # GUI for Voice Assistant
         current_dir = os.path.dirname(__file__)
 
         # Construct relative paths to the images
-        # self.listen_img_path = os.path.join(current_dir, "assets", "img", "green.png")
-        self.listen_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\green.png"
-        self.recognize_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\red.png"
-        # self.recognize_img_path = os.path.join(current_dir, "assets", "img", "red.png")
+        self.listen_img_path = os.path.join(current_dir, "assets", "img", "green.png")
+        self.recognize_img_path = os.path.join(current_dir, "assets", "img", "red.png")
+        # self.listen_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\green.png"
+        # self.recognize_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\red.png"
         
         print(f"Listen image path: {self.listen_img_path}")
         print(f"Recognize image path: {self.recognize_img_path}")
@@ -156,10 +158,17 @@ class Utility:
         "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
         "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50
     }
+    
+    current_dir = os.path.dirname(__file__)
+
+    SONGS_FILE = os.path.join(current_dir, "data", "songs.txt")  # Ensure the path is correct
+
+
     def __init__(self, speech_engine, voice_recognition,sleep_time=1):
         self.speech_engine = speech_engine
         self.voice_recognition = voice_recognition
         self.sleep_time = sleep_time  # Default sleep time (can be adjusted)
+       
 
     def speak(self, message):
         self.speech_engine.speak(message)
@@ -453,8 +462,68 @@ class Utility:
             else:
                 continue
     
-    def play_song(self):
-        pass
+    def load_songs(self):
+    # Loads songs from the file provided
+        if os.path.exists(self.SONGS_FILE):
+            songs = {}
+            with open(self.SONGS_FILE, "r") as file:
+                for line in file:
+                    line = line.strip()
+                    if line:  # Check if line is not empty
+                        try:
+                            index, song = line.split('|', 1)
+                            index = int(index.strip())
+                            song = song.strip()
+                            songs[index] = song
+                        except ValueError:
+                            print(f"Skipping invalid line: {line}")
+            return songs
+        return {}
+
+    def save_songs(self,songs):  # Save songs to the file
+        with open(self.SONGS_FILE, "w") as file:
+            for index, song in sorted(songs.items()):
+                file.write(f"{index} | {song} original\n")  # Always saves new song in new line
+
+    def add_song(self):
+        songs=self.load_songs()
+        song_name = input("Enter the song name to add: ")
+        new_index = max(songs.keys(), default=0) + 1
+        songs[new_index] = song_name
+        self.save_songs(songs)
+        print(f"'{song_name}' has been added to the library.")
+
+    def delete_song(self):
+        songs=self.load_songs()
+        if not songs:
+            print("No songs available to delete.")
+            return songs
+        
+        self.view_songs()
+        try:
+            index_to_delete = int(input("Enter the index of the song to delete: "))
+            if index_to_delete in songs:
+                removed_song = songs.pop(index_to_delete)
+                # Renumber the remaining songs
+                renumbered_songs = {i + 1: song for i, song in enumerate(songs.values())}
+                self.save_songs(renumbered_songs)
+                print(f"'{removed_song}' has been removed from the library.")
+                return renumbered_songs
+            else:
+                print(f"No song found at index {index_to_delete}.")
+                return songs
+        except ValueError:
+            print("Invalid index. Please enter a number.")
+            return songs
+
+    def play_random_song(self):
+        songs=self.load_songs()
+        if songs:
+            song = random.choice(list(songs.values()))
+            print(f"Playing a random song: {song}")
+            self.play_song(song)
+        else:
+            print("The song library is empty. Add some songs first.")
 
     def type_text(self, query):
         text = query.replace("type ", "")
@@ -501,11 +570,24 @@ class Utility:
                     break
 
     def suggest_song(self):
-        pass
-    
-    def play_random_song(self):
-        pass
-        # return song_name
+        songs=self.load_songs()
+        if songs:
+            song = random.choice(list(songs.values()))
+            print(f"How about listening to: {song}?")
+            self.play_song(song)
+        else:
+            print("The song library is empty. Add some songs first.")
+      
+    def view_songs(self):
+        songs=self.load_songs()
+        if not songs:
+            print("No songs available.")
+        else:
+            print("\nCurrent song library:")
+            for index, song in sorted(songs.items()):
+                print(f"{index}: {song}")
+
+
     def handle_song_selection(self, index):
         pass
         
@@ -835,7 +917,6 @@ class Utility:
                 self.speak(f"All Chrome tabs are successfully closed.")
             except subprocess.CalledProcessError:
                 self.speak(f"Failed to close Chrome.")
-
 
     def adjust_volume(self,query):
         # Define patterns and keywords

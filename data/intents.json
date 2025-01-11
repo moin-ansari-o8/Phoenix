@@ -162,6 +162,64 @@
       ]
     },
     {
+      "tag": "addsong",
+      "patterns": [
+        "add song",
+        "add a song",
+        "add a song to the playlist",
+        "add song to the music library"
+      ],
+      "responses": ["addsong"]
+    },
+    {
+      "tag": "playsong",
+      "patterns": [
+        "play random song",
+        "play any song",
+        "play random music",
+        "play any music",
+        "hit some random music",
+        "hit some music",
+        "hit some random song"
+      ],
+      "responses": ["randomsong"]
+    },
+    {
+      "tag": "suggestsong",
+      "patterns": [
+        "suggest song",
+        "suggest any song",
+        "suggest me a song",
+        "suggest me some songs"
+      ],
+      "responses": ["suggestsong"]
+    },
+    {
+      "tag": "viewsongs",
+      "patterns": [
+        "show me the songs",
+        "show me the music library",
+        "show me the playlist",
+        "show me the songs music list"
+      ],
+      "responses": [
+        "Alright sir! , Here are the songs.",
+        "Sure thing! Here is the music library.",
+        "Here you go, sir! Enjoy the music.",
+        "Displaying the playlist for you, sir.",
+        "Here are the songs you requested, sir."
+      ]
+    },
+    {
+      "tag": "dltsong",
+      "patterns": [
+        "delete song",
+        "delete a song",
+        "delete a song from the playlist"
+      ],
+      "responses": ["dltsong"]
+    },
+    {
       "tag": "loveu",
       "patterns": ["love you", "love u", "love you darling", "love u darling"],
       "responses": [
@@ -712,23 +770,6 @@
       "tag": "wantSm",
       "patterns": ["want some"],
       "responses": ["you eat, i eat, it's same darling"]
-    },
-    {
-      "tag": "playsong",
-      "patterns": [
-        "play music",
-        "hit music",
-        "play song",
-        "hit song",
-        "hit some music",
-        "hit music",
-        "i want to listen music"
-      ],
-      "responses": [
-        "Alright sir .  What would you like to listen : Atif Aslam, sir   KK, Arman Malikk, or random.",
-        "Okay sir .  What would you like to listen : Atif Aslam, sir   KK, Arman Malikk, or random.",
-        "Great decision sir .  What would you like to listen : Atif Aslam, sir   KK, Arman Malikk, or random.."
-      ]
     },
     {
       "tag": "changetab",
