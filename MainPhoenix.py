@@ -237,7 +237,7 @@ class PhoenixAssistant:
             "playsong": self.utility.play_random_song,
             "addsong": self.utility.add_song,
             "viewsongs": self.utility.view_songs,
-            "setTimer": self.utility.set_timer,
+            "setTimer": self.utility.set_timer
         }
         
         if tag in action_map:  # for single argument (query)
