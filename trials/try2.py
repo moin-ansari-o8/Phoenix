@@ -46,7 +46,7 @@ class SpeechEngine: # Text-to-Speech Engine
         print(f"$ : {audio}")
         self.engine.runAndWait()
 
-class VoiceAssistantGUI: # GUI for Voice Assistant
+class VoiceAssistantGUI:  # GUI for Voice Assistant
     def __init__(self, root):
         self.root = root
         self.root.overrideredirect(True)
@@ -61,39 +61,60 @@ class VoiceAssistantGUI: # GUI for Voice Assistant
         current_dir = os.path.dirname(__file__)
 
         # Construct relative paths to the images
-        self.listen_img = Image.open(os.path.join(current_dir, "assets", "img", "green.png"))
-        self.recognize_img = Image.open(os.path.join(current_dir, "assets", "img", "red.png"))
+        # self.listen_img_path = os.path.join(current_dir, "assets", "img", "green.png")
+        self.listen_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\green.png"
+        self.recognize_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\red.png"
+        # self.recognize_img_path = os.path.join(current_dir, "assets", "img", "red.png")
+        
+        print(f"Listen image path: {self.listen_img_path}")
+        print(f"Recognize image path: {self.recognize_img_path}")
+        
+        # Verify if image paths exist
+        if not os.path.exists(self.listen_img_path):
+            print("Error: Listen image not found!")
+        if not os.path.exists(self.recognize_img_path):
+            print("Error: Recognize image not found!")
+
+        # Load images
+        self.listen_img = Image.open(self.listen_img_path)
+        self.recognize_img = Image.open(self.recognize_img_path)
 
         # Configure window geometry
-        max_width, max_height = 4, 30
+        max_width = max(4, 4)
+        max_height = max(30, 30)
         x_offset = self.root.winfo_screenwidth() - max_width
         y_offset = self.root.winfo_screenheight() - max_height
         self.root.geometry(f"{max_width}x{max_height}+{x_offset}+{y_offset}")
 
-    def setup_transparency(self): # Set transparency based on OS
-        if self.root.tk.call('tk', 'windowingsystem') == 'win32': # Windows
-            self.root.attributes('-topmost', 1) # Always on top
-        elif self.root.tk.call('tk', 'windowingsystem') == 'x11': # Linux
-            self.root.attributes('-type', 'dock') # Dock
-        elif self.root.tk.call('tk', 'windowingsystem') == 'aqua': # MacOS
-            self.root.call('::tk::unsupported::MacWindowStyle', 'style', self.root._w, 'help', 'none') # No title bar
-        self.root.wm_attributes("-transparentcolor", "white") # Set white as transparent
+    def setup_transparency(self):  # Set transparency based on OS
+        if self.root.tk.call('tk', 'windowingsystem') == 'win32':  # Windows
+            self.root.attributes('-topmost', 1)  # Always on top
+        elif self.root.tk.call('tk', 'windowingsystem') == 'x11':  # Linux
+            self.root.attributes('-type', 'dock')  # Dock
+        elif self.root.tk.call('tk', 'windowingsystem') == 'aqua':  # MacOS
+            self.root.call('::tk::unsupported::MacWindowStyle', 'style', self.root._w, 'help', 'none')  # No title bar
+        self.root.wm_attributes("-transparentcolor", "white")  # Set white as transparent
 
     def show_listen_image(self):
-        mic_img = ImageTk.PhotoImage(self.listen_img.resize((40, 40), Image.LANCZOS).convert("RGBA"))
+        # self.mic_label.config(image=None)
+        mic_img = Image.open(self.listen_img_path).convert("RGBA")
+        mic_img = mic_img.resize((40, 40), Image.LANCZOS)
+        mic_img = ImageTk.PhotoImage(mic_img)
         self.mic_label.config(image=mic_img)
         self.mic_label.image = mic_img
         self.root.update()
-    
+
+
     def hide_listen_image(self):
         self.mic_label.config(image=None)
 
     def show_recognize_image(self):
+        self.mic_label.config(image=None)
         recognize_img = ImageTk.PhotoImage(self.recognize_img.resize((40, 40), Image.LANCZOS).convert("RGBA"))
         self.mic_label.config(image=recognize_img)
         self.mic_label.image = recognize_img
         self.root.update()
-    
+
     def hide_recognize_image(self):
         self.mic_label.config(image=None)
 
@@ -120,7 +141,6 @@ class VoiceRecognition:
             return ""
         
         return query
-
 class Utility:
     MONTH_DICT = {
         "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
@@ -310,7 +330,7 @@ class Utility:
         self.desKtoP(3)
         sleep(1)
         pg.keyDown("win")
-        pg.press("6")  # Assumes Armory Crate is pinned as the 6th item in the taskbar
+        pg.press("7")  # Assumes Armory Crate is pinned as the 6th item in the taskbar
         pg.keyUp("win")
         self.speak("Armory Crate has been opened.")
 
@@ -533,7 +553,7 @@ class Utility:
         tt = time.strftime("%I:%M %p")
         self.speak(f"The time is {tt}.")
 
-    def battery(self):
+    def battery_check(self):
         battery = psutil.sensors_battery()
         battery_percentage = int(battery.percent)
         plugged = battery.power_plugged
@@ -606,10 +626,12 @@ class Utility:
             print("BG Python already closed.")
         sleep(18)
         self.speak(shti2)
+        sys.exit()
 
     def sleeP(self):
-        slp = ["PC is going to sleep mode."]
+        slp = ["PC is going to sleep."]
         slpi = random.choice(slp)
+        self.speak(self.rP())
         pg.keyDown("win")
         sleep(1)
         pg.press("d")
@@ -629,6 +651,7 @@ class Utility:
         self.speak(slpi)
         sleep(2)
         pg.press("enter")
+        self.speak(self.onL())
 
     def hibernatE(self):
         self.lastChargeCheck()
@@ -640,10 +663,13 @@ class Utility:
                "I'm off now. See ya soon sir !",
                "Adios Señor! Until we meet again!",
                "Take care! See you next time sir !",
-               "I'm outta here. Goodbye sir !"]
+               "Take care! Goodbye sir !"]
         hibi = random.choice(hib)
         self.speak(hibi)
         os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
+        sleep(40)
+        self.restart_explorer()
+        self.speak(self.onL())
 
     def restarT(self):
         res = ["Restarting the pc."]
@@ -1274,11 +1300,11 @@ def music(Utility): #integrating more function into one
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.withdraw()
     gui = VoiceAssistantGUI(root)
     speech_engine = SpeechEngine()
     recognizer = VoiceRecognition(gui)
     utils = Utility(speech_engine, recognizer)
+    gui.show_listen_image()
     while True:
         recognizer.take_command()
     # Example usage

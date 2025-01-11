@@ -99,6 +99,7 @@
         "restart the phoenix",
         "restart phoenix",
         "re start the poenix",
+        "re start the finish",
         "re start phoenix"
       ],
       "responses": ["Restarting phoenix."]
@@ -589,7 +590,7 @@
       "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
     },
     {
-      "tag": "time",
+      "tag": "saytime",
       "patterns": ["what is the time", "what's the time", "tell me the time"],
       "responses": ["time"]
     },
@@ -658,11 +659,6 @@
       "responses": ["left"]
     },
     {
-      "tag": "calc",
-      "patterns": ["calculator", "calculate"],
-      "responses": ["calc"]
-    },
-    {
       "tag": "add",
       "patterns": ["do addition", "i want to do sum", "i want to do plus"],
       "responses": ["add"]
@@ -718,7 +714,7 @@
       "responses": ["you eat, i eat, it's same darling"]
     },
     {
-      "tag": "song",
+      "tag": "playsong",
       "patterns": [
         "play music",
         "hit music",

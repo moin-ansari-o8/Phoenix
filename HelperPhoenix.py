@@ -1,5 +1,6 @@
 import pyttsx3
 import random
+import threading
 import speech_recognition as sr
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -20,11 +21,12 @@ import datetime
 import pygame
 import pyaudio
 import wave
+import pywhatkit as kit
 # from tkinter import *
 from tkinter import Toplevel
 import tkinter.messagebox 
 from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QVBoxLayout
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt,QTimer
 from PyQt5.QtGui import QPainter, QBrush, QColor, QFont
 
 class SpeechEngine: # Text-to-Speech Engine
@@ -198,6 +200,18 @@ class Utility:
         except Exception as e:
             self.speak("I couldn't process the input. Please try again.")
 
+    def start_thread(self, function_name, *args, **kwargs):
+        """
+        Creates and starts a thread for the given function.
+        Args:
+            function_name (function): The function to run in a separate thread.
+            *args: Positional arguments for the function.
+            **kwargs: Keyword arguments for the function.
+        """
+        thread = threading.Thread(target=function_name, args=args, kwargs=kwargs)
+        thread.daemon = True  # Ensure the thread ends when the main program exits
+        thread.start()
+
     def press(self, key, times):
         try:
             for _ in range(times):
@@ -206,6 +220,30 @@ class Utility:
             self.speak(f"Pressed the {key} key {times} times.")
         except Exception as e:
             self.speak("An error occurred while pressing the key.")
+
+    def handle_time_based_greeting(self,tag, response):
+        hour = int(datetime.datetime.now().hour)
+        if tag == "morning":
+            if 0 <= hour < 12:
+                self.speak(response)
+            elif 12 <= hour < 18:
+                self.speak("You might have mistaken Sir, It's Afternoon!")
+            else:
+                self.speak("You might have mistaken Sir, It's Evening!")
+        elif tag == "afternoon":
+            if 0 <= hour < 12:
+                self.speak("You might have mistaken Sir, It's Morning!")
+            elif 12 <= hour < 18:
+                self.speak(response)
+            else:
+                self.speak("You might have mistaken Sir, It's Evening!")
+        elif tag == "evening":
+            if 0 <= hour < 12:
+                self.speak("You might have mistaken Sir, It's Morning!")
+            elif 12 <= hour < 18:
+                self.speak("You might have mistaken Sir, It's Afternoon!")
+            else:
+                self.speak(response)
 
     def bluetooth(self):
         try:
@@ -255,7 +293,8 @@ class Utility:
         except Exception as e:
             self.speak("An error occurred while taking the screenshot.")
 
-    def change_tab(self, n=1):
+    def change_tab(self,query="switch tab to one"):
+        n = self._extract_number(query)
         try:
             pg.keyDown("ctrl")
             for _ in range(n):
@@ -340,7 +379,7 @@ class Utility:
         # pg.press("enter")
         # self.speak("Selected the desired option in Armory Crate.")
 
-    def alrM(self):
+    def set_alarm(self):
         """
         Sets up an alarm at the specified time.
         """
@@ -366,21 +405,6 @@ class Utility:
                 print("Alarm! Wake up!")
                 break
             time.sleep(10)  # Check every 10 seconds
-
-    def extracTnumbeR(self, string):
-        """
-        Extracts a number (in digit or word form) from a string based on the format "change tab to X".
-        """
-        match = re.search(r'change tab(?: (?:to|with))? (\w+)', string, re.IGNORECASE)
-        if match:
-            number_str = match.group(1).strip().lower()
-            if number_str.isdigit():
-                return int(number_str)
-            if number_str in self.word_to_num_map:
-                return self.word_to_num_map[number_str]
-            raise ValueError(f"Cannot convert '{number_str}' to a number.")
-        else:
-            return 1
 
     def mute_speaker(self):
         """Mute the system volume."""
@@ -418,8 +442,73 @@ class Utility:
         direction = "increased" if change > 0 else "decreased"
         cmd = f'powershell -Command "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, ((Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightness).CurrentBrightness + {change}))"'
         os.system(cmd)
-        print(f"Brightness has been {direction} by {abs(change)}%")
+        self.speak(f"Brightness has been {direction} by {abs(change)}%")
+    
+    def sleep_phnx(self):
+        while True:
+            cmnd2 = self.take_command().lower()
+            if cmnd2 in ["phoenix"]:
+                self.speak(self.wakE())
+                break
+            else:
+                continue
+    
+    def play_song(self):
+        pass
 
+    def type_text(self, query):
+        text = query.replace("type ", "")
+        keyboard.write(text)
+
+    def switch_tab(self):
+        pg.keyDown("ctrl")
+        pg.press("tab")
+        pg.keyUp("ctrl")
+
+    def select_action(self, query, response_function):
+        selected_text = query.replace("select ", "")
+        self.speak(response_function())
+        keyboard.write(f"{selected_text[:2]}")  # Only type the first two characters
+        self.speak("Do you want to open it?")
+
+        while True:
+            confirmation = self.takeCommand().lower()
+            if any(x in confirmation for x in ["yes", "ha", "sure", "play it"]):
+                webbrowser.open(f"https://www.youtube.com/results?search_query={selected_text}")
+                break
+            elif any(x in confirmation for x in ["no", "don't", "do not", "na"]):
+                self.speak(response_function())
+                break
+
+    def play_pause_action(self,query):
+        ply = query.replace("play ", "")
+        if ply =="":
+            pg.press("space")
+        
+        elif "random song" in ply:
+            self.play_random_song()
+
+        else:
+            self.speak(f"Sir, do you want to play {ply}?")
+            while True:
+                print(">>> Listening for confirmation...")
+                confirmation = self.takeCommand().lower()
+                if any(x in confirmation for x in ["yes", "ha", "sure", "play it"]):
+                    webbrowser.open(f"https://www.youtube.com/results?search_query={ply}")
+                    break
+                elif any(x in confirmation for x in ["no", "don't", "do not", "na"]):
+                    self.speak("Okay, sir.")
+                    break
+
+    def suggest_song(self):
+        pass
+    
+    def play_random_song(self):
+        pass
+        # return song_name
+    def handle_song_selection(self, index):
+        pass
+        
     def rP(self):
         rply = [
             "I'm on it sir", "Roger that sir", "On it sir", "as you speak sir"
@@ -479,8 +568,276 @@ class Utility:
                 app_name = words[1]
         return app_name
 
-    @staticmethod
-    def adjust_volume(query):
+    def open_app(self,query,response):
+        reply = response
+        Nameofapp = self.opN(query)
+        print(Nameofapp)
+        if Nameofapp:
+            if  Nameofapp in ["next tab" ,"next app"]:
+                pg.keyDown("alt")
+                pg.press("tab")  
+                pg.keyUp("alt") 
+            elif Nameofapp in ["task list","tasklist", "all tasks list", "all task list","list of tasks"]:
+                try:
+                    self.speak("Listing All tasks : ")
+                    subprocess.run(['tasklist'], check=True)
+                except subprocess.CalledProcessError:
+                    print("Failed to load list.")
+            elif "notification" in Nameofapp:
+                pg.keyDown("win")
+                pg.press("n")  
+                pg.keyUp("win")
+            elif "widget" in Nameofapp or "news" in Nameofapp:
+                pg.keyDown("win")
+                pg.press("w")  
+                pg.keyUp("win")
+            elif "music" in Nameofapp:
+                self.speak(f"{reply} {Nameofapp}")
+                #desKtoP(4)
+                pg.press('win')
+                sleep(1)
+                keyboard.write(Nameofapp)
+                sleep(1)
+                keyboard.press('enter')
+                sleep(6)
+                pg.press('space')
+
+            elif "code" in Nameofapp: 
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(2)
+                pg.keyDown("win")
+                pg.press("4")  
+                pg.keyUp("win")
+                sleep(6)
+
+            elif "arc" in Nameofapp:
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(4)
+                pg.press("enter")
+                pg.keyDown("win")
+                pg.press("1")  # Arc Browser
+                pg.keyUp("win")
+                sleep(1)
+
+            elif "brave" in Nameofapp:
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(4)
+                pg.press("enter")
+                pg.keyDown("win")
+                pg.press("2")  # Brave Browser
+                pg.keyUp("win")
+                sleep(1)
+
+            elif 'movies' in Nameofapp or 'entertainment' in Nameofapp:
+                self.speak(self.rP())
+                self.desKtoP(2)
+                npath = "E:\\MV"
+                os.startfile(npath)
+
+            elif 'e drive' in Nameofapp:
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(2)
+                npath = "E:\\"
+                os.startfile(npath)
+
+            elif 'c drive' in Nameofapp:
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(2)
+                npath = "C:\\"
+                os.startfile(npath)
+
+            elif 'd drive' in Nameofapp:
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(2)
+                npath = "M:\\"
+                os.startfile(npath)
+
+            elif "study" in Nameofapp: 
+                self.desKtoP(1)
+
+            elif "alpha" in Nameofapp: 
+                self.desKtoP(2)
+
+            elif "extra" in Nameofapp:
+                self.desKtoP(3)
+
+            elif "trash" in Nameofapp or "dress" in Nameofapp:
+                self.desKtoP(4)
+
+            elif "armory crate" in Nameofapp or "armory" in Nameofapp or "crate" in Nameofapp:
+                self.speak(f"{reply} {Nameofapp}")
+                self.arMcratE()
+            
+            elif (
+                "file manager" in Nameofapp
+                or "this pc" in Nameofapp
+                or "thispc" in Nameofapp
+                or "file explorer" in Nameofapp
+            ):
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(3)
+                pg.keyDown("win")
+                pg.press("5")  # file manager home
+                pg.keyUp("win")
+                sleep(2)
+
+            elif (
+                "phoenix folder" in Nameofapp
+                or "ai folder" in Nameofapp
+                or "a i folder" in Nameofapp
+            ):
+                self.speak(f"{reply} {Nameofapp}")
+                self.desKtoP(3)
+                npath = "C:\\PHNX"
+                os.startfile(npath)
+                sleep(2)
+
+            elif (
+                "quick" in Nameofapp
+                or "quick configuration" in Nameofapp
+            ):
+                self.speak(f"{reply} quick configuration.")
+                # self.desKtoP(2)
+                npath = "C:\\PHNX\\Xtra\\quiK.bat"
+                pg.keyDown("win")
+                pg.press("up")  
+                pg.keyUp("win")
+                os.startfile(npath)
+                sleep(2)
+
+            elif (
+                "gpt" in Nameofapp
+                or "chatgpt" in Nameofapp
+                or "chat gpt" in Nameofapp
+            ):
+                self.speak(f"Starting {Nameofapp}")
+                # self.desKtoP(4)
+                Link = "https://chat.openai.com/"
+                webbrowser.open(Link)
+
+            elif "open" in Nameofapp:
+                pass
+
+            else:
+                ls_app = [
+                    "snap", "snapchat", "insta", "instagram", "whatsapp",
+                    "sticky notes", "cmd", "c m d", "and", "android studio"
+                ]
+                if Nameofapp in ls_app:
+                    self.desKtoP(3)
+                    self.speak(f"{reply} {Nameofapp}")
+                    pg.press('win')
+                    sleep(1)
+                    keyboard.write(Nameofapp)
+                    sleep(1)
+                    keyboard.press('enter')
+                else:
+                    self.speak(f"Do you want to open {Nameofapp}?")
+                    conF = self.takeCommand().lower()
+                    if conF in self.AGREE:
+                        self.speak(self.rP())
+                        # self.desKtoP(4)
+                        pg.press('win')
+                        sleep(1)
+                        keyboard.write(Nameofapp)
+                        sleep(1)
+                        keyboard.press('enter')
+                    else:
+                        pass
+
+    def close_app(self,query,response):
+        reply = response
+        Nameofap = query.replace("close ", "")
+        if (
+            "the window" in Nameofap
+            or "this window" in Nameofap
+            or "window" in Nameofap
+            or "it" in Nameofap
+            or "this" in Nameofap
+        ):
+            self.speak(f"{reply} {Nameofap}")
+            pg.keyDown("alt")
+            pg.press("F4")
+            pg.keyUp("alt")
+
+        elif "tab" in Nameofap:
+            self.close_tab()
+
+        elif (
+            "the desktop" in Nameofap
+            or "this desktop" in Nameofap
+            or "this desk" in Nameofap
+            or "desktop" in Nameofap
+            or "desk" in Nameofap
+        ):
+            sleep(1)
+            pg.keyDown("win")
+            pg.keyDown("ctrl")
+            pg.press("f4")
+            pg.keyUp("ctrl")
+            pg.keyUp("win")
+            sleep(1)
+
+        elif (
+            "brave" in Nameofap
+            or "brave browser" in Nameofap
+            or "all brave" in Nameofap
+        ):
+            try:
+                subprocess.run(['taskkill', '/F', '/IM', 'brave.exe'], check=True)
+                self.speak(f"All Brave tabs are successfully closed.")
+            except subprocess.CalledProcessError:
+                self.speak(f"Failed to close Brave.")
+        elif (
+            "arc" in Nameofap
+            or "arc browser" in Nameofap
+        ):
+            try:
+                subprocess.run(['taskkill', '/F', '/IM', 'Arc.exe'], check=True)
+                self.speak(f"All Brave tabs are successfully closed.")
+            except subprocess.CalledProcessError:
+                self.speak(f"Failed to close Brave.")
+
+        elif (
+            "code" in Nameofap
+            or "vs code" in Nameofap
+            or "v s code" in Nameofap
+        ):
+            try:
+                subprocess.run(["taskkill", "/F", "/IM", "code.exe"], check=True)
+                self.speak(f"Visual Studio code tabs are successfully closed.")
+            except subprocess.CalledProcessError:
+                self.speak("No Visual Studio tabs are opened.")
+
+        elif "all background programs" in Nameofap or "all background python programs" in Nameofap:
+            self.speak(f"Closing all background programs")
+            try:
+                subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
+            except subprocess.CalledProcessError:
+                self.speak("No Python program found.")
+
+        elif "all python programs" in Nameofap:
+            self.speak(f"Closing all background programs")
+            try:
+                subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
+                self.speak("Goodbye sir, see you soon.")
+                subprocess.run(["taskkill", "/F", "/IM", "python.exe"], check=True)
+            except subprocess.CalledProcessError:
+                self.speak("No Python program found.")
+
+        elif (
+            "chrome" in Nameofap
+            or "chrome browser" in Nameofap
+            or "all chrome" in Nameofap
+        ):
+            try:
+                subprocess.run(['taskkill', '/F', '/IM', 'chrome.exe'], check=True)
+                self.speak(f"All Chrome tabs are successfully closed.")
+            except subprocess.CalledProcessError:
+                self.speak(f"Failed to close Chrome.")
+
+
+    def adjust_volume(self,query):
         # Define patterns and keywords
         inc_vol_keywords = ["increase", "increased"]
         dec_vol_keywords = ["decrease", "decreased"]
@@ -492,16 +849,16 @@ class Utility:
             if match:
                 # Extract numeric value and remove percentage sign if present
                 value = int(re.sub(r'\D', '', match.group()))
-                Utility.adj_volume("set", value)
+                self.adj_volume("set", value)
         else:
             # Check for increase or decrease keywords
             if any(word in query for word in inc_vol_keywords):
-                Utility.adj_volume("increase", None)
+                self.adj_volume("increase", None)
             elif any(word in query for word in dec_vol_keywords):
-                Utility.adj_volume("decrease", None)
+                self.adj_volume("decrease", None)
 
-    @staticmethod
-    def adjust_brightness(query):
+    
+    def adjust_brightness(self,query):
         # Define patterns and keywords
         inc_bright_keywords = ["increase", "increased"]
         dec_bright_keywords = ["decrease", "decreased"]
@@ -514,35 +871,112 @@ class Utility:
                 # Extract numeric value and remove percentage sign if present
                 value = int(match.group().rstrip('%'))
                 if any(word in query for word in inc_bright_keywords):
-                    Utility.adj_brightness(value)
+                    self.adj_brightness(value)
                 elif any(word in query for word in dec_bright_keywords):
-                    Utility.adj_brightness(-value)
+                    self.adj_brightness(-value)
         else:
             # Default adjustment amount is 10%
             if any(word in query for word in inc_bright_keywords):
-                Utility.adj_brightness(10)
+                self.adj_brightness(10)
             elif any(word in query for word in dec_bright_keywords):
-                Utility.adj_brightness(-10)
+                self.adj_brightness(-10)
+   
+    def handle_whatis_whois(self, query2):
+        srch = query2.replace("what is ", "").replace("who is ", "")
+        self.speak(f"Do you want to know about {srch}?")
+        while True:
+            conF = self.takeCommand().lower()
+            if any(x in conF for x in ["yes", "ha", "sure", "play it"]):
+                webbrowser.open(f"https://www.google.com/search?q=About {srch}")
+                break
+            elif any(x in conF for x in ["no", "don't", "do not", "na"]):
+                self.speak("Would you please repeat what you want to know about, sir?")
+                conF = self.takeCommand().lower()
+                if any(x in conF for x in ["sorry", "no", "don't", "do not"]):
+                    self.speak("That's all right, sir. Call me whenever you need.")
+                    break
+                else:
+                    webbrowser.open(f"https://www.google.com/search?q={srch}")
+                    break
 
-    @staticmethod
-    def adj_volume(action, value=None):
-        # Example implementation for volume adjustment
-        if action == "set":
-            print(f"Setting volume to {value}%")
-        elif action == "increase":
-            print("Increasing volume")
-        elif action == "decrease":
-            print("Decreasing volume")
+    def search_instagram(self):
+        self.speak("Sir, please enter the username correctly.")
+        name = input("Enter username: ")
+        webbrowser.open(f"https://www.instagram.com/{name}")
 
-    @staticmethod
-    def adj_brightness(value):
-        # Example implementation for brightness adjustment
-        if value > 0:
-            print(f"Increasing brightness by {value}%")
+    def search_browser(self):
+        self.speak("Sir, what do I search on the browser?")
+        cm = self.takeCommand().lower()
+        webbrowser.open(cm)
+
+    def set_focus(self):
+        for _ in range(2):
+            pg.leftClick(500, 500)
+            sleep(3)
+
+    def move_direction(self, tag, query):
+        direction = 'right' if tag == "forward" else 'left'
+        pg.press(direction, 1)
+        sleep(1)
+        if "twice" in query:
+            pg.press(direction, 1)
+        elif "thrice" in query:
+            pg.press(direction, 2)
+        elif any(x in query for x in ["four", "4"]):
+            pg.press(direction, 3)
+
+    def search_youtube(self):
+        try:
+            self.speak("What do I search, sir?")
+            sng = self.takeCommand().lower()
+            self.speak(f"Starting {sng}")
+            kit.playonyt(sng)
+        except Exception as e:
+            print("Internet error occurred.")
+
+    def perform_window_action(self, tag):
+        actions = {
+            "hide": ("win", "m"),
+            "minimize": ("win", "down"),
+            "maximize": ("win", "up"),
+            "fullscreen": "f11"
+        }
+        action = actions[tag]
+        if isinstance(action, tuple):
+            pg.keyDown(action[0])
+            pg.press(action[1])
+            pg.keyUp(action[0])
         else:
-            print(f"Decreasing brightness by {-value}%")
+            pg.press(action)
+        self.speak("Done Sir!")
+
+    def press_key(self, query):
+        prs = query.replace("press ", "").strip()
+        pg.press(prs)
+
+    def hide_window(self):
+        pg.keyDown("win")
+        pg.press("m")
+        pg.keyUp("win")
+        self.speak("Done Sir!")
+
+    def minimize_window(self):
+        pg.keyDown("win")
+        pg.press("down")
+        pg.keyUp("win")
+        self.speak("Done Sir!")
     
-    def date(self):
+    def maximize_window(self):
+        pg.keyDown("win")
+        pg.press("up")
+        pg.keyUp("win")
+        self.speak("Done Sir!")
+    
+    def toggle_fullscreen(self):
+        pg.press("f11")
+        self.speak("Done Sir!")
+
+    def date_day(self):
         year = int(datetime.datetime.now().year)
         month = int(datetime.datetime.now().month)
         date = int(datetime.datetime.now().day)
@@ -553,7 +987,7 @@ class Utility:
         tt = time.strftime("%I:%M %p")
         self.speak(f"The time is {tt}.")
 
-    def battery(self):
+    def battery_check(self):
         battery = psutil.sensors_battery()
         battery_percentage = int(battery.percent)
         plugged = battery.power_plugged
@@ -626,10 +1060,12 @@ class Utility:
             print("BG Python already closed.")
         sleep(18)
         self.speak(shti2)
+        sys.exit()
 
     def sleeP(self):
-        slp = ["PC is going to sleep mode."]
+        slp = ["PC is going to sleep."]
         slpi = random.choice(slp)
+        self.speak(self.rP())
         pg.keyDown("win")
         sleep(1)
         pg.press("d")
@@ -649,6 +1085,7 @@ class Utility:
         self.speak(slpi)
         sleep(2)
         pg.press("enter")
+        self.speak(self.onL())
 
     def hibernatE(self):
         self.lastChargeCheck()
@@ -660,10 +1097,13 @@ class Utility:
                "I'm off now. See ya soon sir !",
                "Adios Señor! Until we meet again!",
                "Take care! See you next time sir !",
-               "I'm outta here. Goodbye sir !"]
+               "Take care! Goodbye sir !"]
         hibi = random.choice(hib)
         self.speak(hibi)
         os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
+        sleep(40)
+        self.restart_explorer()
+        self.speak(self.onL())
 
     def restarT(self):
         res = ["Restarting the pc."]
@@ -937,16 +1377,20 @@ class Utility:
         return Utility.WORD_TO_NUM.get(word.lower(), None)
 
     def _extract_number(self, text):
-        """Extract a number from the given text."""
-        # Split the text into words
-        words = text.split()
-        # Iterate over the words to find the number
-        for word in words:
-            if word.isdigit():
-                return int(word)
-            if word.lower() in Utility.WORD_TO_NUM:
-                return Utility.WORD_TO_NUM[word.lower()]
-        return None
+         # Adjusted regex to capture the number, allowing for "to", "with", or nothing in between
+        match = re.search(r'change tab(?: (?:to|with))? (\w+)', text, re.IGNORECASE)
+        if match:
+            number_str = match.group(1).strip().lower()  # Convert to lowercase for consistent matching
+            # Try to convert directly if it's a digit
+            if number_str.isdigit():
+                return int(number_str)
+            # If it's a word, check in the map
+            if number_str in self.WORD_TO_NUM:
+                return self.WORD_TO_NUM[number_str]
+            # If neither, raise an error
+            raise ValueError(f"Cannot convert '{number_str}' to a number.")
+        else:
+            return 1
     
     def _parse_time(self, time_str):
         """
@@ -1134,6 +1578,8 @@ class Utility:
         custom_box.grab_set()
         custom_box.wait_window()
 
+
+# Inside your Utility class
     def set_timer(self):
         """
         Sets a timer based on user input.
@@ -1147,7 +1593,7 @@ class Utility:
 
             # Parse input to extract hours, minutes, and seconds
             hours, minutes, seconds = self._parse_time_duration(time_input)
-            
+
             if hours is None and minutes is None and seconds is None:
                 self.speak("Sorry, I couldn't understand the duration. Please try again.")
                 return
@@ -1159,28 +1605,43 @@ class Utility:
             self.speak(f"Setting a timer for {hours} hour(s), {minutes} minute(s), and {seconds} second(s).")
             print(f"Timer set for {hours} hour(s), {minutes} minute(s), and {seconds} second(s).")
 
-            # Countdown timer
-            while total_seconds:
-                mins, secs = divmod(total_seconds, 60)
-                hrs, mins = divmod(mins, 60)
-                timer = f'{hrs:02d}:{mins:02d}:{secs:02d}'
-                print(f"Time left: {timer}", end="\r")  # Dynamic countdown
-                time.sleep(1)
-                total_seconds -= 1
+            # Start the countdown timer in a separate thread
+            timer_thread = threading.Thread(target=self._countdown_timer, args=(total_seconds,), daemon=True)
+            timer_thread.start()
 
-            # Notify when timer ends
-            self.speak("\nTime's up!")
-            # Show a custom message using RoundedMessageBox
-
-            app = QApplication(sys.argv)  # Ensure an application instance exists
-            message_box = RoundedMessageBox("Timer", "Time's up, sir!")
-            message_box.exec_()
-            sys.exit(app.exec_())  # Terminate the application after the dialog closes
-            
         except Exception as e:
             self.speak(f"An error occurred while setting the timer: {str(e)}")
-        return
-    
+
+    def _countdown_timer(self, total_seconds):
+        """
+        Handles the countdown logic for the timer.
+        """
+        try:
+            # while total_seconds:
+            mins, secs = divmod(total_seconds, 60)
+            hrs, mins = divmod(mins, 60)
+            # print(f"Time left: {hrs:02d}:{mins:02d}:{secs:02d}", end="\r")  # Dynamic countdown
+            time.sleep(total_seconds)
+            # total_seconds -= 1
+
+            # Notify when the timer ends
+            self.speak("\nTime's up!")
+            self._show_timer_notification()
+
+        except Exception as e:
+            print(f"Error in countdown timer: {str(e)}")
+
+    def _show_timer_notification(self):
+        """
+        Displays the timer notification using a rounded message box.
+        """
+        app = QApplication.instance() or QApplication([])
+        message_box = RoundedMessageBox("Timer", "Time's up, sir!")
+        message_box.exec_()
+
+        # if not QApplication.instance():  # Only quit if we created the app instance
+        #     app.quit()
+
     def _parse_time_duration(self, time_str):
         """
         Parses the timer duration from the input string.
@@ -1229,7 +1690,7 @@ class RoundedMessageBox(QDialog):
     def __init__(self, title, message):
         super().__init__()
         # Set up window attributes
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setFixedSize(300, 150)
         self.init_ui(title, message)
@@ -1284,7 +1745,7 @@ class RoundedMessageBox(QDialog):
         painter.setBrush(brush)
         painter.setPen(Qt.NoPen)
         painter.drawRoundedRect(self.rect(), 15, 15)
-
+        
 def music(Utility): #integrating more function into one  
     # Playing intro sound (ensure the file path is correct)
     Utility.intrOmsC()
@@ -1299,8 +1760,8 @@ if __name__ == "__main__":
     recognizer = VoiceRecognition(gui)
     utils = Utility(speech_engine, recognizer)
     gui.show_listen_image()
-    while True:
-        recognizer.take_command()
+    # while True:
+    #     recognizer.take_command()
     # Example usage
     # utils.speak("Utility functions are ready.")
     # utils.calC()  # Example for calculator function
@@ -1310,20 +1771,23 @@ if __name__ == "__main__":
     # utils.screenshot()  # Example for hotspot toggle
     # utils.snG()  # Example for hotspot toggle
     # utils.desKtoP_4()  # Example for hotspot toggle
-    # utils.set_reminder()  
-    # utils.set_timer()  
+    # utils._countdown_timer(5)  
+    utils.set_timer()  
+    while True:
+    
     # utils.custom_message("Phoenix:","Time's up")  
     # app = QApplication(sys.argv)
 
-    # Display the custom message box
+    # # Display the custom message box
     # message_box = RoundedMessageBox(
     #     "Custom Title", "This is a custom message box with rounded corners!"
     # )
     # message_box.exec_()
     # # print(utils._parse_time("1341"))  
     # sleep(5)
-    print("back to main")
-    
+
+        print("back to main")
+        sleep(1)
     
     # music(Utility)
 

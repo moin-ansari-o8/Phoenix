@@ -1,69 +1,78 @@
-from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QVBoxLayout
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QBrush, QColor, QFont
+import json
 
-class RoundedMessageBox(QDialog):
-    def __init__(self, title, message):
-        super().__init__()
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(300, 150)
-        self.init_ui(title, message)
+def load_intents(file_path):
+    """
+    Load the intents JSON file.
+    """
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    return data
 
-    def init_ui(self, title, message):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(15, 15, 15, 15)
+def preprocess_patterns(intents):
+    """
+    Process intents JSON data to create a dictionary mapping tags to sets of unique pattern words.
 
-        # Title Label
-        title_label = QLabel(title, self)
-        title_label.setStyleSheet("color: #f1c40f; font-size: 16px; font-weight: bold;")
-        title_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title_label)
+    Args:
+        intents (dict): A dictionary containing intents with tags and patterns.
 
-        # Message Label
-        message_label = QLabel(message, self)
-        message_label.setStyleSheet("color: #ecf0f1; font-size: 14px;")
-        message_label.setWordWrap(True)
-        message_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(message_label)
+    Returns:
+        dict: A dictionary mapping tags to sets of unique words from their patterns.
+    """
+    tag_to_patterns = {}
+    
+    for intent in intents["intents"]:
+        tag = intent["tag"]
+        patterns = intent["patterns"]
+        
+        # Create a set of unique words from all patterns for the tag
+        word_set = set()
+        for pattern in patterns:
+            word_set.update(pattern.lower().split())  # Split pattern into words and add to set
+        
+        tag_to_patterns[tag] = word_set
 
-        # OK Button
-        ok_button = QPushButton("OK", self)
-        ok_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #16a085;
-                color: white;
-                font-size: 12px;
-                border-radius: 5px;
-                padding: 5px 15px;
-            }
-            QPushButton:hover {
-                background-color: #1abc9c;
-            }
-            """
-        )
-        ok_button.clicked.connect(self.accept)
-        ok_button.setFixedWidth(80)
-        ok_button.setFixedHeight(30)
-        ok_button.setCursor(Qt.PointingHandCursor)
-        layout.addWidget(ok_button, alignment=Qt.AlignCenter)
+    return tag_to_patterns
 
-    def paintEvent(self, event):
-        """Draw rounded corners and background."""
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        brush = QBrush(QColor("#2c3e50"))
-        painter.setBrush(brush)
-        painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(self.rect(), 15, 15)
+def match_input(input_string, tag_to_patterns):
+    """
+    Match a user input string to a tag using the tokenized patterns.
+    Find the tag whose patterns have the most overlap with the input words.
+    
+    Args:
+        input_string (str): The input string provided by the user.
+        tag_to_patterns (dict): A dictionary mapping tags to sets of pattern words.
+        
+    Returns:
+        str: The tag with the highest match, or "No match found" if no match exists.
+    """
+    # Convert input_string to a set of words
+    input_words = set(input_string.lower().split())
+    
+    best_match = None
+    max_overlap = 0
 
-# Example Usage
+    # Iterate through each tag and its patterns
+    for tag, patterns in tag_to_patterns.items():
+        # Calculate overlap (intersection) with each pattern
+        overlap = len(input_words & patterns)
+        if overlap > max_overlap:  # Update the best match if overlap is higher
+            max_overlap = overlap
+            best_match = tag
+
+    return best_match if best_match else "No match found"
+
 if __name__ == "__main__":
-    import sys
-    app = QApplication(sys.argv)
-
-    message_box = RoundedMessageBox("Custom Title", "This is a custom message box with rounded corners!")
-    message_box.exec_()
-
-    sys.exit(app.exec_())
+    # Path to your intents.json file
+    file_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\data\\intents.json"
+    
+    # Load and preprocess intents
+    intents = load_intents(file_path)
+    tag_to_patterns = preprocess_patterns(intents)#returns a dictionary of tags and their patterns
+    # print(tag_to_patterns)
+    # Example user input
+    user_input = "play phoenix"
+    
+    # Match the input to a tag
+    matched_tag = match_input(user_input, tag_to_patterns)
+    
+    print(f"Matched tag: {matched_tag}")
