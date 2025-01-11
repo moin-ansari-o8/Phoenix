@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPainter, QColor, QBrush
 
 class DesktopWindow(QMainWindow):
     def __init__(self):
@@ -9,10 +9,11 @@ class DesktopWindow(QMainWindow):
         self.setWindowTitle("Desktop GUI")
         
         # Set window size and position
-        self.setGeometry(100, 100, 300, 200)  # Set window size (300x200) and position (100, 100)
+        self.setGeometry(100, 100, 200, 200)  # Set window size (300x200) and position (100, 100)
         
         # Set window flags (no taskbar and frameless window)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)  # Tool window (no taskbar)
+        self.setAttribute(Qt.WA_TranslucentBackground)  # Make the background transparent
         
         # Create the main layout
         layout = QVBoxLayout()
@@ -29,7 +30,7 @@ class DesktopWindow(QMainWindow):
         button.setFont(QFont('Arial', 12))
         button.setStyleSheet("""
             QPushButton {
-                background-color: #4CAF50;
+                background-color: blue;
                 color: white;
                 border-radius: 10px;
                 padding: 10px 20px;
@@ -45,10 +46,6 @@ class DesktopWindow(QMainWindow):
         # Create a widget for the layout and set it as the central widget
         central_widget = QWidget(self)
         central_widget.setLayout(layout)
-        central_widget.setStyleSheet("""
-            background-color: lightgrey;
-            border-radius: 15px;  # Makes corners round
-        """)  # Apply styles to central widget
         self.setCentralWidget(central_widget)
 
     def on_button_click(self):
@@ -56,6 +53,16 @@ class DesktopWindow(QMainWindow):
         self.label.setText("Hello there!")
         self.label.setStyleSheet("color: #4CAF50;")  # Change text color to green
 
+    def paintEvent(self, event):
+        """Draw rounded corners and background."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        brush = QBrush(QColor("grey"))  # Background color (dark greyish blue)
+        painter.setBrush(brush)
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(self.rect(), 20, 40)  # Draw rounded corners
+
+# Example Usage
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = DesktopWindow()
