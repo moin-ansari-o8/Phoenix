@@ -20,6 +20,13 @@ import datetime
 import pygame
 import pyaudio
 import wave
+# from tkinter import *
+from tkinter import Toplevel
+import tkinter.messagebox 
+from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QVBoxLayout
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPainter, QBrush, QColor, QFont
+
 class SpeechEngine: # Text-to-Speech Engine
     def __init__(self):
         self.engine = pyttsx3.init('sapi5')
@@ -98,17 +105,17 @@ class VoiceRecognition:
     def take_command(self):
         with sr.Microphone() as source:
             self.gui.show_listen_image()
-            print(">>> Listening...")
+            print(">>>",end="\r")
             audio = self.recognizer.listen(source, 0, 5)
         
         try:
             self.recognizer.pause_threshold = 1
             self.gui.show_recognize_image()
-            print("<<< Recognizing...")
+            print("<<<",end="\r")
             query = self.recognizer.recognize_google(audio, language='en-in')
             print(f"# : {query}\n")
         except Exception as e:
-            print("<!> Error Recognizing")
+            print("<!>",end="\r")
             self.gui.hide_listen_image()
             return ""
         
@@ -300,7 +307,7 @@ class Utility:
         Automates the process of opening Armory Crate application
         and performing specific actions within it.
         """
-        self.desKtoP_3()
+        self.desKtoP(3)
         sleep(1)
         pg.keyDown("win")
         pg.press("6")  # Assumes Armory Crate is pinned as the 6th item in the taskbar
@@ -584,7 +591,7 @@ class Utility:
         self.speak(shti1)
         os.system("shutdown /s")
         try:
-            os.system("taskkill /F /IM brave.exe")
+            os.system("taskkill /F /IM Arc.exe")
         except Exception:
             print("Brave already closed.")
         sleep(2)
@@ -597,7 +604,7 @@ class Utility:
             os.system("taskkill /F /IM pyw.exe")
         except Exception:
             print("BG Python already closed.")
-        sleep(10)
+        sleep(18)
         self.speak(shti2)
 
     def sleeP(self):
@@ -660,13 +667,26 @@ class Utility:
         sleep(2)
         pg.press("enter")
 
+    def restart_explorer(self):
+        try:
+            self.speak("Restarting Windows Explorer...")
+            subprocess.run(["taskkill", "/F", "/IM", "explorer.exe"], check=True)
+            print("Explorer terminated successfully.")
+            sleep(2)
+            subprocess.Popen(["explorer.exe"], shell=False)
+            print("Explorer restarted successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error during explorer management: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
     def restart_phoenix(self):
         try:
             subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
             print("All background python programs closed.")
         except Exception:
             print("No python program found.")
-        self.desKtoP_3()
+        self.desKtoP(3)
         path = "C:\\PHNX\\NORMAL PHOENIX\\main.bat"
         os.startfile(path)
         sleep(5)
@@ -677,13 +697,13 @@ class Utility:
         print("study(0),alpha(1),extra(2),trash(3)")
         dt = self.take_command().lower()
         if 'study' in dt or 'zero' in dt or '0' in dt:
-            self.desKtoP_0()
+            self.desKtoP(0)
         elif 'alpha' in dt or '1' in dt or 'one' in dt or 'first' in dt:
-            self.desKtoP_1()
+            self.desKtoP(0)
         elif 'extra' in dt or '2' in dt or 'two' in dt or 'second' in dt:
-            self.desKtoP_2()
+            self.desKtoP(2)
         elif 'trash' in dt or '3' in dt or 'three' in dt or 'third' in dt:
-            self.desKtoP_3()
+            self.desKtoP(3)
         self.speak("Done sir !")
     
     def _perform_key_press(self, key_combination, action="press"):
@@ -896,8 +916,18 @@ class Utility:
         """Convert word numbers to integers."""
         return Utility.WORD_TO_NUM.get(word.lower(), None)
 
+    def _extract_number(self, text):
+        """Extract a number from the given text."""
+        # Split the text into words
+        words = text.split()
+        # Iterate over the words to find the number
+        for word in words:
+            if word.isdigit():
+                return int(word)
+            if word.lower() in Utility.WORD_TO_NUM:
+                return Utility.WORD_TO_NUM[word.lower()]
+        return None
     
-
     def _parse_time(self, time_str):
         """
         Parse time from text input and return it in HH:MM format.
@@ -973,8 +1003,7 @@ class Utility:
         if month and day:
             return month, day
         return None, None
-
-    
+ 
     def set_reminder(self):
         """Set a reminder based on user input."""
         self.speak("What reminder should I set, sir?")
@@ -1014,55 +1043,150 @@ class Utility:
         )
         self.speak("Reminder notification delivered, sir!")
 
-    def set_timer(self):
-        self.speak("For how long should I set the timer, sir?")
-        timer_duration = self.take_command().lower()
+        import tkinter as tk
 
-        # Extract the number and unit (minutes or hours) from the command
-        match = re.search(r'(\d+)\s*(minute|hour)', timer_duration)
-        if not match:
-            self.speak("I couldn't understand the duration. Please try again.")
-            return
+    def custom_message(self, title, message):
+        """Creates a custom message box with rounded corners."""
+        # Create a top-level window
+        custom_box = tk.Toplevel()
+        custom_box.geometry("300x150")  # Set size of the window
+        custom_box.overrideredirect(True)  # Remove the title bar
+        custom_box.attributes("-topmost", True)  # Always on top
 
-        duration = int(match.group(1))
-        unit = match.group(2)
+        # Position the message box at the top-right corner of the screen
+        custom_box.update_idletasks()
+        screen_width = custom_box.winfo_screenwidth()
+        size = tuple(int(_) for _ in custom_box.geometry().split('+')[0].split('x'))
+        x = screen_width - size[0] - 10  # Position at right side with padding
+        custom_box.geometry(f"{size[0]}x{size[1]}+{int(x)}+10")
 
-        if unit == "minute":
-            duration_seconds = duration * 60
-        elif unit == "hour":
-            duration_seconds = duration * 3600
-        else:
-            self.speak("Invalid time unit. Please specify minutes or hours.")
-            return
+        # Create a canvas to simulate rounded corners
+        canvas = tk.Canvas(custom_box, width=300, height=150, bd=0, highlightthickness=0, bg="black")
+        canvas.pack()
 
-        self.speak(f"Timer set for {duration} {unit}(s).")
-        time.sleep(duration_seconds)
+        # Draw a rounded rectangle using polygons and ovals
+        canvas.create_oval(0, 0, 30, 30, fill="#2c3e50", outline="#2c3e50")  # Top-left
+        canvas.create_oval(270, 0, 300, 30, fill="#2c3e50", outline="#2c3e50")  # Top-right
+        canvas.create_oval(0, 120, 30, 150, fill="#2c3e50", outline="#2c3e50")  # Bottom-left
+        canvas.create_oval(270, 120, 300, 150, fill="#2c3e50", outline="#2c3e50")  # Bottom-right
+        canvas.create_rectangle(15, 0, 285, 150, fill="#2c3e50", outline="#2c3e50")
+        canvas.create_rectangle(0, 15, 300, 135, fill="#2c3e50", outline="#2c3e50")
 
-        notification.notify(
-            title="Timer",
-            message=f"Your {duration} {unit}(s) timer is up!",
-            app_name="Phoenix",
-            timeout=10  # Notification visible for 10 seconds
+        # Create a frame to hold the content (on top of canvas)
+        content_frame = tk.Frame(custom_box, bg="#2c3e50", bd=0)
+        content_frame.place(x=0, y=0, width=300, height=150)
+
+        # Title label
+        title_label = tk.Label(
+            content_frame,
+            text=title,
+            bg="#2c3e50",
+            fg="#f1c40f",
+            font=("Arial", 14, "bold"),
+            wraplength=250
         )
-        self.speak(f"Your {duration} {unit}(s) timer is up, sir!")
-    # def open_app(self, app_name):
-    #     """
-    #     Open a specific application using its name.
-    #     :param app_name: Name of the application to open.
-    #     """
-    #     app_name = app_name.lower()
-    #     if "chrome" in app_name:
-    #         os.system("start chrome")
-    #         self.speak("Google Chrome has been opened.")
-    #     elif "notepad" in app_name:
-    #         os.system("start notepad")
-    #         self.speak("Notepad has been opened.")
-    #     elif "calculator" in app_name:
-    #         os.system("start calc")
-    #         self.speak("Calculator has been opened.")
-    #     else:
-    #         self.speak("I don't know how to open that application.")
+        title_label.pack(pady=(10, 5))
+
+        # Message label
+        message_label = tk.Label(
+            content_frame,
+            text=message,
+            bg="#2c3e50",
+            fg="#ecf0f1",
+            font=("Arial", 12),
+            wraplength=250
+        )
+        message_label.pack(pady=5)
+
+        # OK button
+        ok_button = tk.Button(
+            content_frame,
+            text="OK",
+            bg="#16a085",
+            fg="white",
+            font=("Arial", 10),
+            command=custom_box.destroy
+        )
+        ok_button.pack(pady=10)
+
+        # Focus handling
+        custom_box.transient()
+        custom_box.grab_set()
+        custom_box.wait_window()
+
+    def set_timer(self):
+        """
+        Sets a timer based on user input.
+        Notifies the user when the timer ends.
+        """
+        try:
+            # Prompt user to enter timer duration
+            self.speak("For how long should I set the timer?")
+            print("e.g :: 1 hour, 5 minutes, or 1 hour and 30 minutes)")
+            time_input = self.take_command().lower()
+
+            # Parse input to extract hours, minutes, and seconds
+            hours, minutes, seconds = self._parse_time_duration(time_input)
+            
+            if hours is None and minutes is None and seconds is None:
+                self.speak("Sorry, I couldn't understand the duration. Please try again.")
+                return
+
+            # Convert to total seconds
+            total_seconds = hours * 3600 + minutes * 60 + seconds
+
+            # Confirm the timer
+            self.speak(f"Setting a timer for {hours} hour(s), {minutes} minute(s), and {seconds} second(s).")
+            print(f"Timer set for {hours} hour(s), {minutes} minute(s), and {seconds} second(s).")
+
+            # Countdown timer
+            while total_seconds:
+                mins, secs = divmod(total_seconds, 60)
+                hrs, mins = divmod(mins, 60)
+                timer = f'{hrs:02d}:{mins:02d}:{secs:02d}'
+                print(f"Time left: {timer}", end="\r")  # Dynamic countdown
+                time.sleep(1)
+                total_seconds -= 1
+
+            # Notify when timer ends
+            self.speak("\nTime's up!")
+            # Show a custom message using RoundedMessageBox
+
+            app = QApplication(sys.argv)  # Ensure an application instance exists
+            message_box = RoundedMessageBox("Timer", "Time's up, sir!")
+            message_box.exec_()
+            sys.exit(app.exec_())  # Terminate the application after the dialog closes
+            
+        except Exception as e:
+            self.speak(f"An error occurred while setting the timer: {str(e)}")
+        return
     
+    def _parse_time_duration(self, time_str):
+        """
+        Parses the timer duration from the input string.
+        Returns the duration in hours, minutes, and seconds.
+        """
+        try:
+            # Regex pattern to match hours, minutes, and seconds
+            duration_pattern = re.compile(
+                r'(?:(\d+)\s*hour(?:s)?)?\s*'
+                r'(?:(\d+)\s*minute(?:s)?)?\s*'
+                r'(?:(\d+)\s*second(?:s)?)?',
+                re.IGNORECASE
+            )
+            match = duration_pattern.search(time_str)
+
+            if match:
+                hours = int(match.group(1)) if match.group(1) else 0
+                minutes = int(match.group(2)) if match.group(2) else 0
+                seconds = int(match.group(3)) if match.group(3) else 0
+                return hours, minutes, seconds
+
+            return None, None, None
+        except Exception as e:
+            self.speak("I couldn't parse the time duration. Please try again.")
+            return None, None, None
+
     # def close_app(self, app_name):
     #     """
     #     Close a specific application using its name.
@@ -1081,8 +1205,67 @@ class Utility:
     #     else:
     #         self.speak("I don't know how to close that application.")
 # Main Application
-def music(Utility): #integrating more function into one 
-    
+class RoundedMessageBox(QDialog):
+    def __init__(self, title, message):
+        super().__init__()
+        # Set up window attributes
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setFixedSize(300, 150)
+        self.init_ui(title, message)
+
+    def init_ui(self, title, message):
+        # Set up the layout with custom margins
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+
+        # Title label
+        title_label = QLabel(title, self)
+        title_label.setStyleSheet(
+            "color: #f1c40f; font-size: 16px; font-weight: bold;"
+        )
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
+
+        # Message label
+        message_label = QLabel(message, self)
+        message_label.setStyleSheet("color: #ecf0f1; font-size: 14px;")
+        message_label.setWordWrap(True)
+        message_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(message_label)
+
+        # OK button
+        ok_button = QPushButton("OK", self)
+        ok_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #16a085;
+                color: white;
+                font-size: 12px;
+                border-radius: 5px;
+                padding: 5px 15px;
+            }
+            QPushButton:hover {
+                background-color: #1abc9c;
+            }
+            """
+        )
+        ok_button.clicked.connect(self.accept)
+        ok_button.setFixedWidth(80)
+        ok_button.setFixedHeight(30)
+        ok_button.setCursor(Qt.PointingHandCursor)
+        layout.addWidget(ok_button, alignment=Qt.AlignCenter)
+
+    def paintEvent(self, event):
+        """Draw rounded corners and background."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        brush = QBrush(QColor("#2c3e50"))
+        painter.setBrush(brush)
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(self.rect(), 15, 15)
+
+def music(Utility): #integrating more function into one  
     # Playing intro sound (ensure the file path is correct)
     Utility.intrOmsC()
 
@@ -1091,13 +1274,15 @@ def music(Utility): #integrating more function into one
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.withdraw()
     gui = VoiceAssistantGUI(root)
     speech_engine = SpeechEngine()
     recognizer = VoiceRecognition(gui)
     utils = Utility(speech_engine, recognizer)
-    # recognizer.take_command()
+    while True:
+        recognizer.take_command()
     # Example usage
-    utils.speak("Utility functions are ready.")
+    # utils.speak("Utility functions are ready.")
     # utils.calC()  # Example for calculator function
     # utils.press("enter", 3)  # Example for press function
     # utils.bluetooth()  # Example for Bluetooth toggle
@@ -1107,7 +1292,17 @@ if __name__ == "__main__":
     # utils.desKtoP_4()  # Example for hotspot toggle
     # utils.set_reminder()  
     # utils.set_timer()  
-    # print(utils._parse_time("1341"))  
+    # utils.custom_message("Phoenix:","Time's up")  
+    # app = QApplication(sys.argv)
+
+    # Display the custom message box
+    # message_box = RoundedMessageBox(
+    #     "Custom Title", "This is a custom message box with rounded corners!"
+    # )
+    # message_box.exec_()
+    # # print(utils._parse_time("1341"))  
+    # sleep(5)
+    print("back to main")
     
     
     # music(Utility)

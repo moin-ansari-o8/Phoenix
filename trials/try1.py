@@ -1,93 +1,69 @@
-import time
-from plyer import notification
-import re
-import tkinter as tk
-import tkinter.messagebox
-# from ..HelperPhoenix import VoiceAssistantGUI,SpeechEngine,VoiceRecognition,Utility
-import sys
-import os
+from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QVBoxLayout
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPainter, QBrush, QColor, QFont
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from HelperPhoenix import VoiceAssistantGUI, SpeechEngine, VoiceRecognition, Utility
+class RoundedMessageBox(QDialog):
+    def __init__(self, title, message):
+        super().__init__()
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setFixedSize(300, 150)
+        self.init_ui(title, message)
 
-class TimerUtility:
-    def __init__(self,speech_engine, voice_recognition,sleep_time=1):
-        self.speech_engine = speech_engine
-        self.voice_recognition = voice_recognition
-        self.sleep_time = sleep_time
+    def init_ui(self, title, message):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
 
-    def speak(self, message):
-        self.speech_engine.speak(message)
+        # Title Label
+        title_label = QLabel(title, self)
+        title_label.setStyleSheet("color: #f1c40f; font-size: 16px; font-weight: bold;")
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
 
-    def take_command(self):
-        return self.voice_recognition.take_command()
+        # Message Label
+        message_label = QLabel(message, self)
+        message_label.setStyleSheet("color: #ecf0f1; font-size: 14px;")
+        message_label.setWordWrap(True)
+        message_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(message_label)
 
-    def set_timer(self):
-        """
-        Sets a timer based on user input.
-        Notifies the user when the timer ends.
-        """
-        try:
-            # Prompt user to enter timer duration
-            self.speak("For how long should I set the timer? (e.g., 1 hour and 30 minutes, or 90 minutes)")
-            time_input = self.take_command().lower()
+        # OK Button
+        ok_button = QPushButton("OK", self)
+        ok_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #16a085;
+                color: white;
+                font-size: 12px;
+                border-radius: 5px;
+                padding: 5px 15px;
+            }
+            QPushButton:hover {
+                background-color: #1abc9c;
+            }
+            """
+        )
+        ok_button.clicked.connect(self.accept)
+        ok_button.setFixedWidth(80)
+        ok_button.setFixedHeight(30)
+        ok_button.setCursor(Qt.PointingHandCursor)
+        layout.addWidget(ok_button, alignment=Qt.AlignCenter)
 
-            # Parse input to extract hours and minutes
-            hours, minutes = self._parse_timer_duration(time_input)
-            
-            if hours is None and minutes is None:
-                self.speak("Sorry, I couldn't understand the duration. Please try again.")
-                return
+    def paintEvent(self, event):
+        """Draw rounded corners and background."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        brush = QBrush(QColor("#2c3e50"))
+        painter.setBrush(brush)
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(self.rect(), 15, 15)
 
-            # Convert to total seconds
-            total_seconds = hours * 3600 + minutes * 60
-
-            # Confirm the timer
-            self.speak(f"Setting a timer for {hours} hour(s) and {minutes} minute(s).")
-            print(f"Timer set for {hours} hour(s) and {minutes} minute(s).")
-
-            # Countdown timer
-            while total_seconds:
-                mins, secs = divmod(total_seconds, 60)
-                timer = f'{mins:02d}:{secs:02d}'
-                print(f"Time left: {timer}", end="\r")  # Dynamic countdown
-                time.sleep(1)
-                total_seconds -= 1
-                
-
-            # Notify when timer ends
-            self.speak("Time's up!")
-            tkinter.messagebox.showinfo("PHOENIX.",  "Hi I  'm your message") 
-        except Exception as e:
-            self.speak(f"An error occurred while setting the timer: {str(e)}")
-
-    def _parse_timer_duration(self, time_str):
-        """
-        Parses the timer duration from the input string.
-        Returns the duration in hours and minutes.
-        """
-        try:
-            # Regex pattern to match hours and minutes
-            duration_pattern = re.compile(
-                r'(?:(\d+)\s*hour(?:s)?)?\s*(?:(\d+)\s*minute(?:s)?)?', re.IGNORECASE
-            )
-            match = duration_pattern.search(time_str)
-
-            if match:
-                hours = int(match.group(1)) if match.group(1) else 0
-                minutes = int(match.group(2)) if match.group(2) else 0
-                return hours, minutes
-
-            return None, None
-        except Exception as e:
-            self.speak("I couldn't parse the time duration. Please try again.")
-            return None, None
-
-
+# Example Usage
 if __name__ == "__main__":
-    root = tk.Tk()
-    gui = VoiceAssistantGUI(root)
-    speech_engine = SpeechEngine()
-    recognizer = VoiceRecognition(gui)
-    timer = TimerUtility(speech_engine, recognizer)
-    timer.set_timer()
+    import sys
+    app = QApplication(sys.argv)
+
+    message_box = RoundedMessageBox("Custom Title", "This is a custom message box with rounded corners!")
+    message_box.exec_()
+
+    sys.exit(app.exec_())

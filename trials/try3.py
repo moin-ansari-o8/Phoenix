@@ -1,72 +1,64 @@
-import tkinter as tk
-from tkinter import ttk
-import time
-from threading import Thread
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 
-class CustomNotification:
-    def __init__(self, title="Notification", message="This is a custom notification"):
-        self.title = title
-        self.message = message
-        self.duration = 5  # Duration in seconds
+class DesktopWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Desktop GUI")
+        
+        # Set window size and position
+        self.setGeometry(100, 100, 300, 200)  # Set window size (300x200) and position (100, 100)
+        
+        # Set window flags (no taskbar and frameless window)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)  # Tool window (no taskbar)
+        
+        # Create the main layout
+        layout = QVBoxLayout()
+        
+        # Create a label with text
+        self.label = QLabel("Hello from GUI", self)
+        self.label.setAlignment(Qt.AlignCenter)  # Center the text
+        self.label.setFont(QFont('Arial', 14, QFont.Bold))  # Set font style and size
+        self.label.setStyleSheet("color: #333333;")  # Set label text color
+        layout.addWidget(self.label)
+        
+        # Create a button and set its style
+        button = QPushButton("Click Me!", self)
+        button.setFont(QFont('Arial', 12))
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border-radius: 10px;
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        button.clicked.connect(self.on_button_click)  # Connect the button click to the function
+        layout.addWidget(button)
+        
+        # Create a widget for the layout and set it as the central widget
+        central_widget = QWidget(self)
+        central_widget.setLayout(layout)
+        central_widget.setStyleSheet("""
+            background-color: lightgrey;
+            border-radius: 15px;  # Makes corners round
+        """)  # Apply styles to central widget
+        self.setCentralWidget(central_widget)
 
-    def show_notification(self):
-        # Create a new Tkinter window
-        self.root = tk.Tk()
-        self.root.title(self.title)
+    def on_button_click(self):
+        """Change label text when button is clicked."""
+        self.label.setText("Hello there!")
+        self.label.setStyleSheet("color: #4CAF50;")  # Change text color to green
 
-        # Make the window borderless
-        self.root.overrideredirect(True)
-
-        # Get screen dimensions to position the notification
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-
-        # Define the size and position of the notification
-        window_width = 300
-        window_height = 100
-        x = screen_width - window_width - 10
-        y = screen_height - window_height - 50
-
-        # Position the window
-        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-
-        # Add a frame for styling
-        frame = ttk.Frame(self.root, relief="raised", borderwidth=2)
-        frame.pack(fill="both", expand=True, padx=5, pady=5)
-
-        # Add title and message
-        title_label = ttk.Label(frame, text=self.title, font=("Helvetica", 14, "bold"))
-        title_label.pack(pady=(10, 5))
-        message_label = ttk.Label(frame, text=self.message, font=("Helvetica", 10))
-        message_label.pack()
-
-        # Add a close button
-        close_button = ttk.Button(frame, text="Close", command=self.close_notification)
-        close_button.pack(pady=(5, 10))
-
-        # Start a timer to automatically close the notification
-        self.auto_close_timer()
-
-        # Run the Tkinter main loop
-        self.root.mainloop()
-
-    def auto_close_timer(self):
-        def timer():
-            time.sleep(self.duration)
-            self.close_notification()
-
-        # Run the timer in a separate thread
-        Thread(target=timer, daemon=True).start()
-
-    def close_notification(self):
-        self.root.destroy()
-
-
-# Example usage
 if __name__ == "__main__":
-    # Create and display the notification
-    notification = CustomNotification(
-        title="PHOENIX",
-        message="Your timer is up! Time to take action."
-    )
-    notification.show_notification()
+    app = QApplication(sys.argv)
+    window = DesktopWindow()
+    window.show()  # Show the window
+    
+    sys.exit(app.exec_())
