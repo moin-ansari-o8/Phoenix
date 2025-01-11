@@ -483,13 +483,13 @@ class Utility:
     def save_songs(self,songs):  # Save songs to the file
         with open(self.SONGS_FILE, "w") as file:
             for index, song in sorted(songs.items()):
-                file.write(f"{index} | {song} original\n")  # Always saves new song in new line
+                file.write(f"{index} | {song} \n")  # Always saves new song in new line
 
     def add_song(self):
         songs=self.load_songs()
         song_name = input("Enter the song name to add: ")
         new_index = max(songs.keys(), default=0) + 1
-        songs[new_index] = song_name
+        songs[new_index] = song_name + " original"
         self.save_songs(songs)
         print(f"'{song_name}' has been added to the library.")
 
@@ -516,14 +516,41 @@ class Utility:
             print("Invalid index. Please enter a number.")
             return songs
 
-    def play_random_song(self):
-        songs=self.load_songs()
-        if songs:
-            song = random.choice(list(songs.values()))
-            print(f"Playing a random song: {song}")
-            self.play_song(song)
+    def play_random_song(self, query):
+        # Extract the song request from the query
+        song = query.replace("play ", "").strip()
+        songs = self.load_songs()  # Load the list of available songs
+
+        # Check if the query is asking for a random song
+        if "random" in query:
+            if songs:
+                # Select and play a random song
+                song = random.choice(list(songs.values()))
+                print(f"Playing a random song: {song}")
+                self.play_song(song)
+            else:
+                # Handle empty song library
+                print("The song library is empty. Add some songs first.")
         else:
-            print("The song library is empty. Add some songs first.")
+            # Handle specific song requests
+            self.speak(f"Sir, do you want to play {song}?")
+            while True:
+                print(">>> Listening for confirmation...")
+                confirmation = self.take_command().lower()
+                if any(x in confirmation for x in ["yes", "ha", "sure", "play it"]):
+                    self.play_song(song)
+                    new_index = max(songs.keys(), default=0) + 1
+                    songs[new_index] = song + " original"
+                    self.save_songs(songs)
+                    print(f"'{song}' has been added to the library.")
+                    break
+                elif any(x in confirmation for x in ["no", "don't", "do not", "na"]):
+                    # User denied the request
+                    self.speak("Okay, sir.")
+                    break
+                else:
+                    # Handle unclear responses
+                    self.speak("I didn't understand that. Please confirm again.")
 
     def type_text(self, query):
         text = query.replace("type ", "")
@@ -541,7 +568,7 @@ class Utility:
         self.speak("Do you want to open it?")
 
         while True:
-            confirmation = self.takeCommand().lower()
+            confirmation = self.take_command().lower()
             if any(x in confirmation for x in ["yes", "ha", "sure", "play it"]):
                 webbrowser.open(f"https://www.youtube.com/results?search_query={selected_text}")
                 break
@@ -561,7 +588,7 @@ class Utility:
             self.speak(f"Sir, do you want to play {ply}?")
             while True:
                 print(">>> Listening for confirmation...")
-                confirmation = self.takeCommand().lower()
+                confirmation = self.take_command().lower()
                 if any(x in confirmation for x in ["yes", "ha", "sure", "play it"]):
                     webbrowser.open(f"https://www.youtube.com/results?search_query={ply}")
                     break
@@ -815,7 +842,7 @@ class Utility:
                     keyboard.press('enter')
                 else:
                     self.speak(f"Do you want to open {Nameofapp}?")
-                    conF = self.takeCommand().lower()
+                    conF = self.take_command().lower()
                     if conF in self.AGREE:
                         self.speak(self.rP())
                         # self.desKtoP(4)
@@ -966,13 +993,13 @@ class Utility:
         srch = query2.replace("what is ", "").replace("who is ", "")
         self.speak(f"Do you want to know about {srch}?")
         while True:
-            conF = self.takeCommand().lower()
+            conF = self.take_command().lower()
             if any(x in conF for x in ["yes", "ha", "sure", "play it"]):
                 webbrowser.open(f"https://www.google.com/search?q=About {srch}")
                 break
             elif any(x in conF for x in ["no", "don't", "do not", "na"]):
                 self.speak("Would you please repeat what you want to know about, sir?")
-                conF = self.takeCommand().lower()
+                conF = self.take_command().lower()
                 if any(x in conF for x in ["sorry", "no", "don't", "do not"]):
                     self.speak("That's all right, sir. Call me whenever you need.")
                     break
@@ -987,7 +1014,7 @@ class Utility:
 
     def search_browser(self):
         self.speak("Sir, what do I search on the browser?")
-        cm = self.takeCommand().lower()
+        cm = self.take_command().lower()
         webbrowser.open(cm)
 
     def set_focus(self):
@@ -1009,7 +1036,7 @@ class Utility:
     def search_youtube(self):
         try:
             self.speak("What do I search, sir?")
-            sng = self.takeCommand().lower()
+            sng = self.take_command().lower()
             self.speak(f"Starting {sng}")
             kit.playonyt(sng)
         except Exception as e:

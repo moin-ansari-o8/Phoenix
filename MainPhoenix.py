@@ -234,14 +234,14 @@ class PhoenixAssistant:
             "playpause": lambda query: self.utility.play_pause_action(query),
             "dltsong": self.utility.delete_song,
             "suggestsong": self.utility.suggest_song,
-            "playsong": self.utility.play_random_song,
+            "playsong":lambda query: self.utility.play_random_song(query),
             "addsong": self.utility.add_song,
             "viewsongs": self.utility.view_songs,
             "setTimer": self.utility.set_timer
         }
         
         if tag in action_map:  # for single argument (query)
-            if tag in ["adjustVolume", "adjustBrightness", "changetab", "whatis", "whois", "type_text"]:
+            if tag in ["adjustVolume", "adjustBrightness", "changetab", "playsong", "type_text"]:
                 action_map[tag](query)
             elif tag in ["open", "close", "select"]:  # for two arguments (query, response)
                 action_map[tag](query, self.tag_response)
