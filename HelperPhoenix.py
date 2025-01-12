@@ -172,6 +172,9 @@ class Utility:
     SONGS_FILE = os.path.join(current_dir, "data", "songs.txt")  # Ensure the path is correct
 
 
+
+
+
     def __init__(self, speech_engine, voice_recognition,sleep_time=1):
         self.speech_engine = speech_engine
         self.voice_recognition = voice_recognition
@@ -1848,7 +1851,6 @@ def music(Utility): #integrating more function into one
     # Playing rock music with 50% volume (ensure the file path is correct)
     Utility.rockMsc(0.5)
 
-
 class TimeBasedFunctionality:
     def __init__(self):
         # Set the timer.json path
@@ -1902,7 +1904,7 @@ class TimeBasedFunctionality:
         ring_time = current_time + timedelta(hours=hours, minutes=minutes, seconds=seconds)
 
         # Prepare the timer details
-        timer_id = f"t{int(datetime.timestamp(current_time))}"  # Unique ID based on timestamp
+        timer_id = f"t{int(datetime.timestamp(current_time))}_{random.randint(1000, 9999)}"
         set_time = (current_time.hour, current_time.minute, current_time.second)
         ring_time_tuple = (ring_time.hour, ring_time.minute, ring_time.second)
 
@@ -1920,7 +1922,7 @@ class TimeBasedFunctionality:
             f.seek(0)
             json.dump(data, f, indent=4)
 
-        print(f"Timer set successfully! It will ring at {ring_time.strftime('%H:%M:%S')}.")
+        print(f"Timer set successfully! Timer-ID:{timer_id}.")
 
     def remove_timer(self):
         """
@@ -1942,6 +1944,62 @@ class TimeBasedFunctionality:
             json.dump(data, f, indent=4)
 
         print(f"Removed {removed_timers} timers where ringed=true.")
+
+    def _assign_thread_to_timer(self, timer):
+        """
+        Assigns a thread to a timer that continuously checks the current time against the ringTime.
+        """
+        def timer_thread_logic(timer):
+            timer_id = timer["id"]
+            ring_time = timer["ringTime"]
+
+            while True:
+                now = datetime.now()
+                current_time_tuple = (now.hour, now.minute, now.second)
+
+                if current_time_tuple >= tuple(ring_time):
+                    print(f"Timer {timer_id} is ringing! Ring time: {ring_time}")
+                    
+                    # Mark the timer as ringed
+                    self._mark_timer_as_ringed(timer_id)
+                    break
+
+                sleep(1)  # Check every second
+
+        # Create and start a thread
+        timer_thread = threading.Thread(target=timer_thread_logic, args=(timer,))
+        timer_thread.start()
+
+    def _mark_timer_as_ringed(self, timer_id):
+        """Mark a specific timer as ringed in the JSON file."""
+        with open(self.timer_file, "r+") as f:
+            data = json.load(f)
+            for timer in data["timers"]:
+                if timer["id"] == timer_id:
+                    timer["ringed"] = True
+                    break
+            f.seek(0)
+            f.truncate()
+            json.dump(data, f, indent=4)
+
+    def checkTimer(self):
+        """
+        Remove old timers, then assign threads for active timers to monitor ringTime.
+        """
+        # Step 1: Remove timers with ringed=true
+        self.remove_timer()
+
+        # Step 2: Assign threads to active timers
+        with open(self.timer_file, "r") as f:
+            data = json.load(f)
+
+            if not data["timers"]:
+                print("No active timers to check.")
+                return
+
+            print(f"Starting threads for {len(data['timers'])} timers...")
+            for timer in data["timers"]:
+                self._assign_thread_to_timer(timer)
 
 if __name__ == "__main__":
     # root = tk.Tk()
@@ -1966,27 +2024,33 @@ if __name__ == "__main__":
     # while True:
     
     # # utils.custom_message("Phoenix:","Time's up")  
-    # # app = QApplication(sys.argv)
+    app = QApplication(sys.argv)
 
-    # # # Display the custom message box
-    # # message_box = RoundedMessageBox(
-    # #     "Custom Title", "This is a custom message box with rounded corners!"
-    # # )
-    # # message_box.exec_()
+    # Display the custom message box
+    message_box = RoundedMessageBox(
+        "Custom Title", "This is a custom message box with rounded corners!"
+    )
+    message_box.exec_()
     # # # print(utils._parse_time("1341"))  
     # # sleep(5)
 
-    #     print("back to main")
+    print("back to main")
     #     sleep(1)
     
-    # music(Utility)
+    music(Utility)
 
 
     # print(("second".isdigit()))
-    tbf = TimeBasedFunctionality()
-    # tbf.setTimer("Please set timer for 1 hour 30 minutes and 45 seconds.")
-    # tbf.setTimer("Set timer for 5 minutes.")
-    # tbf.setTimer("Set timer for 60 seconds.")
+    # tbf = TimeBasedFunctionality()
+    # # tbf.setTimer("Please set timer for 1 hour 30 minutes and 45 seconds.")
+    # # tbf.setTimer("Set timer for 5 minutes.")
+    # # tbf.setTimer("Set timer for 60 seconds.")
 
-    tbf.remove_timer() # Remove timers where ringed=true
-    
+    # tbf.remove_timer() # Remove timers where ringed=true
+    # tbf = TimeBasedFunctionality()
+    # tbf.setTimer("Set timer for 10 seconds.")
+    # tbf.setTimer("Set timer for 75 seconds.")
+    # tbf.setTimer("Set timer for 89 minutes.")
+    # tbf.remove_timer() # Remove timers where ringed=true
+
+    # tbf.checkTimer()

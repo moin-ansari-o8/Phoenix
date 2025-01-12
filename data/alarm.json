@@ -1,0 +1,18 @@
+{
+    "alarms": [
+        {
+            "id": "a170",
+            "setAlarm": [
+                23,
+                53
+            ],
+            "ringAlarm": [
+                23,
+                53
+            ],
+            "label": "go to sleep",
+            "repeat": "once",
+            "delete": false
+        }
+    ]
+}
