@@ -1,35 +1,43 @@
-import pyttsx3
-import random
-import threading
-import speech_recognition as sr
-import tkinter as tk
-from PIL import Image, ImageTk
+# Standard library imports
 import os
+import sys
+import time
+import threading
+import datetime
+import subprocess
+from time import sleep
+import re
+
+# Third-party libraries
+import random
+import pyttsx3
+import speech_recognition as sr
 import pyautogui as pg
 import keyboard
-from time import sleep
-import time
 import webbrowser
 from plyer import notification
-import sys
-import subprocess
-import random
-import re
-import random
-import webbrowser
 from pytube import YouTube, Search
 import psutil
-import datetime
-import pygame
 import pyaudio
 import wave
 import pywhatkit as kit
-# from tkinter import *
+
+# GUI-related libraries
+import tkinter as tk
 from tkinter import Toplevel
-import tkinter.messagebox 
+import tkinter.messagebox
+from PIL import Image, ImageTk
 from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QVBoxLayout
-from PyQt5.QtCore import Qt,QTimer
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPainter, QBrush, QColor, QFont
+
+# Suppress pygame output
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # Suppress the support prompt
+temp_stdout = sys.stdout  # Save the current stdout
+sys.stdout = open(os.devnull, 'w')  # Redirect stdout to null
+import pygame  # Import pygame silently
+sys.stdout.close()  # Close the null stdout
+sys.stdout = temp_stdout  # Restore the original stdout
 
 class SpeechEngine: # Text-to-Speech Engine
     def __init__(self):
@@ -70,8 +78,8 @@ class VoiceAssistantGUI:  # GUI for Voice Assistant
         # self.listen_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\green.png"
         # self.recognize_img_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\assets\\img\\red.png"
         
-        print(f"Listen image path: {self.listen_img_path}")
-        print(f"Recognize image path: {self.recognize_img_path}")
+        # print(f"Listen image path: {self.listen_img_path}")
+        # print(f"Recognize image path: {self.recognize_img_path}")
         
         # Verify if image paths exist
         if not os.path.exists(self.listen_img_path):
@@ -614,7 +622,6 @@ class Utility:
             for index, song in sorted(songs.items()):
                 print(f"{index}: {song}")
 
-
     def handle_song_selection(self, index):
         pass
         
@@ -918,21 +925,7 @@ class Utility:
             except subprocess.CalledProcessError:
                 self.speak("No Visual Studio tabs are opened.")
 
-        elif "all background programs" in Nameofap or "all background python programs" in Nameofap:
-            self.speak(f"Closing all background programs")
-            try:
-                subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
-            except subprocess.CalledProcessError:
-                self.speak("No Python program found.")
 
-        elif "all python programs" in Nameofap:
-            self.speak(f"Closing all background programs")
-            try:
-                subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
-                self.speak("Goodbye sir, see you soon.")
-                subprocess.run(["taskkill", "/F", "/IM", "python.exe"], check=True)
-            except subprocess.CalledProcessError:
-                self.speak("No Python program found.")
 
         elif (
             "chrome" in Nameofap
@@ -944,6 +937,20 @@ class Utility:
                 self.speak(f"All Chrome tabs are successfully closed.")
             except subprocess.CalledProcessError:
                 self.speak(f"Failed to close Chrome.")
+
+    def close_all_py(self):   
+        try:
+            subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
+            self.speak("Goodbye sir, see you soon.")
+            subprocess.run(["taskkill", "/F", "/IM", "python.exe"], check=True)
+        except subprocess.CalledProcessError:
+            print("No Python program found.")
+
+    def close_bg_py(self):       
+        try:
+            subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
+        except subprocess.CalledProcessError:
+            print("No Python program found.")
 
     def adjust_volume(self,query):
         # Define patterns and keywords
@@ -964,8 +971,7 @@ class Utility:
                 self.adj_volume("increase", None)
             elif any(word in query for word in dec_vol_keywords):
                 self.adj_volume("decrease", None)
-
-    
+  
     def adjust_brightness(self,query):
         # Define patterns and keywords
         inc_bright_keywords = ["increase", "increased"]
@@ -1686,7 +1692,6 @@ class Utility:
         custom_box.grab_set()
         custom_box.wait_window()
 
-
 # Inside your Utility class
     def set_timer(self):
         """
@@ -1775,24 +1780,6 @@ class Utility:
         except Exception as e:
             self.speak("I couldn't parse the time duration. Please try again.")
             return None, None, None
-
-    # def close_app(self, app_name):
-    #     """
-    #     Close a specific application using its name.
-    #     :param app_name: Name of the application to close.
-    #     """
-    #     app_name = app_name.lower()
-    #     if "chrome" in app_name:
-    #         os.system("taskkill /f /im chrome.exe")
-    #         self.speak("Google Chrome has been closed.")
-    #     elif "notepad" in app_name:
-    #         os.system("taskkill /f /im notepad.exe")
-    #         self.speak("Notepad has been closed.")
-    #     elif "calculator" in app_name:
-    #         os.system("taskkill /f /im calculator.exe")
-    #         self.speak("Calculator has been closed.")
-    #     else:
-    #         self.speak("I don't know how to close that application.")
 # Main Application
 class RoundedMessageBox(QDialog):
     def __init__(self, title, message):
@@ -1901,6 +1888,3 @@ if __name__ == "__main__":
 
 
     # print(("second".isdigit()))
-
-
-

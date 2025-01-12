@@ -66,6 +66,16 @@
       "responses": ["on it sir . ", "okay sir "]
     },
     {
+      "tag": "closeallpy",
+      "patterns": ["close all python programs"],
+      "responses": ["closing all python programs"]
+    },
+    {
+      "tag": "closebgpy",
+      "patterns": ["close background python programs"],
+      "responses": ["closing background python programs"]
+    },
+    {
       "tag": "close",
       "patterns": [
         "close it",

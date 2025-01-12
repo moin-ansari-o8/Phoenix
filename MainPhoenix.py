@@ -115,16 +115,16 @@ class PhoenixAssistant:
 
     def input_voice(self):
         self.chat=False
+        self.loop=False
         while True:
             sent = self.takeCommand().lower().strip()
             if "switch to chat" in sent:
                 self.chat = True
                 break
-            if ("phoenix" in sent or "finish" in sent) and self.loop==False:
+            if "phoenix" in sent and self.loop==False:
                 sent = self.remove_phoenix_except_folder(sent)
                 if sent:
                     self.handle_command(sent)
-                    self.loop=True
             elif self.loop==True:
                 self.handle_command(sent)
             elif not sent:
@@ -134,7 +134,7 @@ class PhoenixAssistant:
                 
         if self.chat:
             self.input_chat()
-                
+
     def handle_command(self, sent):
         if sent:
             # Split the sentence based on 'and' and strip extra spaces
@@ -142,7 +142,9 @@ class PhoenixAssistant:
             # Iterate through all parts and pass each to the main function
             for part in parts:
                 if part:  # Ensure non-empty strings are passed
-                    self.main(part)              
+                    self.main(part)     
+        else:
+            self.loop=False         
 
     def remove_phoenix_except_folder(self, sent):
         """
@@ -177,7 +179,6 @@ class PhoenixAssistant:
             # self.speak("Sorry, I didn't get that.")
             self.loop=False
             
-
     def execute_action(self, tag, query):
         common_tags = {
             self.utility.handle_time_based_greeting: ("morning", "afternoon", "evening"),
@@ -195,7 +196,7 @@ class PhoenixAssistant:
                 elif func == self.utility.move_direction:
                     func(tag, query)
                 else:
-                    func(tag, self.response)  
+                    func(tag, self.tag_response)  
                 return
         
         action_map = {
@@ -214,6 +215,8 @@ class PhoenixAssistant:
             "close": lambda query, response: self.utility.close_app(query, response), 
             "select": lambda query, response: self.utility.select_action(query, response),
             "phnxrestart": self.utility.restart_phoenix,
+            "closeallpy": self.utility.close_all_py,
+            "closebgpy": self.utility.close_bg_py,
             "screenshot": self.utility.screenshot,
             "hotspot": self.utility.hotspot,
             "bluetooth": self.utility.bluetooth,
@@ -257,4 +260,4 @@ if __name__ == "__main__":
     recognizer = VoiceRecognition(gui)
     asutils = Utility(speech_engine, recognizer)
     phnx = PhoenixAssistant(asutils)
-    phnx.input_chat()
+    phnx.input_voice()
