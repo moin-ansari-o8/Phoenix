@@ -824,18 +824,18 @@
     },
     {
       "tag": "setTimer",
-      "patterns": ["set timer"],
-      "responses": ["okay sir ", "on it sir ", "just a second sir ."]
+      "patterns": ["set timer for", "set a timer for", "set a timer"],
+      "responses": ["setTimer"]
     },
     {
       "tag": "setAlarm",
-      "patterns": ["set alarm"],
-      "responses": ["okay sir ", "on it sir  ", "just a second sir . "]
+      "patterns": ["set alarm for", "set a alarm for", "set an alarm"],
+      "responses": ["setAlarm"]
     },
     {
       "tag": "setReminder",
-      "patterns": ["set reminder"],
-      "responses": ["okay sir ", "on it sir ", "just a second sir ."]
+      "patterns": ["set reminder for", "set a reminder for", "set an reminder"],
+      "responses": ["setReminder"]
     },
     {
       "tag": "muteSpeaker",

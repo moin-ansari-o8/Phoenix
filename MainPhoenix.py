@@ -123,6 +123,7 @@ class PhoenixAssistant:
                 break
             if "phoenix" in sent and self.loop==False:
                 sent = self.remove_phoenix_except_folder(sent)
+                # if len(sent.split()) > 1:
                 if sent:
                     self.handle_command(sent)
             elif self.loop==True:
@@ -160,7 +161,8 @@ class PhoenixAssistant:
             "pcsleep", "open", "close", "time", "battery", "dateday", "searchinsta",
             "searchbrowser", "searchyoutube", "swtchTab", "select", "playpause", "press",
             "setReminder", "type", "random", "suggestsong", "maximize", "minimize", "fullscreen",
-            "adjustBrightness", "hide", "whatis", "whois", "select", "setfocus", "forward", "backward"
+            "adjustBrightness", "hide", "whatis", "whois", "select", "setfocus", "forward", "backward",
+            "setTimer","setAlarm","setReminder","addsong","dltsong","playsong","suggestsong"
         ]
         
         query = self.remove_phoenix_except_folder(sent)  # Remove phoenix keyword

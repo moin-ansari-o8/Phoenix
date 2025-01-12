@@ -1,0 +1,16 @@
+{
+  "timers": [
+    {
+      "id": "t1736682050",
+      "setTime": [17, 10, 50],
+      "ringTime": [17, 15, 50],
+      "ringed": false
+    },
+    {
+      "id": "t1736682050",
+      "setTime": [17, 10, 50],
+      "ringTime": [17, 11, 50],
+      "ringed": false
+    }
+  ]
+}

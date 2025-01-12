@@ -7,7 +7,8 @@ import datetime
 import subprocess
 from time import sleep
 import re
-
+import json
+from datetime import datetime, timedelta
 # Third-party libraries
 import random
 import pyttsx3
@@ -21,7 +22,6 @@ import psutil
 import pyaudio
 import wave
 import pywhatkit as kit
-
 # GUI-related libraries
 import tkinter as tk
 from tkinter import Toplevel
@@ -1848,43 +1848,145 @@ def music(Utility): #integrating more function into one
     # Playing rock music with 50% volume (ensure the file path is correct)
     Utility.rockMsc(0.5)
 
+
+class TimeBasedFunctionality:
+    def __init__(self):
+        # Set the timer.json path
+        self.timer_file = os.path.join(os.path.dirname(__file__), "data", "timer.json")
+        self._initialize_timer_file()
+
+    def _initialize_timer_file(self):
+        """Initialize the timer file if it doesn't exist."""
+        try:
+            with open(self.timer_file, "r") as f:
+                data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Create an empty structure if the file doesn't exist or is corrupted
+            data = {"timers": []}
+            with open(self.timer_file, "w") as f:
+                json.dump(data, f, indent=4)
+
+    def _extract_time(self, query):
+        """Extract hours, minutes, and seconds from the query string."""
+        hours, minutes, seconds = 0, 0, 0
+
+        # Regex to extract time components
+        patterns = {
+            "hours": r"(\d+)\s*hour",
+            "minutes": r"(\d+)\s*minute",
+            "seconds": r"(\d+)\s*second"
+        }
+
+        # Extract hours, minutes, and seconds
+        if match := re.search(patterns["hours"], query):
+            hours = int(match.group(1))
+        if match := re.search(patterns["minutes"], query):
+            minutes = int(match.group(1))
+        if match := re.search(patterns["seconds"], query):
+            seconds = int(match.group(1))
+
+        return hours, minutes, seconds
+
+    def setTimer(self, query):
+        """
+        Set a timer based on the input query string and save it to timer.json.
+        """
+        # Extract hours, minutes, and seconds
+        hours, minutes, seconds = self._extract_time(query)
+        if hours == 0 and minutes == 0 and seconds == 0:
+            print("No valid time duration found in the query.")
+            return
+
+        # Get the current time and calculate the ring time
+        current_time = datetime.now()
+        ring_time = current_time + timedelta(hours=hours, minutes=minutes, seconds=seconds)
+
+        # Prepare the timer details
+        timer_id = f"t{int(datetime.timestamp(current_time))}"  # Unique ID based on timestamp
+        set_time = (current_time.hour, current_time.minute, current_time.second)
+        ring_time_tuple = (ring_time.hour, ring_time.minute, ring_time.second)
+
+        timer_details = {
+            "id": timer_id,
+            "setTime": set_time,
+            "ringTime": ring_time_tuple,
+            "ringed": False
+        }
+
+        # Save to timer.json
+        with open(self.timer_file, "r+") as f:
+            data = json.load(f)
+            data["timers"].append(timer_details)
+            f.seek(0)
+            json.dump(data, f, indent=4)
+
+        print(f"Timer set successfully! It will ring at {ring_time.strftime('%H:%M:%S')}.")
+
+    def remove_timer(self):
+        """
+        Remove timers from timer.json where ringed=true.
+        """
+        with open(self.timer_file, "r+") as f:
+            data = json.load(f)
+
+            # Filter out timers with ringed=true
+            timers_before = len(data["timers"])
+            data["timers"] = [timer for timer in data["timers"] if not timer.get("ringed", False)]
+
+            timers_after = len(data["timers"])
+            removed_timers = timers_before - timers_after
+
+            # Overwrite the JSON file with updated data
+            f.seek(0)
+            f.truncate()
+            json.dump(data, f, indent=4)
+
+        print(f"Removed {removed_timers} timers where ringed=true.")
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    gui = VoiceAssistantGUI(root)
-    speech_engine = SpeechEngine()
-    recognizer = VoiceRecognition(gui)
-    utils = Utility(speech_engine, recognizer)
-    gui.show_listen_image()
+    # root = tk.Tk()
+    # gui = VoiceAssistantGUI(root)
+    # speech_engine = SpeechEngine()
+    # recognizer = VoiceRecognition(gui)
+    # utils = Utility(speech_engine, recognizer)
+    # gui.show_listen_image()
+    # # while True:
+    # #     recognizer.take_command()
+    # # Example usage
+    # # utils.speak("Utility functions are ready.")
+    # # utils.calC()  # Example for calculator function
+    # # utils.press("enter", 3)  # Example for press function
+    # # utils.bluetooth()  # Example for Bluetooth toggle
+    # # utils.hotspot()  # Example for hotspot toggle
+    # # utils.screenshot()  # Example for hotspot toggle
+    # # utils.snG()  # Example for hotspot toggle
+    # # utils.desKtoP_4()  # Example for hotspot toggle
+    # # utils._countdown_timer(5)  
+    # utils.set_timer()  
     # while True:
-    #     recognizer.take_command()
-    # Example usage
-    # utils.speak("Utility functions are ready.")
-    # utils.calC()  # Example for calculator function
-    # utils.press("enter", 3)  # Example for press function
-    # utils.bluetooth()  # Example for Bluetooth toggle
-    # utils.hotspot()  # Example for hotspot toggle
-    # utils.screenshot()  # Example for hotspot toggle
-    # utils.snG()  # Example for hotspot toggle
-    # utils.desKtoP_4()  # Example for hotspot toggle
-    # utils._countdown_timer(5)  
-    utils.set_timer()  
-    while True:
     
-    # utils.custom_message("Phoenix:","Time's up")  
-    # app = QApplication(sys.argv)
+    # # utils.custom_message("Phoenix:","Time's up")  
+    # # app = QApplication(sys.argv)
 
-    # # Display the custom message box
-    # message_box = RoundedMessageBox(
-    #     "Custom Title", "This is a custom message box with rounded corners!"
-    # )
-    # message_box.exec_()
-    # # print(utils._parse_time("1341"))  
-    # sleep(5)
+    # # # Display the custom message box
+    # # message_box = RoundedMessageBox(
+    # #     "Custom Title", "This is a custom message box with rounded corners!"
+    # # )
+    # # message_box.exec_()
+    # # # print(utils._parse_time("1341"))  
+    # # sleep(5)
 
-        print("back to main")
-        sleep(1)
+    #     print("back to main")
+    #     sleep(1)
     
     # music(Utility)
 
 
     # print(("second".isdigit()))
+    tbf = TimeBasedFunctionality()
+    # tbf.setTimer("Please set timer for 1 hour 30 minutes and 45 seconds.")
+    # tbf.setTimer("Set timer for 5 minutes.")
+    # tbf.setTimer("Set timer for 60 seconds.")
+
+    tbf.remove_timer() # Remove timers where ringed=true
+    
