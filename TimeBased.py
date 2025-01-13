@@ -8,8 +8,12 @@ from time import sleep
 import re
 import json
 from datetime import datetime, timedelta
-# Third-party libraries
+import datetime
+from HelperPhoenix import VoiceRecognition,VoiceAssistantGUI,SpeechEngine
+import tkinter as tk
+# Third-party librariesk
 import random
+import uuid
 
 class TimerHandle:
     def __init__(self):
@@ -169,6 +173,34 @@ class AlarmHandle:
             "daily", "once", "next", "monday", "tuesday", "wednesday",
             "thursday", "friday", "saturday", "sunday"
         ]
+    days_mapping = {
+            "monday": "MO", "tuesday": "TU", "wednesday": "WE",
+            "thursday": "TH", "friday": "FR", "saturday": "ST", "sunday": "SU"
+        }
+    
+    def __init__(self,recognizer,speech_engine):
+        self.alarm_file = os.path.join(os.path.dirname(__file__), "data", "alarm.json")
+        self._initialize_alarm_file()
+        self.recognizer = recognizer
+        self.speech_engine = speech_engine
+    
+    def take_command(self):
+        return self.recognizer.take_command()
+
+    def speak(self,query):
+        self.speech_engine.speak(query)
+
+    def _initialize_alarm_file(self):
+        """Initialize the timer file if it doesn't exist."""
+        try:
+            with open(self.alarm_file, "r") as f:
+                data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Create an empty structure if the file doesn't exist or is corrupted
+            data = {"timers": []}
+            with open(self.alarm_file, "w") as f:
+                json.dump(data, f, indent=4)
+
     def getTime(self, query):
         """
         Extracts time information (hour, minute, and period) from the query string.
@@ -181,9 +213,20 @@ class AlarmHandle:
                 hour = int(time_match.group(1))
                 minute = int(time_match.group(2))
             else:
-                # Prompt user input if no valid time found
-                user_input = input("Time not recognized, please input time in HH:MM format: ")
-                hour, minute = map(int, user_input.split(":"))
+                while True:  # Keep prompting until valid input is provided
+                    user_input = input("Time not recognized. Please input time in HH:MM (24H) format (e.g., 23:45): ").strip()
+                    print("type exit to go out of the loop")
+                    if "exit" in user_input:
+                        return None, None, "not found"
+                    try:
+                        # Split the input and validate the format
+                        hour, minute = map(int, user_input.split(":"))
+                        if 0 <= hour < 24 and 0 <= minute < 60:  # Check if the time is within valid range
+                            break  # Return the validated hour and minute
+                        else:
+                            print("Invalid time range. Ensure hours are between 0-23 and minutes between 0-59.")
+                    except ValueError:
+                        print("Invalid format. Please enter time in HH:MM format (e.g., 23:45).")
 
             # Check for period (a.m./p.m.) after the time
             period_match = re.search(r"(a\.m\.|am|p\.m\.|pm)", query.lower())
@@ -201,24 +244,268 @@ class AlarmHandle:
             return hour, minute, period
 
         # If no keyword found
-        return None, None, "Keyword 'set alarm for' not found"
+        return None, None, "not found"
 
-    def getRepeat(self, query):
+    def getRepeat(self,query):
         """
-        Extracts repetition information from the query string.
+        Extracts the repeat pattern and associated days from the query.
+
+        Args:
+            query (str): The input query string.
+
+        Returns:
+            dict: A dictionary with 'repeat' as the key and a list of days as the value.
         """
+        query = query.lower().strip()
         
+        # Default values
+        repeat = "once"
+        days = ["TODAY"]
 
-        # Search for repetition keyword in query
-        for keyword in self.REPEAT_KEYS:
-            if keyword in query.lower():
-                return keyword
-        
-        # Default to 'once' if no keyword is found
-        return "once"
+        if "daily" in query:
+            repeat = "daily"
+            days = ["TODAY"]
+        elif "today" in query:
+            repeat = "once"
+            days = ["TODAY"]
+        elif "tomorrow" in query:
+            repeat = "once"
+            today_index = datetime.now().weekday()
+            tomorrow_index = (today_index + 1) % 7
+            days = [list(self.days_mapping.values())[tomorrow_index]]
+        elif "every" in query:
+            for day in self.days_mapping:
+                if day in query:
+                    repeat = "weekly"
+                    days = [self.days_mapping[day]]
+                    break
+        else:
+            print("Do you want the alarm for a specific day, weekly, or something else?")
+            user_input = input("Type 'weekly', 'daily', or leave blank for default (once today): ").strip().lower()
+            if user_input == "daily":
+                repeat = "daily"
+                days = ["TODAY"]
+            elif user_input == "weekly":
+                repeat = "weekly"
+                days_input = input("Enter the days (e.g., monday tuesday friday): ").strip().lower().split()
+                days = [self.days_mapping[day] for day in days_input if day in self.days_mapping]
+                if not days:
+                    print("No valid days entered. Setting to default 'once' for 'TODAY'.")
+                    repeat = "once"
+                    days = ["TODAY"]
+            else:
+                print("Defaulting to 'once' for 'TODAY'.")
+                repeat = "once"
+                days = ["TODAY"]
 
+        return {repeat: days}
+ 
+    def removeDeletedAlarms(self):
+        """
+        Removes alarms marked for deletion (delete=true) from the JSON file
+        and prints the label of each deleted alarm.
+        """
+        try:
+            # Load existing alarms from the file
+            with open(self.alarm_file, "r") as file:
+                alarms = json.load(file)
+        except FileNotFoundError:
+            print("Alarm file not found. Nothing to remove.")
+            return
+        except json.JSONDecodeError:
+            print("Error reading the alarm file. Please check the file structure.")
+            return
+
+        # Initialize a list to hold the alarms that are not marked for deletion
+        updated_alarms = []
+
+        # Iterate over existing alarms and remove those marked for deletion
+        for alarm in alarms.get("alarms", []):
+            if alarm.get("delete", False):
+                # Print the label of the deleted alarm
+                print(f"Alarm deleted for label: {alarm.get('label', 'unknown')}")
+            elif alarm.get("repeat", "") == "once" and alarm.get("ringed", 0) > 0:
+                # Delete one-time alarms that have already rung
+                print(f"One-time alarm deleted for label: {alarm.get('label', 'unknown')}")
+            else:
+                # Keep alarms that are not marked for deletion
+                updated_alarms.append(alarm)
+
+        # Update the alarms structure with the remaining alarms
+        alarms["alarms"] = updated_alarms
+
+        # Save the updated structure back to the file
+        try:
+            with open(self.alarm_file, "w") as file:
+                json.dump(alarms, file, indent=4)
+            print("Alarms updated successfully.")
+        except IOError:
+            print("Error writing to the alarm file. Please check file permissions.")
+
+    def handleAlarmPrompt(self, query):
+        """
+        Handles the alarm setup process, prompts for confirmation, and updates the alarm JSON file.
+
+        Args:
+            query (str): The input query for setting the alarm.
+        """
+        # Get time details from query using getTime method
+        hour, minute, period = self.getTime(query)  # Assuming getTime is already implemented
+        if period == "not found":
+            print("String not suitable for alarm setup.")
+            return
+        elif period == "loop out":
+            return
+
+        # Get repeat details from query using getRepeat method
+        repeat_dict = self.getRepeat(query)  # Assuming getRepeat is already implemented
+        repeat = list(repeat_dict.keys())[0]  # Extract the key ("once", "weekly", etc.)
+        days = repeat_dict[repeat]  # Extract the list of days
+
+        # Loop to get the label
+        while True:
+            print(f"Speak the label name or 'no' to just come out of the loop for: {hour}:{minute} {period}:")  # Don't change
+            lbl = self.take_command()  # Don't change this line
+            if lbl:  # Check if input is valid
+                lbl = lbl.lower().strip()  # Convert to lowercase and strip whitespace
+                if "no" in lbl:  # If input contains "no", set label to "alarm"
+                    lbl = "alarm"
+                break  # Exit loop as lbl is processed
+
+        # Generate a unique ID
+        unique_id = f"A_{uuid.uuid4().hex[:6]}"
+
+        # Confirm details with the user
+        print(f"Please confirm the details:\nTime: {hour}:{minute} {period}\nRepeat: {repeat}\nDays: {days}\nLabel: {lbl}")
+        confirmation = input("Type 'Y' to confirm, anything else to cancel: ").strip().lower()
+        if confirmation != "y":
+            print("Operation cancelled.")
+            return  # Exit the method
+
+        # Prepare alarm data
+        alarm_data = {
+            "id": unique_id,
+            "ringAlarm": [hour, minute, period],
+            "label": lbl,
+            "day": days,  # Use the days list extracted from the repeat dictionary
+            "repeat": repeat,  # Use the repeat key
+            "ringed": 0,  
+            "delete": False  
+        }
+
+        # Load existing alarms from file or create a new structure
+        try:
+            with open(self.alarm_file, "r") as file:
+                alarms = json.load(file)
+        except FileNotFoundError:
+            alarms = {"alarms": []}
+
+        # Add the new alarm
+        alarms["alarms"].append(alarm_data)
+
+        # Save updated alarms back to the file
+        with open(self.alarm_file, "w") as file:
+            json.dump(alarms, file, indent=4)
+
+        # Confirm alarm set
+        print(f"Alarm successfully set for {hour}:{minute} {period} with repeat: {repeat} and days: {days}.")
+
+    def startAlarm(self, alarm):
+        """Starts the alarm thread and rings it when the time comes."""
+        ring_time = alarm.get("ringAlarm", [])
+        label = alarm.get("label", "")
+
+        if len(ring_time) >= 3:
+            hour, minute, period = ring_time
+            now = datetime.datetime.now()
+
+            # Convert 12-hour format to 24-hour format
+            if period.lower() == "p.m." and hour != 12:
+                hour += 12
+            elif period.lower() == "a.m." and hour == 12:
+                hour = 0
+
+            # Calculate the difference between current time and alarm time
+            alarm_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            time_difference = (alarm_time - now).total_seconds()
+
+            if time_difference > 0:
+                # threading.Timer(time_difference, self.ringAlarm, args=(alarm,)).start()
+                threading.Thread(target=self.ringAlarm,args=(alarm,time_difference)).start()
+                print(f"Alarm '{label}' scheduled to ring in {time_difference // 60:.0f} minutes.")
+
+    def ringAlarm(self, alarm,sleep_seconds):
+        """Rings the alarm."""
+        sleep(sleep_seconds)
+        try:
+            with open(self.alarm_file, "r") as file:
+                data = json.load(file)
+
+            for item in data["alarms"]:
+                if item["id"] == alarm["id"]:
+                    item["ringed"] = item.get("ringed", 0) + 1
+                    break
+
+            # Write the updated JSON back to the file
+            with open(self.alarm_file, "w") as file:
+                json.dump(data, file, indent=4)
+
+        except Exception as e:
+            print(f"Error updating alarm: {e}")
+
+        label = alarm.get("label", "No Label")
+        # while True:
+        #     end_alarminput
+        threading.Thread(target=self.speech_engine.threadedSpeak, args=(f"*** Alarm '{label}' is ringing! ***",)).start()
+        print(f"*** Alarm '{label}' is ringing! ***")
+
+    def chkAlarm(self):
+        """Checks and schedules alarms for today if their ring time is in the future."""
+        self.removeDeletedAlarms()
+
+        # Load alarms from the file
+        try:
+            with open(self.alarm_file, "r") as file:
+                data = json.load(file)
+                alarms = data.get("alarms", [])
+        except (FileNotFoundError, json.JSONDecodeError):
+            print("Error loading alarms. Please check the file.")
+            return
+
+        # Get today's day in abbreviated form (e.g., "MO" for Monday)
+        today = datetime.datetime.now().strftime("%A").lower()
+        today_abbr = self.days_mapping.get(today)
+        if not today_abbr:
+            print("Could not determine today's day.")
+            return
+
+        # Iterate through alarms
+        for alarm in alarms:
+            alarm_days = alarm.get("day", [])
+            ring_time = alarm.get("ringAlarm", [])
+
+            # Check if the alarm is set for today and has a valid ring time
+            if today_abbr in alarm_days or "TODAY" in alarm_days and len(ring_time) >= 3:
+                hour, minute, period = ring_time
+                now = datetime.datetime.now()
+
+                # Convert 12-hour format to 24-hour format
+                if period.lower() == "p.m." and hour != 12:
+                    hour += 12
+                elif period.lower() == "a.m." and hour == 12:
+                    hour = 0
+
+                current_time = now.hour * 60 + now.minute
+                alarm_time_in_minutes = hour * 60 + minute
+
+                if alarm_time_in_minutes > current_time:
+                    print(f"Scheduling alarm for label: {alarm.get('label')}")
+                    self.startAlarm(alarm)
 
 if __name__ == "__main__":
+    root = tk.Tk()
+    gui = VoiceAssistantGUI(root)
+    recognizer = VoiceRecognition(gui)
     # tbf = TimerHandle()
     # tbf.setTimer("Set timer for 10 seconds.")
     # tbf.remove_timer() 
@@ -227,19 +514,35 @@ if __name__ == "__main__":
     # import inspect
     # methods = [func for func, _ in inspect.getmembers(TimeBasedFunctionality, predicate=inspect.isfunction)]
     # print(methods)
-    ah=AlarmHandle()
+    ah=AlarmHandle(recognizer,speech_engine=SpeechEngine())
     # print(ah.timeDivider("set alarm for 12:10"))
-    query1 = "set alarm for 10:30 a.m."
-    query2 = "set alarm for 15:45"
-    query3 = "set alarm for 8:00 pm"
-    print(ah.getTime(query1))  # Output: (10, 30, 'a.m.')
-    print(ah.getTime(query2))  # Output: (3, 45, 'p.m.')
-    print(ah.getTime(query3))  # Output: (8, 0, 'p.m.')
+    # query1 = "set alarm for 10:30 a.m."
+    query2 = "set alarm for 14:30"
+    # ah.speak("alarm management is starting")
+    # query3 = "set alarm for 8:00 pm"
+    # print(ah.getTime(query1))  # Output: (10, 30, 'a.m.')
+    # ah.handleAlarmPrompt(query2)# Output: (3, 45, 'p.m.')
+    # ah.removeDeletedAlarms()
+    # ah.chkAlarm()
+    
+    # print(ah.getTime(query3))  # Output: (8, 0, 'p.m.')
+    # while True:
+    #     query=recognizer.take_command()
+    #     print(ah.handleAlarmPrompt(query))  # Output: 'once'
 
-    # Test getRepeat
-    query4 = "set alarm for 10:30 daily"
-    query5 = "set alarm for 7:00 on monday"
-    query6 = "set alarm for 9:15 for next day"
-    print(ah.getRepeat(query4))  # Output: 'daily'
-    print(ah.getRepeat(query5))  # Output: 'monday'
-    print(ah.getRepeat(query6))  # Output: 'once'
+    # # Test getRepeat
+    # query4 = "set alarm for 10:30 daily"
+    # query5 = "set alarm for 7:00 on monday"
+    # query6 = "set alarm for 9:15 for next day"
+    # # print(ah.getRepeat(query4))  # Output: 'daily'
+    # print(ah.getRepeat(query5))  # Output: 'monday'
+    # print(ah.handleAlarmPrompt(query5))  # Output: 'once'
+    # print(ah.handleAlarmPrompt(query6))  # Output: 'once'
+    
+        # Call chkAlarm to start checking and scheduling alarms
+    print("Checking and scheduling alarms...")
+    ah.chkAlarm()
+
+    # Prevent the program from exiting
+    print("Program is running. Press Ctrl+C to exit.")
+        

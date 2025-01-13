@@ -45,18 +45,30 @@ class SpeechEngine: # Text-to-Speech Engine
         voices = self.engine.getProperty('voices')
         self.engine.setProperty('voice', voices[1].id)
         self.engine.setProperty('rate', 174)
+        self.lock = threading.Lock() 
     
     def speak(self, audio):
-        # Replace "sir" with a random respectful term
-        replacements = ["boss", "my lord"]
-        for punctuation in ["", "?", "!", ".", " "]:
-            if f"sir{punctuation}" in audio:
-                replacement = random.choice(replacements)
-                audio = audio.replace(f"sir{punctuation}", f"{replacement}{punctuation}") 
-                break
-        self.engine.say(audio)
-        print(f"$ : {audio}")
-        self.engine.runAndWait()
+        """
+        Thread-safe method to handle text-to-speech.
+        """
+        with self.lock:  # Ensure no other thread is using the engine simultaneously
+            # Replace "sir" with a random respectful term
+            replacements = ["boss", "my lord"]
+            for punctuation in ["", "?", "!", ".", " "]:
+                if f"sir{punctuation}" in audio:
+                    replacement = random.choice(replacements)
+                    audio = audio.replace(f"sir{punctuation}", f"{replacement}{punctuation}")
+                    break
+            self.engine.say(audio)
+            print(f"$ : {audio}")
+            self.engine.runAndWait()
+            return
+
+    def threadedSpeak(self, audio):
+        """
+        Starts a thread to call the `speak` method.
+        """
+        threading.Thread(target=self.speak, args=(audio,)).start()
 
 class VoiceAssistantGUI:  # GUI for Voice Assistant
     def __init__(self, root):
@@ -2007,9 +2019,10 @@ if __name__ == "__main__":
     speech_engine = SpeechEngine()
     recognizer = VoiceRecognition(gui)
     utils = Utility(speech_engine, recognizer)
-    gui.show_listen_image()
-    while True:
-        recognizer.take_command()
+    speech_engine.speak("hello")
+    # gui.show_listen_image()
+    # while True:
+    #     recognizer.take_command()
     # # Example usage
     # # utils.speak("Utility functions are ready.")
     # # utils.calC()  # Example for calculator function

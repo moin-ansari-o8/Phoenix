@@ -1,18 +1,31 @@
 {
-    "alarms": [
-        {
-            "id": "a170",
-            "setAlarm": [
-                23,
-                53
-            ],
-            "ringAlarm": [
-                23,
-                53
-            ],
-            "label": "go to sleep",
-            "repeat": "once",
-            "delete": false
-        }
-    ]
+  "alarms": [
+    {
+      "id": "A_720097",
+      "ringAlarm": [6, 21, "p.m."],
+      "label": "just checking twice",
+      "day": ["TODAY"],
+      "repeat": "daily",
+      "ringed": 0,
+      "delete": false
+    },
+    {
+      "id": "A_b56037",
+      "ringAlarm": [6, 1, "p.m."],
+      "label": "just checking thrice",
+      "day": ["FR", "TU", "WE", "MO"],
+      "repeat": "weekly",
+      "ringed": 11,
+      "delete": false
+    },
+    {
+      "id": "A_b56090",
+      "ringAlarm": [6, 2, "p.m."],
+      "label": "check2",
+      "day": ["MO"],
+      "repeat": "weekly",
+      "ringed": 8,
+      "delete": false
+    }
+  ]
 }

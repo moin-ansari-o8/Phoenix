@@ -1,0 +1,2 @@
+1.request :
+make a method according to the request, u can improve the logic if you think it would be better, also tell me the changes u made. request:""
