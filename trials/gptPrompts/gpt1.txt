@@ -1,5 +1,5 @@
 now i want to make setAlarm method,
-ex json file:
+set alarm should save data as json file .ex json file:
 "
 {
   "alarms": [
@@ -29,4 +29,4 @@ query can be :
 2. set alarm for 2:20 a.m. tomorrow
 3. xyz... set alarm for 4:50 xyz...
 extract 
-ask for other details which
+ask for other details which are remaining from input.

@@ -2002,14 +2002,14 @@ class TimeBasedFunctionality:
                 self._assign_thread_to_timer(timer)
 
 if __name__ == "__main__":
-    # root = tk.Tk()
-    # gui = VoiceAssistantGUI(root)
-    # speech_engine = SpeechEngine()
-    # recognizer = VoiceRecognition(gui)
-    # utils = Utility(speech_engine, recognizer)
-    # gui.show_listen_image()
-    # # while True:
-    # #     recognizer.take_command()
+    root = tk.Tk()
+    gui = VoiceAssistantGUI(root)
+    speech_engine = SpeechEngine()
+    recognizer = VoiceRecognition(gui)
+    utils = Utility(speech_engine, recognizer)
+    gui.show_listen_image()
+    while True:
+        recognizer.take_command()
     # # Example usage
     # # utils.speak("Utility functions are ready.")
     # # utils.calC()  # Example for calculator function
@@ -2036,8 +2036,8 @@ if __name__ == "__main__":
 
     print("back to main")
     #     sleep(1)
-    
-    music(Utility)
+        
+    # music(Utility)
 
 
     # print(("second".isdigit()))

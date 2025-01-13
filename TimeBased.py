@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 # Third-party libraries
 import random
 
-class TimeBasedFunctionality:
+class TimerHandle:
     def __init__(self):
         # Set the timer.json path
         self.timer_file = os.path.join(os.path.dirname(__file__), "data", "timer.json")
@@ -162,127 +162,84 @@ class TimeBasedFunctionality:
             print(f"Starting threads for {len(data['timers'])} timers...")
             for timer in data["timers"]:
                 self._assign_thread_to_timer(timer)
-#------------------TIMER FINISH-----------------------------------------------------
-    def _initialize_alarm_file(self):
-        """Initialize the alarm file if it doesn't exist."""
-        try:
-            with open(self.alarm_file, "r") as f:
-                data = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            # Create an empty structure if the file doesn't exist or is corrupted
-            data = {"alarms": []}
-            with open(self.alarm_file, "w") as f:
-                json.dump(data, f, indent=4)
 
-    def _extract_time(self, query):
-        """Extract hours and minutes from the query string."""
-        hours, minutes = 0, 0
-
-        # Regex to extract time components
-        patterns = {
-            "hours": r"(\d+)\s*hour",
-            "minutes": r"(\d+)\s*minute",
-            "time": r"(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)",  # 12:30 pm or 12:30 a.m.
-        }
-
-        # Extract time using regex for 12-hour format
-        match = re.search(patterns["time"], query, re.IGNORECASE)
-        if match:
-            hours, minutes = int(match.group(1)), int(match.group(2))
-            # Convert to 24-hour format if necessary
-            am_pm = match.group(3).lower()
-            if am_pm in ['pm', 'p.m.'] and hours != 12:
-                hours += 12
-            elif am_pm in ['am', 'a.m.'] and hours == 12:
-                hours = 0
-        else:
-            # Handle 24-hour format or other case
-            if match := re.search(patterns["hours"], query):
-                hours = int(match.group(1))
-            if match := re.search(patterns["minutes"], query):
-                minutes = int(match.group(1))
-
-        return hours, minutes
-
-    def _ask_for_details(self, query):
-        """Ask the user for additional details like label and repeat schedule."""
-        # Ask for the alarm label
-        label = input("Please provide a label for the alarm: ")
-
-        # Ask for the repeat schedule
-        repeat = input("Should the alarm repeat? (daily, once, or a day of the week): ").lower()
-
-        # Validate repeat input
-        valid_repeats = {"", "daily", "once", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
-        if repeat not in valid_repeats:
-            print("Invalid repeat schedule. Defaulting to 'once'.")
-            repeat = "once"
-
-        return label, repeat
-
-    def setAlarm(self, query):
+class AlarmHandle:
+    # Keywords for repetition
+    REPEAT_KEYS = [
+            "daily", "once", "next", "monday", "tuesday", "wednesday",
+            "thursday", "friday", "saturday", "sunday"
+        ]
+    def getTime(self, query):
         """
-        Set an alarm based on the input query string and save it to alarm.json.
+        Extracts time information (hour, minute, and period) from the query string.
         """
-        # Extract the time (hours and minutes) from the query
-        hours, minutes = self._extract_time(query)
-        if hours == 0 and minutes == 0:
-            print("No valid time duration found in the query.")
-            return
+        # Ensure the query contains the keyword
+        if "set alarm for" in query.lower():
+            # Extract time in HH:MM format
+            time_match = re.search(r"(\d{1,2}):(\d{2})", query)
+            if time_match:
+                hour = int(time_match.group(1))
+                minute = int(time_match.group(2))
+            else:
+                # Prompt user input if no valid time found
+                user_input = input("Time not recognized, please input time in HH:MM format: ")
+                hour, minute = map(int, user_input.split(":"))
 
-        # Ask for other details if needed
-        label, repeat = self._ask_for_details(query)
+            # Check for period (a.m./p.m.) after the time
+            period_match = re.search(r"(a\.m\.|am|p\.m\.|pm)", query.lower())
+            if period_match:
+                period = period_match.group(0).replace("am", "a.m.").replace("pm", "p.m.")
+            else:
+                # Determine period based on 24-hour format
+                if hour >= 12:
+                    period = "p.m."
+                    if hour > 12:
+                        hour -= 12
+                else:
+                    period = "a.m."
 
-        # Get the current time
-        current_time = datetime.now()
+            return hour, minute, period
 
-        # Calculate the alarm time based on the current time
-        alarm_time = current_time.replace(hour=hours, minute=minutes, second=0, microsecond=0)
+        # If no keyword found
+        return None, None, "Keyword 'set alarm for' not found"
+
+    def getRepeat(self, query):
+        """
+        Extracts repetition information from the query string.
+        """
         
-        # If the alarm time is in the past, set it for the next day (tomorrow)
-        if alarm_time < current_time:
-            alarm_time += timedelta(days=1)
 
-        # Prepare the alarm details
-        alarm_id = f"a{random.randint(1, 1000)}"  # Generate a random ID for the alarm
-        alarm_details = {
-            "id": alarm_id,
-            "setAlarm": [alarm_time.hour, alarm_time.minute],
-            "ringAlarm": [alarm_time.hour, alarm_time.minute],  # For simplicity, same as setAlarm
-            "label": label,
-            "repeat": repeat,
-            "delete": False
-        }
+        # Search for repetition keyword in query
+        for keyword in self.REPEAT_KEYS:
+            if keyword in query.lower():
+                return keyword
+        
+        # Default to 'once' if no keyword is found
+        return "once"
 
-        # Save to alarm.json
-        with open(self.alarm_file, "r+") as f:
-            data = json.load(f)
-            data["alarms"].append(alarm_details)
-            f.seek(0)
-            json.dump(data, f, indent=4)
 
-        print(f"Alarm set successfully! Alarm-ID:{alarm_id}.")
-
-    def checkAlarm(self):
-        """
-        Check for alarms and print details of the upcoming alarms.
-        """
-        with open(self.alarm_file, "r") as f:
-            data = json.load(f)
-
-            if not data["alarms"]:
-                print("No alarms set.")
-                return
-
-            for alarm in data["alarms"]:
-                print(f"Alarm ID: {alarm['id']}, Time: {alarm['setAlarm'][0]}:{alarm['setAlarm'][1]}, Label: {alarm['label']}, Repeat: {alarm['repeat']}")
 if __name__ == "__main__":
-    tbf = TimeBasedFunctionality()
+    # tbf = TimerHandle()
     # tbf.setTimer("Set timer for 10 seconds.")
     # tbf.remove_timer() 
     # tbf.checkTimer()
-    tbf.setAlarm("set alarm for 1")
 
     # import inspect
     # methods = [func for func, _ in inspect.getmembers(TimeBasedFunctionality, predicate=inspect.isfunction)]
     # print(methods)
+    ah=AlarmHandle()
+    # print(ah.timeDivider("set alarm for 12:10"))
+    query1 = "set alarm for 10:30 a.m."
+    query2 = "set alarm for 15:45"
+    query3 = "set alarm for 8:00 pm"
+    print(ah.getTime(query1))  # Output: (10, 30, 'a.m.')
+    print(ah.getTime(query2))  # Output: (3, 45, 'p.m.')
+    print(ah.getTime(query3))  # Output: (8, 0, 'p.m.')
+
+    # Test getRepeat
+    query4 = "set alarm for 10:30 daily"
+    query5 = "set alarm for 7:00 on monday"
+    query6 = "set alarm for 9:15 for next day"
+    print(ah.getRepeat(query4))  # Output: 'daily'
+    print(ah.getRepeat(query5))  # Output: 'monday'
+    print(ah.getRepeat(query6))  # Output: 'once'
