@@ -507,5 +507,283 @@
 
     "
 
+--setReminder---
+    make a method according to the request, 
+    u can improve the logic if you think it would be better, 
+    also tell me the changes u made. 
+    request:
+    "
+    json file structure::
+    {
+        "reminders": [
+            {
+            "id": "R_720097", # unique_id starting with R_
+            "date": "13-01-25", # "DD-MM-YY"
+            "day": "MO",
+            "time": "12:00", # time in 24hr format HH:MM
+            "message": "Reminder for filling up form",
+            "reminded": false
+            }
+        ]
+    }
+    notes::
+    init method of class has :: days_mapping = {
+            "monday": "MO", "tuesday": "TU", "wednesday": "WE",
+            "thursday": "TH", "friday": "FR", "saturday": "ST", "sunday": "SU"
+        }
+    
+    logic::
+        make a setReminder that takes query as argument:
+        message="";date="",day="",time=""
+        queries can be : "set reminder for tomorrow","set reminder for next {monday/tuesday.../sunday}"
+       if query has tomorrow then get today's date aand date=date+1
+        if query has something else like: "set reminder for ..xyz" then: message=..xyz
+        if not message:
+            while true:
+                take message as input
+                if taken then get out of loop
+        day = getday()
 
+        make json file : as told before
 
+        reminder set for {message}, i will remind you on {12th January}
+    "
+
+------------
+    existing code::
+    # Parse query for date or day
+        query = query.lower()
+        today = datetime.datetime.now()
+
+        if "tomorrow" in query:
+            next_day = today + datetime.timedelta(days=1)
+            reminder_date = next_day.strftime("%d-%m-%y")
+            reminder_day = self.days_mapping[next_day.strftime("%A").lower()]
+        elif "next" in query:
+            for day in self.days_mapping.keys():
+                if day in query:
+                    reminder_date = self.get_next_day(day)
+                    reminder_day = self.days_mapping[day]
+                    message = query.split("for", 1)[1].strip()
+        else:
+            # If the query doesn't contain "tomorrow" or "next {day}"
+            parts = query.split("for", 1)
+            if len(parts) > 1:
+                message = parts[1].strip()
+            else:
+                message = query.strip()
+
+    new logic row code::
+        queries = query.split("for")  
+        #ex if query = "set reminder for tomorrow for meeting" then queries[0]=set reminder for queries[1] = tomorrow and queries[2] = meeting
+        if "tomorrow" in queries[1]:
+             reminder_date = next_day.strftime("%d-%m-%y")
+            reminder_day = self.days_mapping[next_day.strftime("%A").lower()]
+        elif "next" in queries[1]:
+            for day in self.days_mapping.keys():
+                if day in query:
+                    reminder_date = self.get_next_day(day)
+                    reminder_day = self.days_mapping[day]
+        if queries[2] : #if there is any queries[2] then
+            message = queries[2]
+
+---------------------
+    make a filter reminder method for the json file structure:this is reminders.json file::
+    "
+   {
+        "reminders": [
+            {
+                "id": "R_839787",
+                "date": "14-01-25",
+                "day": "TU",
+                "time": "09:00",
+                "message": "just casual thing",
+                "reminded": false
+            },
+            {
+                "id": "R_278989",
+                "date": "20-01-25",
+                "day": "MO",
+                "time": "09:00",
+                "message": "another",
+                "reminded": false
+            },
+            {
+                "id": "R_357261",
+                "date": "14-01-25",
+                "day": "TU",
+                "time": "09:00",
+                "message": "filling up",
+                "reminded": false
+            },
+            {
+                "id": "R_931371",
+                "date": "14-01-25",
+                "day": "TU",
+                "time": "09:00",
+                "message": "uttrayan",
+                "reminded": false
+            },
+            {
+                "id": "R_166793",
+                "date": "15-01-25",
+                "day": "WE",
+                "time": "08:00",
+                "message": "next wednesday for chilling",
+                "reminded": false
+            },
+            {
+                "id": "R_699842",
+                "date": "15-01-25",
+                "day": "WE",
+                "time": "08:00",
+                "message": "next wednesday for chilling",
+                "reminded": false
+            },
+            {
+                "id": "R_697134",
+                "date": "15-01-25",
+                "day": "WE",
+                "time": "09:00",
+                "message": "chilling",
+                "reminded": false
+            }
+        ]
+    }
+    "
+    step1:if reminded is true then delete that reminder remove that reminder from the json file
+    from all reminders if more than one reminder has same date and time and message then filter it and keep only one of them
+    if the date and time is same and message is different then save it in json like this:"message":["msg1","msg2"]
+-----------------------------
+    add one more functionality to the filterreminder method: if the reminder date is of past date then current date then remove that reminder
+    add this functionality to this code, don't change the existing code logic.existing code:"try:
+            # Step 1: Load the JSON file
+            with open(self.reminder_file, "r") as file:
+                data = json.load(file)
+
+            reminders = data.get("reminders", [])
+
+            # Step 2: Remove reminders where "reminded" is true
+            filtered_reminders = [r for r in reminders if not r.get("reminded", False)]
+
+            # Step 3: Filter duplicates and handle the message aggregation
+            unique_reminders = defaultdict(
+                lambda: {
+                    "id": None,
+                    "date": None,
+                    "day": None,
+                    "time": None,
+                    "message": [],
+                    "reminded": False,
+                }
+            )
+
+            for reminder in filtered_reminders:
+                key = (reminder["date"], reminder["time"])  # Group by date and time
+                if not unique_reminders[key]["id"]:
+                    unique_reminders[key]["id"] = reminder["id"]
+                    unique_reminders[key]["date"] = reminder["date"]
+                    unique_reminders[key]["day"] = reminder["day"]
+                    unique_reminders[key]["time"] = reminder["time"]
+                    unique_reminders[key]["reminded"] = reminder["reminded"]
+
+                if isinstance(reminder["message"], list):
+                    unique_reminders[key]["message"].extend(reminder["message"])
+                else:
+                    unique_reminders[key]["message"].append(reminder["message"])
+
+            # Convert defaultdict to a list of reminders with combined messages
+            final_reminders = []
+            for key, value in unique_reminders.items():
+                value["message"] = list(
+                    set(value["message"])
+                )  # Remove duplicate messages within the list
+                final_reminders.append(value)
+
+            # Step 4: Update the JSON file with filtered reminders
+            data["reminders"] = final_reminders
+
+            with open(self.reminder_file, "w") as file:
+                json.dump(data, file, indent=4)
+
+            print("Reminders have been successfully filtered and updated.")
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    "
+---------------
+    now make the ringReminder method, 
+        if the current date for reminder in reminders:
+            if there is still time to ring the reminder:#chk after comparing with current time
+                 if yes then run the reminder ringer in the seperate thread  # when ringed the reminder make "reminded":true
+            else:
+                print("you have missed reminder : reminder["message"]")
+    
+    json file:
+    "
+    {
+  "reminders": [
+    {
+      "id": "R_839787",
+      "date": "14-01-25",
+      "day": "TU",
+      "time": "09:00",
+      "message": ["just casual thing", "filling up", "uttrayan"],
+      "reminded": false
+    },
+    {
+      "id": "R_278989",
+      "date": "20-01-25",
+      "day": "MO",
+      "time": "09:00",
+      "message": ["another"],
+      "reminded": false
+    },
+    {
+      "id": "R_697134",
+      "date": "15-01-25",
+      "day": "WE",
+      "time": "09:00",
+      "message": ["chilling"],
+      "reminded": false
+    },
+    {
+      "id": "R_655510",
+      "date": "18-01-25",
+      "day": "ST",
+      "time": "09:00",
+      "message": ["chilling majja", "chilling"],
+      "reminded": false
+    }
+  ]
+    }
+
+        "
+-----------------
+    json file:
+    "
+    {
+        "schedule": [
+            {
+            "time": "05:00",
+            "message": "Wake up, eat banana, and perform Fajr prayer."
+            },
+            {
+            "time": "05:30",
+            "message": "Time for running."
+            },
+            {
+            "time": "06:30",
+            "message": "Time for workout."
+            },
+            {
+            "time": "07:30",
+            "message": "Time for a bath."
+            }
+        ]
+    }
+
+    "
+    make a class method to add a new schedule routine to the json file.
+     method name addSchedule , takes query as argument,  query can be :"add schedule at 12:00","add schedule at 13:00 for lunch"

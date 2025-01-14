@@ -248,7 +248,7 @@
         "say something i love"
       ],
       "responses": [
-        "Umm what about songs sir!",
+        "Um..what about songs sir!",
         "Well I want to tell you one thing that my Master Kaly is awesome.",
         "Alright sir! I want to confess that i love you and you are everything for me. Because It's you, It's only you who've made me.",
         "Nope, I don't want to.",
@@ -824,14 +824,53 @@
     },
     {
       "tag": "setTimer",
-      "patterns": ["set timer for", "set a timer for", "set a timer"],
+      "patterns": [
+        "set timer for",
+        "set a timer for",
+        "set a timer",
+        "add timer"
+      ],
       "responses": ["setTimer"]
+    },
+    {
+      "tag": "viewTimer",
+      "patterns": [
+        "view timers",
+        "view timer",
+        "view the timer",
+        "show me timers",
+        "list out timer"
+      ],
+      "responses": ["viewTimer"]
     },
     {
       "tag": "setAlarm",
       "patterns": ["set alarm for", "set a alarm for", "set an alarm"],
       "responses": ["setAlarm"]
     },
+    {
+      "tag": "viewAlarm",
+      "patterns": [
+        "view alarms",
+        "view alarm",
+        "view the alarm",
+        "show me alarm",
+        "list out alarm"
+      ],
+      "responses": ["viewAlarm"]
+    },
+    {
+      "tag": "dltAlarm",
+      "patterns": [
+        "delete alarm",
+        "delete the alarm",
+        "delete an alarm",
+        "remove alarm",
+        "remove an alarm"
+      ],
+      "responses": ["dltAlarm"]
+    },
+
     {
       "tag": "setReminder",
       "patterns": ["set reminder for", "set a reminder for", "set an reminder"],

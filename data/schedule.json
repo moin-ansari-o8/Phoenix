@@ -1,0 +1,20 @@
+{
+    "schedule": [
+        {
+            "time": "06:30",
+            "message": "Time for workout."
+        },
+        {
+            "time": "07:30",
+            "message": "Time for a bath."
+        },
+        {
+            "time": "08:30",
+            "message": "have a breakfast"
+        },
+        {
+            "time": "09:30",
+            "message": " koleg time"
+        }
+    ]
+}
