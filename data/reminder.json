@@ -1,36 +1,34 @@
 {
-  "reminders": [
-    {
-      "id": "R_278989",
-      "date": "20-01-25",
-      "day": "MO",
-      "time": "09:00",
-      "message": ["another"],
-      "reminded": false
-    },
-    {
-      "id": "R_697134",
-      "date": "15-01-25",
-      "day": "WE",
-      "time": "09:00",
-      "message": ["chilling"],
-      "reminded": false
-    },
-    {
-      "id": "R_655510",
-      "date": "18-01-25",
-      "day": "ST",
-      "time": "06:00",
-      "message": "what message!!",
-      "reminded": false
-    },
-    {
-      "id": "R_371172",
-      "date": "16-01-25",
-      "day": "TH",
-      "time": "12:00",
-      "message": "skdf",
-      "reminded": false
-    }
-  ]
+    "reminders": [
+        {
+            "id": "R_278989",
+            "date": "20-01-25",
+            "day": "MO",
+            "time": "09:00",
+            "message": [
+                "another"
+            ],
+            "reminded": false
+        },
+        {
+            "id": "R_655510",
+            "date": "18-01-25",
+            "day": "ST",
+            "time": "06:00",
+            "message": [
+                "what message!!"
+            ],
+            "reminded": false
+        },
+        {
+            "id": "R_371172",
+            "date": "16-01-25",
+            "day": "TH",
+            "time": "12:00",
+            "message": [
+                "skdf"
+            ],
+            "reminded": false
+        }
+    ]
 }

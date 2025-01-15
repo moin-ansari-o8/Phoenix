@@ -1,1 +1,9 @@
 trials/
+# Ignore log files
+*.log
+
+# Ignore temp files
+*.tmp
+
+# Ignore a specific file
+secret_config.json

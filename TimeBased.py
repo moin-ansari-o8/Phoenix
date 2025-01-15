@@ -19,8 +19,14 @@ import uuid
 class TimerHandle:
 
     def __init__(self):
-        self.timer_file = os.path.join(os.path.dirname(__file__), "data", "timer.json")
+        self.timer_file = os.path.join(
+            os.path.dirname(__file__), "data", "TimeData.json"
+        )
         self._initialize_timer_file()
+        self.root = tk.Tk()
+        self.gui = VoiceAssistantGUI(self.root)
+        self.se = SpeechEngine()
+        self.recognizer = VoiceRecognition(self.gui)
 
     def _assign_thread_to_timer(self, timer):
         """
@@ -100,9 +106,26 @@ class TimerHandle:
             if not data["timers"]:
                 print("No active timers to check.")
                 return
-            print(f"Starting threads for {len(data['timers'])} timers...")
             for timer in data["timers"]:
-                self._assign_thread_to_timer(timer)
+                timer_id = timer["id"]
+                ring_time = timer.get("ringTime", [])
+                if len(ring_time) != 3:
+                    print(f"Time's up sir. ")
+                    return
+                hour, minute, second = ring_time
+                now = datetime.datetime.now()
+                try:
+                    if (
+                        now.hour == hour
+                        and now.minute == minute
+                        and now.second == second
+                    ):
+                        self._mark_timer_as_ringed(timer_id)
+                        self.se.speak(
+                            f"Timer {timer_id} is ringing! Ring time: {ring_time}"
+                        )
+                except Exception as e:
+                    print(f"Error in timer {timer_id}: {e}")
 
     def remove_timer(self):
         """
@@ -126,9 +149,6 @@ class TimerHandle:
             f.seek(0)
             f.truncate()
             json.dump(data, f, indent=4)
-        print(
-            f"Removed {removed_timers} timers where ringed=true or createDate is earlier than today's date.."
-        )
 
     def setTimer(self, query):
         """
@@ -207,8 +227,14 @@ class AlarmHandle:
     }
 
     def __init__(self):
-        self.alarm_file = os.path.join(os.path.dirname(__file__), "data", "alarm.json")
+        self.alarm_file = os.path.join(
+            os.path.dirname(__file__), "data", "TimeData.json"
+        )
         self._initialize_alarm_file()
+        self.root = tk.Tk()
+        self.gui = VoiceAssistantGUI(self.root)
+        self.se = SpeechEngine()
+        self.recognizer = VoiceRecognition(self.gui)
 
     def _initialize_alarm_file(self):
         """Initialize the timer file if it doesn't exist."""
@@ -458,18 +484,20 @@ class AlarmHandle:
         updated_alarms = []
         for alarm in alarms.get("alarms", []):
             if alarm.get("delete", False):
-                print(f"Alarm deleted for label: {alarm.get('label', 'unknown')}")
+                # print(f"Alarm deleted for label: {alarm.get('label', 'unknown')}")
+                continue
             elif alarm.get("repeat", "") == "once" and alarm.get("ringed", 0) > 0:
-                print(
-                    f"One-time alarm deleted for label: {alarm.get('label', 'unknown')}"
-                )
+                # print(
+                #     f"One-time alarm deleted for label: {alarm.get('label', 'unknown')}"
+                # )
+                continue
             else:
                 updated_alarms.append(alarm)
         alarms["alarms"] = updated_alarms
         try:
             with open(self.alarm_file, "w") as file:
                 json.dump(alarms, file, indent=4)
-            print("Alarms updated successfully.")
+            # print("Alarms updated successfully.")
         except IOError:
             print("Error writing to the alarm file. Please check file permissions.")
 
@@ -557,12 +585,14 @@ class ReminderHandle:
         "sunday": "SU",
     }
 
-    def __init__(self, recognizer, speech_engine):
+    def __init__(self):
         self.reminder_file = os.path.join(
             os.path.dirname(__file__), "data", "reminder.json"
         )
-        self.recognizer = recognizer
-        self.speech_engine = speech_engine
+        self.root = tk.Tk()
+        self.gui = VoiceAssistantGUI(self.root)
+        self.se = SpeechEngine()
+        self.recognizer = VoiceRecognition(self.gui)
 
     def deleteReminder(self):
         """
@@ -760,32 +790,51 @@ class ReminderHandle:
                 )
 
     def ring_reminder(self):
-        self.filter_reminders()
         try:
+            # Read reminders from the file
             with open(self.reminder_file, "r") as file:
                 data = json.load(file)
+
             reminders = data.get("reminders", [])
             current_datetime = datetime.datetime.now()
-
-            def reminder_ringer(reminder):
-                print(f"Reminder: {', '.join(reminder['message'])}")
-                reminder["reminded"] = True
+            changes = False
 
             for reminder in reminders:
+                # Parse reminder date and time
                 reminder_date = datetime.datetime.strptime(reminder["date"], "%d-%m-%y")
                 reminder_time = datetime.datetime.strptime(
                     reminder["time"], "%H:%M"
                 ).time()
-                reminder_datetime = datetime.combine(
+                reminder_datetime = datetime.datetime.combine(
                     reminder_date.date(), reminder_time
                 )
-                if reminder_datetime > current_datetime:
-                    delay = (reminder_datetime - current_datetime).total_seconds()
-                    threading.Timer(delay, reminder_ringer, [reminder]).start()
-                elif not reminder["reminded"]:
-                    print(f"You have missed reminder: {', '.join(reminder['message'])}")
-            with open(self.reminder_file, "w") as file:
-                json.dump(data, file, indent=4)
+
+                # Check if the reminder time equals the current time
+                if current_datetime >= reminder_datetime and not reminder["reminded"]:
+                    reminder["reminded"] = True  # Mark as reminded
+                    self.speak(
+                        f"Sir, got a reminder message, time to: {', '.join(reminder['message'])}"
+                    )
+                    changes = True
+
+                # Check for missed reminders
+                elif current_datetime > reminder_datetime and not reminder["reminded"]:
+                    self.speak(
+                        f"You have missed reminder: {', '.join(reminder['message'])}"
+                    )
+                    reminder["reminded"] = True  # Mark as reminded
+                    changes = True
+
+            # Save changes back to the file
+            if changes:
+                with open(self.reminder_file, "w") as file:
+                    json.dump(data, file, indent=4)
+
+            # Call filter_reminders to remove outdated entries
+            self.filter_reminders()
+
+            time.sleep(1)  # Check reminders every second
+
         except Exception as e:
             print(f"An error occurred: {e}")
 
@@ -904,12 +953,14 @@ class ReminderHandle:
 
 class ScheduleHandle:
 
-    def __init__(self, recognizer, speech_engine):
+    def __init__(self):
         self.schedule_file = os.path.join(
             os.path.dirname(__file__), "data", "schedule.json"
         )
-        self.recognizer = recognizer
-        self.speech_engine = speech_engine
+        self.root = tk.Tk()
+        self.gui = VoiceAssistantGUI(self.root)
+        self.se = SpeechEngine()
+        self.recognizer = VoiceRecognition(self.gui)
 
     def addSchedule(self, query):
         """

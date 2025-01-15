@@ -1,46 +1,31 @@
 {
-    "alarms": [
-        {
-            "id": "A_1cef13",
-            "ringAlarm": [
-                7,
-                0
-            ],
-            "label": "wake up!!!",
-            "day": [
-                "TODAY"
-            ],
-            "repeat": "once",
-            "ringed": 0,
-            "delete": false
-        },
-        {
-            "id": "A_59c92c",
-            "ringAlarm": [
-                9,
-                15
-            ],
-            "label": "koleg time",
-            "day": [
-                "TODAY"
-            ],
-            "repeat": "once",
-            "ringed": 0,
-            "delete": false
-        },
-        {
-            "id": "A_a0a2c8",
-            "ringAlarm": [
-                20,
-                20
-            ],
-            "label": "study time",
-            "day": [
-                "TODAY"
-            ],
-            "repeat": "daily",
-            "ringed": 1,
-            "delete": false
-        }
-    ]
+  "alarms": [
+    {
+      "id": "A_1cef13",
+      "ringAlarm": [7, 0],
+      "label": "wake up!!!",
+      "day": ["TODAY"],
+      "repeat": "once",
+      "ringed": 0,
+      "delete": false
+    },
+    {
+      "id": "A_59c92c",
+      "ringAlarm": [9, 15],
+      "label": "koleg time",
+      "day": ["TODAY"],
+      "repeat": "once",
+      "ringed": 0,
+      "delete": false
+    },
+    {
+      "id": "A_a0a2c8",
+      "ringAlarm": [20, 20],
+      "label": "study time",
+      "day": ["TODAY"],
+      "repeat": "daily",
+      "ringed": 1,
+      "delete": false
+    }
+  ]
 }
