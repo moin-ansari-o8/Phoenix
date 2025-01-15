@@ -1,3 +1,0 @@
-pip install pipwin
-python -m pipwin install pyaudio
-pip install SpeechRecognition
