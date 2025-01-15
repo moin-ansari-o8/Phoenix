@@ -16,9 +16,9 @@ import webbrowser
 from plyer import notification
 from pytube import YouTube, Search
 import psutil
+from difflib import SequenceMatcher
 import pyaudio
 import wave
-import pywhatkit as kit
 import tkinter as tk
 from tkinter import Toplevel
 import tkinter.messagebox
@@ -26,8 +26,6 @@ from PIL import Image, ImageTk
 from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QVBoxLayout
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPainter, QBrush, QColor, QFont
-
-# from TimeBased import TimerHandle, ReminderHandle, AlarmHandle, ScheduleHandle
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 temp_stdout = sys.stdout
@@ -38,22 +36,38 @@ sys.stdout.close()
 sys.stdout = temp_stdout
 
 
-engine = pyttsx3.init("sapi5")
-voices = engine.getProperty("voices")
-engine.setProperty("voice", voices[1].id)
-engine.setProperty("rate", 174)
+class SpeechEngine:
 
+    def __init__(self):
+        self.engine = pyttsx3.init("sapi5")
+        voices = self.engine.getProperty("voices")
+        self.engine.setProperty("voice", voices[1].id)
+        self.engine.setProperty("rate", 174)
+        self.lock = threading.Lock()
 
-def speak(audio):
-    replacements = ["boss", "my lord"]
-    for punctuation in ["", "?", "!", ".", " "]:
-        if f"sir{punctuation}" in audio:
-            replacement = random.choice(replacements)
-            audio = audio.replace(f"sir{punctuation}", f"{replacement}{punctuation}")
-            break
-    engine.say(audio)
-    print(f"$ : {audio}")
-    engine.runAndWait()
+    def speak(self, audio):
+        """
+        Thread-safe method to handle text-to-speech.
+        """
+        with self.lock:
+            replacements = ["boss", "my lord", "commander", "captain"]
+            for punctuation in ["", "?", "!", ".", " "]:
+                if f"sir{punctuation}" in audio:
+                    replacement = random.choice(replacements)
+                    audio = audio.replace(
+                        f"sir{punctuation}", f"{replacement}{punctuation}"
+                    )
+                    break
+            self.engine.say(audio)
+            print(f"$ : {audio}")
+            self.engine.runAndWait()
+            return
+
+    def threadedSpeak(self, audio):
+        """
+        Starts a thread to call the `speak` method.
+        """
+        threading.Thread(target=self.speak, args=(audio,)).start()
 
 
 class VoiceAssistantGUI:
@@ -187,12 +201,7 @@ class Utility:
     current_dir = os.path.dirname(__file__)
     SONGS_FILE = os.path.join(current_dir, "data", "songs.txt")
 
-    def __init__(
-        self,
-        speech_engine,
-        voice_recognition,
-        sleep_time=1,
-    ):
+    def __init__(self, speech_engine, voice_recognition, sleep_time=1):
         self.speech_engine = speech_engine
         self.voice_recognition = voice_recognition
         self.sleep_time = sleep_time
@@ -1264,7 +1273,17 @@ class Utility:
         pg.press(prs)
 
     def rP(self):
-        rply = ["I'm on it sir", "On it sir", "Roger that sir", "as you speak sir"]
+        rply = [
+            "I'm on it sir",
+            "On it sir",
+            "as you speak sir",
+            "Okay-dokay, let’s rock!",
+            "You got it!",
+            "Sure thing, sir!",
+            "Roger that, sir!",
+            "you got it, sir!",
+            "Affirmative, moving on!",
+        ]
         return random.choice(rply)
 
     def restarT(self):
@@ -1363,7 +1382,7 @@ class Utility:
             self.speak("What do I search, sir?")
             sng = self.take_command().lower()
             self.speak(f"Starting {sng}")
-            kit.playonyt(sng)
+            self.play_song(sng)
         except Exception as e:
             print("Internet error occurred.")
 
@@ -1756,11 +1775,6 @@ class RoundedMessageBox(QDialog):
         painter.drawRoundedRect(self.rect(), 15, 15)
 
 
-def music(Utility):
-    Utility.intrOmsC()
-    Utility.rockMsc(0.5)
-
-
 class TimeBasedFunctionality:
 
     def __init__(self):
@@ -1887,61 +1901,51 @@ class TimeBasedFunctionality:
         print(f"Timer set successfully! Timer-ID:{timer_id}.")
 
 
+def music(Utility):
+    Utility.intrOmsC()
+    Utility.rockMsc(0.5)
+
+
+def compareSent(main_query, list_of_strings):
+    """
+    Compares a main string with a list of strings and returns True if the similarity
+    probability is greater than or equal to 90% for any string in the list.
+
+    Args:
+        main_query (str): The main string to compare.
+        list_of_strings (list): A list of strings to compare with the main string.
+
+    Returns:
+        bool: True if any string in the list matches the main string with >=90% similarity, else False.
+    """
+    if not main_query or not list_of_strings:
+        raise ValueError("Both main_query and list_of_strings must be non-empty.")
+
+    def calculate_similarity(str1, str2):
+        """
+        Calculate the similarity ratio between two strings.
+        """
+        return SequenceMatcher(None, str1, str2).ratio()
+
+    match_found = False
+    for string in list_of_strings:
+        probability = calculate_similarity(main_query, string) * 100
+        print(
+            f"Comparing '{main_query}' with '{string}': {probability:.2f}% similarity"
+        )
+        if probability >= 65:
+            match_found = True
+    return match_found
+
+
 if __name__ == "__main__":
-    # root = tk.Tk()
-    # gui = VoiceAssistantGUI(root)
-    # # speech_engine = SpeechEngine()
-    # recognizer = VoiceRecognition(gui)
-    # timer = TimerHandle()
-    # schedule = ScheduleHandle()
-    # reminder = ReminderHandle()
-    # alarm = AlarmHandle()
-    # utils = Utility(speech_engine, recognizer)
-    speak("hello")
-    # utils.alarm.viewAlarm()
-    # gui.show_listen_image()
-    # while True:
-    #     recognizer.take_command()
-    # # Example usage
-    # # utils.speak("Utility functions are ready.")
-    # # utils.calC()  # Example for calculator function
-    # # utils.press("enter", 3)  # Example for press function
-    # # utils.bluetooth()  # Example for Bluetooth toggle
-    # # utils.hotspot()  # Example for hotspot toggle
-    # # utils.screenshot()  # Example for hotspot toggle
-    # # utils.snG()  # Example for hotspot toggle
-    # # utils.desKtoP_4()  # Example for hotspot toggle
-    # # utils._countdown_timer(5)
-    # utils.set_timer()
-    # while True:
-
-    # # utils.custom_message("Phoenix:","Time's up")
-    # app = QApplication(sys.argv)
-
-    # # Display the custom message box
-    # message_box = RoundedMessageBox(
-    #     "Custom Title", "This is a custom message box with rounded corners!"
-    # )
-    # message_box.exec_()
-    # # # print(utils._parse_time("1341"))
-    # # sleep(5)
-
+    root = tk.Tk()
+    gui = VoiceAssistantGUI(root)
+    speech_engine = SpeechEngine()
+    recognizer = VoiceRecognition(gui)
+    utils = Utility(speech_engine, recognizer)
+    main_query = "i select game1"
+    list_to_compare = ["game1", "game1 i select", "i choosel game1"]
+    result = compareSent(main_query, list_to_compare)
+    print("Match found:", result)
     print("back to main")
-    #     sleep(1)
-
-    # music(Utility)
-
-    # print(("second".isdigit()))
-    # tbf = TimeBasedFunctionality()
-    # # tbf.setTimer("Please set timer for 1 hour 30 minutes and 45 seconds.")
-    # # tbf.setTimer("Set timer for 5 minutes.")
-    # # tbf.setTimer("Set timer for 60 seconds.")
-
-    # tbf.remove_timer() # Remove timers where ringed=true
-    # tbf = TimeBasedFunctionality()
-    # tbf.setTimer("Set timer for 10 seconds.")
-    # tbf.setTimer("Set timer for 75 seconds.")
-    # tbf.setTimer("Set timer for 89 minutes.")
-    # tbf.remove_timer() # Remove timers where ringed=true
-
-    # tbf.checkTimer()

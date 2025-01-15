@@ -43,35 +43,19 @@
 # # queries = list(map(lambda x: x.lower().strip(), query.split("for")))
 # queries = [q.lower().strip() for q in query.split("for")]
 # print(queries)
-from rich.console import Console
-from rich.progress import Spinner
-from time import sleep
-import os
+# -----------------------------------------------------------------------------------------------
+import json
 
+file = r"E:\STDY\GIT_PROJECTS\Phoenix\data\intents.json"
 
-def phoenix_startup():
-    console = Console()
-
-    # Clear the terminal
-    os.system("cls" if os.name == "nt" else "clear")
-
-    # Define the startup message
-    title = "{ ◐  ◓  ◑  ◒ }  Phoenix  { ◐  ◓  ◑  ◒ }"
-
-    # Animate the spinner with a beautiful design
-    with console.status(
-        "[bold cyan]Starting Phoenix...",
-        spinner="circle",
-        spinner_style="bright_magenta",
-    ) as status:
-        for i in range(10):  # Simulate loading steps
-            console.print(f"[bright_magenta]{title}")
-            sleep(0.2)  # Small delay to simulate progress
-            os.system("cls" if os.name == "nt" else "clear")
-
-    # Print final startup message
-    console.print(f"[bold green]{title}", style="bold green on black")
-
-
-# Run the startup animation
-phoenix_startup()
+with open(file, "r") as f:
+    data = json.load(f)
+    if not data.get("intents"):
+        print("No intents found.")
+    else:
+        # Find tags with exactly one response and print "tag": "response"
+        print("[")
+        for entry in data["intents"]:
+            if len(entry["responses"]) == 1:
+                print(f'"{entry["tag"]}",')
+        print("]")

@@ -13,7 +13,7 @@
         "open battery checker",
         "launch battery"
       ],
-      "responses": ["Btrychk"]
+      "responses": ["btrychk"]
     },
     {
       "tag": "tmchk",
@@ -160,7 +160,16 @@
     },
     {
       "tag": "hi",
-      "patterns": ["hii", "hey", "hello", "hei", "hola", "heya"],
+      "patterns": [
+        "hii",
+        "hey",
+        "hello",
+        "hei",
+        "hola",
+        "heya",
+        "hello there",
+        "hi there"
+      ],
       "responses": [
         "Hello sir!",
         "Hello , How are you sir? ",
@@ -478,17 +487,6 @@
       "responses": ["Thank you sir . ", "Thanks Master"]
     },
     {
-      "tag": "commandreply",
-      "patterns": [],
-      "responses": [
-        "Alright sir!",
-        "Okay sir . ",
-        "I'm on it sir . ",
-        "Roger that sir . ",
-        "Roger sir . "
-      ]
-    },
-    {
       "tag": "sleepbye",
       "patterns": [
         "bye",
@@ -547,10 +545,13 @@
         "welldone"
       ],
       "responses": [
-        "No problem sir!",
-        "Oh! it's my duty sir . ",
-        "Okay sir!",
-        "Oh! It's my work sir . "
+        "K!",
+        "Alrighty!",
+        "Okie-dokie!",
+        "Okie!",
+        "Okie-dokie, artichokie!",
+        "Cool beans!",
+        "Fine by me!"
       ]
     },
     {
@@ -873,8 +874,98 @@
 
     {
       "tag": "setReminder",
-      "patterns": ["set reminder for", "set a reminder for", "set an reminder"],
+      "patterns": [
+        "set reminder for",
+        "set a reminder for",
+        "set an reminder",
+        "remind me to",
+        "create a reminder for",
+        "add a reminder",
+        "schedule a reminder"
+      ],
       "responses": ["setReminder"]
+    },
+    {
+      "tag": "viewReminder",
+      "patterns": [
+        "view reminders",
+        "view reminder",
+        "show me reminders",
+        "list out reminders",
+        "what are my reminders",
+        "show my reminders",
+        "list my reminders"
+      ],
+      "responses": ["viewReminder"]
+    },
+    {
+      "tag": "dltReminder",
+      "patterns": [
+        "delete reminder",
+        "remove reminder",
+        "delete a reminder",
+        "remove a reminder",
+        "delete my reminder"
+      ],
+      "responses": ["dltReminder"]
+    },
+    {
+      "tag": "editReminder",
+      "patterns": [
+        "edit reminder",
+        "modify reminder",
+        "change reminder",
+        "update reminder",
+        "update my reminder",
+        "change my reminder",
+        "modify my reminder"
+      ],
+      "responses": ["editReminder"]
+    },
+    {
+      "tag": "addSchedule",
+      "patterns": [
+        "add schedule",
+        "create schedule",
+        "set schedule",
+        "make a schedule",
+        "schedule an event",
+        "add an event to my schedule"
+      ],
+      "responses": ["addSchedule"]
+    },
+    {
+      "tag": "deleteSchedule",
+      "patterns": [
+        "delete schedule",
+        "remove schedule",
+        "delete an event from my schedule",
+        "remove an event from my schedule",
+        "delete an event"
+      ],
+      "responses": ["deleteSchedule"]
+    },
+    {
+      "tag": "viewSchedule",
+      "patterns": [
+        "view schedule",
+        "show me the schedule",
+        "what's my schedule",
+        "tell me my schedule",
+        "what is my schedule",
+        "list out my schedule"
+      ],
+      "responses": ["viewSchedule"]
+    },
+    {
+      "tag": "editSchedule",
+      "patterns": [
+        "edit schedule",
+        "modify the schedule",
+        "change schedule",
+        "update schedule"
+      ],
+      "responses": ["editSchedule"]
     },
     {
       "tag": "muteSpeaker",

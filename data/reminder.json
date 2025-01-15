@@ -20,8 +20,16 @@
       "id": "R_655510",
       "date": "18-01-25",
       "day": "ST",
-      "time": "09:00",
-      "message": ["chilling majja", "chilling"],
+      "time": "06:00",
+      "message": "what message!!",
+      "reminded": false
+    },
+    {
+      "id": "R_371172",
+      "date": "16-01-25",
+      "day": "TH",
+      "time": "12:00",
+      "message": "skdf",
       "reminded": false
     }
   ]

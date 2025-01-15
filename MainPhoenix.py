@@ -10,7 +10,7 @@ import subprocess
 import keyboard
 import webbrowser
 import threading
-
+from difflib import SequenceMatcher
 import os
 import pywhatkit as kit
 from HelperPhoenix import SpeechEngine, VoiceAssistantGUI, VoiceRecognition, Utility
@@ -33,7 +33,13 @@ class PhoenixAssistant:
         )
         self.clear_terminal_thread.start()
 
-    def execute_action(self, tag, query):
+    def _calculate_similarity(self, str1, str2):
+        """
+        Calculate the similarity ratio between two strings.
+        """
+        return SequenceMatcher(None, str1, str2).ratio()
+
+    def _execute_action(self, tag, query):
         common_tags = {
             self.utility.handle_time_based_greeting: (
                 "morning",
@@ -99,7 +105,6 @@ class PhoenixAssistant:
                 query, response
             ),
             "setTimer": lambda x: self.utility.setTimer(x),
-            # "viewTimer": self.utility.viewTimer(),
             "setfocus": self.utility.set_focus,
             "suggestsong": self.utility.suggest_song,
             "swtchTab": self.utility.switch_tab,
@@ -124,8 +129,24 @@ class PhoenixAssistant:
             else:
                 action_map[tag]()
 
-    def get_best_matching_intent(self, sent):
+    def _getSentProbability(self, main_query, list_of_strings):
         """
+        Compares a main string with a list of strings and returns the highest similarity probability.
+        """
+        if not main_query or not list_of_strings:
+            raise ValueError("Both main_query and list_of_strings must be non-empty.")
+        max_probability = 0
+        for string in list_of_strings:
+            probability = self._calculate_similarity(main_query, string) * 100
+            max_probability = max(max_probability, probability)
+        return max_probability
+
+    def _get_best_matching_intenty(self, sent):
+        """
+        This function compares the input sentence with predefined patterns associated with different tags
+        to find the best matching intent. It calculates the overlap between words in the input sentence
+        and words in the patterns, and selects the tag with the highest overlap.
+
         Find the best matching intent for the given sentence using the tag_to_patterns dictionary.
 
         Args:
@@ -134,23 +155,32 @@ class PhoenixAssistant:
         Returns:
             dict: A dictionary with the best matching tag and a response, or None if no match is found.
         """
-        query_words = set(sent.lower().split())
-        max_overlap = 0
+        "\n        Find the best matching intent for a given sentence based on the highest similarity probability.\n        "
         best_tag = None
-        for tag, pattern_words in self.tag_to_patterns.items():
-            overlap = len(query_words & pattern_words)
-            if overlap > max_overlap:
-                max_overlap = overlap
+        highest_probability = 0
+        for tag, patterns in self.tag_to_patterns.items():
+            probability = self._getSentProbability(sent, patterns)
+            if probability > highest_probability:
+                highest_probability = probability
                 best_tag = tag
         if best_tag:
-            response = self.get_response(best_tag)
+            response = self._get_response(best_tag)
             return {"tag": best_tag, "response": response}
         return None
 
-    def get_response(self, tag):
+    def _get_response(self, tag):
         for intent in self.intents:
             if intent["tag"] == tag:
                 return random.choice(intent["responses"])
+
+    def clear_terminal_periodically(self):
+        """
+        Clears the terminal every 5 minutes.
+        """
+        os.system("cls" if os.name == "nt" else "clear")
+        while True:
+            sleep(300)
+            os.system("cls" if os.name == "nt" else "clear")
 
     def handle_command(self, sent):
         if sent:
@@ -203,45 +233,42 @@ class PhoenixAssistant:
         if self.chat:
             self.input_chat()
 
-    def clear_terminal_periodically(self):
-        """
-        Clears the terminal every 5 minutes.
-        """
-        os.system("cls" if os.name == "nt" else "clear")  # Clear the terminal
-        while True:
-            sleep(300)  # Wait for 5 minutes
-            os.system("cls" if os.name == "nt" else "clear")  # Clear the terminal
-
     def load_intents(self, file_path):
         with open(file_path, "r") as file:
             return json.load(file)["intents"]
 
     def main(self, sent):
         no_response_tag = [
+            "add",
+            "addSchedule",
             "addsong",
-            "adjustBrightness",
-            "afternoon",
-            "backward",
+            "backspace",
             "battery",
-            "close",
+            "bckgrnd",
+            "btrychk",
             "dateday",
+            "deleteSchedule",
+            "div",
+            "dltAlarm",
+            "dltReminder",
             "dltsong",
-            "evening",
-            "forward",
+            "down",
+            "doyouknowabout",
+            "editReminder",
+            "editSchedule",
+            "enter",
             "fullscreen",
             "hide",
+            "left",
             "maximize",
             "minimize",
-            "morning",
-            "open",
-            "pchibernate",
-            "pcrestart",
-            "pcshutdown",
-            "pcsleep",
+            "modulo",
+            "mul",
             "playpause",
             "playsong",
             "press",
-            "random",
+            "right",
+            "saytime",
             "searchbrowser",
             "searchinsta",
             "searchyoutube",
@@ -249,26 +276,31 @@ class PhoenixAssistant:
             "select",
             "setAlarm",
             "setReminder",
-            "setReminder",
             "setTimer",
-            "setfocus",
+            "sub",
             "suggestsong",
             "suggestsong",
-            "swtchTab",
-            "time",
+            "tmchk",
             "type",
+            "up",
+            "viewAlarm",
+            "viewReminder",
+            "viewSchedule",
+            "viewTimer",
             "whatis",
+            "whatyouknowabout",
             "whois",
+            "wikiabout",
         ]
         query = self.remove_phoenix_except_folder(sent)
-        matched_intent = self.get_best_matching_intent(query)
+        matched_intent = self._get_best_matching_intenty(query)
         if matched_intent:
             tag = matched_intent["tag"]
             print(tag)
             self.tag_response = matched_intent["response"]
             if tag not in no_response_tag:
                 self.speak(self.tag_response)
-            self.execute_action(tag, sent)
+            self._execute_action(tag, sent)
             self.loop = True
         else:
             self.loop = False
@@ -285,12 +317,7 @@ class PhoenixAssistant:
         """
         tag_to_patterns = {}
         for intent in intents:
-            tag = intent["tag"]
-            patterns = intent["patterns"]
-            word_set = set()
-            for pattern in patterns:
-                word_set.update(pattern.lower().split())
-            tag_to_patterns[tag] = word_set
+            tag_to_patterns[intent["tag"]] = intent["patterns"]
         return tag_to_patterns
 
     def remove_phoenix_except_folder(self, sent):
@@ -315,6 +342,5 @@ if __name__ == "__main__":
     speech_engine = SpeechEngine()
     recognizer = VoiceRecognition(gui)
     asutils = Utility(speech_engine, recognizer)
-    # timer = TimerHandle()
     phnx = PhoenixAssistant(asutils)
     phnx.input_voice()

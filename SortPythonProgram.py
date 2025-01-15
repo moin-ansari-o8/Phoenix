@@ -53,11 +53,11 @@ def sort_methods_and_dicts_in_file(file_path):
     for node in ast.iter_child_nodes(tree):
         if isinstance(node, ast.ClassDef):
             node.body = process_body(node.body)
-    new_file_path = os.path.splitext(file_path)[0] + "_sorted.py"
+    new_file_path = os.path.splitext(file_path)[0] + "_sort.py"
     with open(new_file_path, "w") as f:
         f.write(ast.unparse(tree))
     print(f"Sorted file created: {new_file_path}")
 
 
-file_path = "filename"  # ex:'z:\\GIT_PROJECTS\\SortPythonProgram.py'
+file_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\TimeBased.py"
 sort_methods_and_dicts_in_file(file_path)
