@@ -2,28 +2,104 @@
   "intents": [
     {
       "tag": "open",
-      "patterns": ["open", "launch"],
-      "responses": ["Opening", "Launching", "Starting"]
+      "patterns": [" open ", " launch ", " start "],
+      "entities": [
+        "brave",
+        "brave browser",
+        "next app",
+        "next window",
+        "next tab",
+        "nexttab",
+        "nextapp",
+        "nextwindow",
+        "new tab",
+        "tasks",
+        "tasklists",
+        "taskslists",
+        "task lists",
+        "tasks lists",
+        "task list",
+        "notification",
+        "widget",
+        "music",
+        "code",
+        "vs code",
+        "v s code",
+        "browser",
+        "arc browser",
+        "movies",
+        "movies folder",
+        "e drive",
+        "c drive",
+        "d drive",
+        "f drive",
+        "g drive",
+        "study",
+        "study desktop",
+        "alpha",
+        "alpha desktop",
+        "trash",
+        "trash desktop",
+        "extra",
+        "extra desktop",
+        "armoury",
+        "armoury crate",
+        "crate",
+        "file explorer",
+        "explorer",
+        "file",
+        "phoenix folder",
+        "ai folder",
+        "a i folder",
+        "quick",
+        "quick configuration",
+        "gpt",
+        "chat gpt",
+        "chatgpt",
+        "and",
+        "android studio",
+        "c m d",
+        "cmd",
+        "insta",
+        "instagram",
+        "snap",
+        "snapchat",
+        "sticky notes",
+        "whatsapp"
+      ],
+      "responses": ["Launching", "Starting", "Opening"]
     },
     {
-      "tag": "btrychk",
-      "patterns": [
-        "open battery checking program",
-        "launch battery checking program",
-        "open battery checker",
-        "launch battery"
+      "tag": "close",
+      "patterns": ["close"],
+      "entities": [
+        " tab ",
+        "all python programs",
+        "all python program",
+        "background python programs",
+        "background python program",
+        " it ",
+        " window ",
+        "hidden program"
       ],
-      "responses": ["btrychk"]
+      "responses": ["Closing", "Starting", "Opening"]
     },
     {
-      "tag": "tmchk",
+      "tag": "conversation",
       "patterns": [
-        "open time checking program",
-        "launch time checking program",
-        "open time checker",
-        "launch time"
+        "let's have a conversation",
+        "talk to me",
+        "let's chat",
+        "chat with me",
+        "have a conversation with me"
       ],
-      "responses": ["Tmchk"]
+      "responses": [
+        "Sure, what would you like to talk about?",
+        "I'm here to chat. What's on your mind?",
+        "Let's have a conversation. What's up?",
+        "I'm all ears. Tell me what's on your mind.",
+        "Let's chat. How can I assist you today?"
+      ]
     },
     {
       "tag": "weather",
@@ -678,7 +754,13 @@
         "what is the date",
         "tell me the date",
         "what is today",
-        "tell me about today"
+        "tell me about today",
+        "what's the day today",
+        "what day is it",
+        "what's today's date",
+        "tell me today's date",
+        "what is the date today",
+        "what day is today"
       ],
       "responses": ["dateday"]
     },
@@ -786,11 +868,6 @@
       "tag": "changetab",
       "patterns": ["change tab"],
       "responses": ["on it sir ", "okay sir "]
-    },
-    {
-      "tag": "newtab",
-      "patterns": ["open new tab", "start new tab", "new tab"],
-      "responses": ["On it sir ", "Okay sir "]
     },
 
     {

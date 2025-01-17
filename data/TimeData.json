@@ -1,56 +1,37 @@
 {
-    "alarms": [
-        {
-            "id": "A_59c92c",
-            "ringAlarm": [
-                23,
-                26
-            ],
-            "label": "koleg time",
-            "day": [
-                "TODAY"
-            ],
-            "repeat": "daily",
-            "ringed": 0,
-            "delete": false
-        },
-        {
-            "id": "A_a0a2c8",
-            "ringAlarm": [
-                23,
-                46
-            ],
-            "label": "study time",
-            "day": [
-                "WE"
-            ],
-            "repeat": "daily",
-            "ringed": 2,
-            "delete": false
-        }
-    ],
-    "timers": [],
-    "reminders": [],
-    "schedule": [
-        {
-            "time": "06:30",
-            "message": "Time for workout."
-        },
-        {
-            "time": "07:30",
-            "message": "Time for a bath."
-        },
-        {
-            "time": "08:30",
-            "message": "have a breakfast"
-        },
-        {
-            "time": "22:18",
-            "message": "koleg time"
-        },
-        {
-            "time": "22:53",
-            "message": "eat"
-        }
-    ]
+  "alarms": [
+    {
+      "id": "A_59c92c",
+      "ringAlarm": [10, 2],
+      "label": "koleg time",
+      "day": ["TODAY"],
+      "repeat": "daily",
+      "ringed": 0,
+      "delete": false
+    }
+  ],
+  "timers": [],
+  "reminders": [],
+  "schedule": [
+    {
+      "time": "06:30",
+      "message": "Time for workout."
+    },
+    {
+      "time": "07:30",
+      "message": "Time for a bath."
+    },
+    {
+      "time": "08:30",
+      "message": "have a breakfast"
+    },
+    {
+      "time": "22:18",
+      "message": "koleg time"
+    },
+    {
+      "time": "10:03",
+      "message": "go to sleep"
+    }
+  ]
 }
