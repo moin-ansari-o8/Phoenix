@@ -121,7 +121,7 @@
       "patterns": [
         "what's the weather",
         "tell me the weather",
-        "weather forecast"
+        "weather forecast","it's good"
       ],
       "responses": [
         "The weather is sunny",
