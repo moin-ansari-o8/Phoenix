@@ -1,16 +1,24 @@
 import json
 import re
 import random
+import tkinter as tk
 from time import sleep
 import threading
 from difflib import SequenceMatcher
 import os
-from HelperPHNX import Utility, OpenAppHandler
+from HelperPHNX import (
+    Utility,
+    OpenAppHandler,
+    CloseAppHandler,
+    VoiceAssistantGUI,
+    VoiceRecognition,
+    SpeechEngine,
+)
 
 
 class PhoenixAssistant:
 
-    def __init__(self, utility):
+    def __init__(self, utility, open_handler, close_handler):
         self.AGREE = ["yes", "open", "yeah", "start", "launch"]
         current_dir = os.path.dirname(__file__)
         self.intents_file_path = os.path.join(current_dir, "data", "intents.json")
@@ -20,7 +28,8 @@ class PhoenixAssistant:
         self.loop = False
         self.voice = False
         self.chat = False
-        self.opn = OpenAppHandler()
+        self.opn = open_handler
+        self.clse = close_handler
         # self.clear_terminal_thread = threading.Thread(
         #     target=self.clear_terminal_periodically, daemon=True
         # )
@@ -82,7 +91,7 @@ class PhoenixAssistant:
             "minimize": self.utility.minimize_window,
             "muteSpeaker": self.utility.mute_speaker,
             "newtab": self.utility.new_tab,
-            "open": lambda query, response: self.utility.open_app(query, response),
+            "openelse": lambda query: self.utility.open_else(query),
             "pchibernate": self.utility.hibernatE,
             "pcrestart": self.utility.restarT,
             "pcshutdown": self.utility.shutD,
@@ -113,8 +122,10 @@ class PhoenixAssistant:
                 "adjustBrightness",
                 "changetab",
                 "playsong",
+                "playpause",
                 "type_text",
                 "setTimer",
+                "openelse",
             ]:
                 action_map[tag](query)
             elif tag in ["open", "close", "select"]:
@@ -151,19 +162,19 @@ class PhoenixAssistant:
             dict: A dictionary with the best matching tag and a response, or None if no match is found.
         """
         "\n        Find the best matching intent for a given sentence based on the highest similarity probability.\n        "
-        best_tag = None
-        highest_probability = 0
-        for tag, patterns in self.tag_to_patterns.items():
-            probability = self._getSentProbability(sent, patterns)
-            if probability > highest_probability:
-                highest_probability = probability
-                best_tag = tag
-                print(f"{tag} : {probability}")
-        final_probability = float(highest_probability)
-        if final_probability > 80:
-            if best_tag:
-                response = self._get_response(best_tag)
-                return {"tag": best_tag, "response": response}
+        best_tag, highest_probability = max(
+            (
+                (tag, self._getSentProbability(sent, patterns))
+                for tag, patterns in self.tag_to_patterns.items()
+            ),
+            key=lambda x: x[1],
+            default=(None, 0),
+        )
+
+        if best_tag == "openelse" or best_tag == "playsong" or highest_probability > 80:
+            response = self._get_response(best_tag)
+            return {"tag": best_tag, "response": response}
+
         return None
 
     def _get_response(self, tag):
@@ -220,6 +231,7 @@ class PhoenixAssistant:
                 break
             if "phoenix" in sent and self.loop == False:
                 sent = self.remove_phoenix_except_folder(sent)
+                print(sent)
                 if sent:
                     self.handle_command(sent)
             elif self.loop == True:
@@ -262,6 +274,7 @@ class PhoenixAssistant:
             "minimize",
             "modulo",
             "mul",
+            "openelse",
             "playpause",
             "playsong",
             "press",
@@ -290,13 +303,19 @@ class PhoenixAssistant:
             "whois",
             "wikiabout",
         ]
+        query_main = self.remove_phoenix_except_folder(sent)
         query = self.remove_phoenix_except_folder(sent)
         keywords = ["open", "launch", "start"]
-
         for keyword in keywords:
             if keyword in query:
                 self.opn.process_query(query)
                 return
+        if "close" in query:
+            self.clse.process_query(query)
+            return
+        match = re.search(r"play (.+?) song", query)
+        if match:
+            query = re.sub(r"play .+? (song|music)", "play {this} song", query)
         matched_intent = self._get_best_matching_intenty(query)
         if matched_intent:
             tag = matched_intent["tag"]
@@ -304,7 +323,7 @@ class PhoenixAssistant:
             self.tag_response = matched_intent["response"]
             if tag not in no_response_tag:
                 self.speak(self.tag_response)
-            self._execute_action(tag, sent)
+            self._execute_action(tag, query_main)
             self.loop = True
         else:
             self.loop = False
@@ -341,6 +360,12 @@ class PhoenixAssistant:
 
 
 if __name__ == "__main__":
-    asutils = Utility()
-    phnx = PhoenixAssistant(asutils)
+    root = tk.Tk()
+    gui = VoiceAssistantGUI(root)
+    recog = VoiceRecognition(gui)
+    spk = SpeechEngine()
+    asutils = Utility(reco=recog, spk=spk)
+    opn = OpenAppHandler(asutils)
+    clse = CloseAppHandler(asutils)
+    phnx = PhoenixAssistant(asutils, open_handler=opn, close_handler=clse)
     phnx.input_voice()

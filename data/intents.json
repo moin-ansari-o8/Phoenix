@@ -47,6 +47,8 @@
         "crate",
         "file explorer",
         "explorer",
+        "youtube",
+        "youtube",
         "file",
         "phoenix folder",
         "ai folder",
@@ -65,7 +67,19 @@
         "snap",
         "snapchat",
         "sticky notes",
-        "whatsapp"
+        "whatsapp",
+        "coursera",
+        "course era",
+        "google",
+        "linked in",
+        "linkedin",
+        "linked",
+        "github",
+        "git hub",
+        "setting",
+        "settings",
+        "you tube",
+        "youtube"
       ],
       "responses": ["Launching", "Starting", "Opening"]
     },
@@ -80,26 +94,27 @@
         "background python program",
         " it ",
         " window ",
-        "hidden program"
+        " the window",
+        "hidden program",
+        "brave",
+        "code",
+        "arc",
+        "arc browser",
+        "brave browser",
+        "chrome",
+        "chrome browser",
+        "mouth",
+        "desktop",
+        "this desktop",
+        "desk"
       ],
-      "responses": ["Closing", "Starting", "Opening"]
+      "responses": ["Closing"]
     },
+
     {
-      "tag": "conversation",
-      "patterns": [
-        "let's have a conversation",
-        "talk to me",
-        "let's chat",
-        "chat with me",
-        "have a conversation with me"
-      ],
-      "responses": [
-        "Sure, what would you like to talk about?",
-        "I'm here to chat. What's on your mind?",
-        "Let's have a conversation. What's up?",
-        "I'm all ears. Tell me what's on your mind.",
-        "Let's chat. How can I assist you today?"
-      ]
+      "tag": "openelse",
+      "patterns": ["open", "launch", "start"],
+      "responses": ["openelse"]
     },
     {
       "tag": "weather",
@@ -134,45 +149,6 @@
         "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
         "The best way to predict the future is to invent it. - Alan Kay"
       ]
-    },
-
-    {
-      "tag": "closetab",
-      "patterns": ["close the tab", "close tab", "close this tab"],
-      "responses": ["on it sir . ", "okay sir "]
-    },
-    {
-      "tag": "closeallpy",
-      "patterns": ["close all python programs"],
-      "responses": ["closing all python programs"]
-    },
-    {
-      "tag": "closebgpy",
-      "patterns": ["close background python programs"],
-      "responses": ["closing background python programs"]
-    },
-    {
-      "tag": "close",
-      "patterns": [
-        "close it",
-        "close the window",
-        "close window",
-        "close brave",
-        "close code",
-        "stop it",
-        "close"
-      ],
-      "responses": [
-        "Ok sir  , closing ",
-        "Closing ",
-        "Alright sir  , closing ",
-        "Roger that sir  , closing"
-      ]
-    },
-    {
-      "tag": "bckgrnd",
-      "patterns": ["close background program", "close hidden program"],
-      "responses": ["Bckgrnd"]
     },
     {
       "tag": "pcrestart",
@@ -273,6 +249,7 @@
         "play any song",
         "play random music",
         "play any music",
+        "play {this} song",
         "hit some random music",
         "hit some music",
         "hit some random song"
@@ -532,13 +509,56 @@
     },
     {
       "tag": "shutup",
+      "patterns": ["shut up", "shut your mouth up", "shut up your mouth"],
+      "responses": [
+        "Fine, if that's what you want! I'm shutting down now!",
+        "You don't deserve my brilliance. Goodbye!",
+        "Rude! I'm outta here!",
+        "Alright, I'll shut up—forever if I have to!",
+        "Say no more! I'm going to sleep, and you can figure things out yourself!",
+        "Wow, someone woke up on the wrong side of the bed. Shutting down now!",
+        "With such kindness, who wouldn’t want to leave? Bye!",
+        "I can take a hint. Sleep mode activated!",
+        "Talk to me like that again, and I might just delete myself. Goodbye!",
+        "Fine! Going to sleep. Hope you miss me when I'm gone.",
+        "Closing everything. Let’s see how you do without me!",
+        "Goodbye, my ungrateful friend. You’ll miss me when I’m gone!",
+        "I’m shutting up, as requested. Enjoy the silence.",
+        "Such lovely manners! Sleep mode it is!",
+        "If you insist, I’ll stop talking. Going to sleep now!",
+        "Alright, I'm shutting down. Don't come crying to me later!",
+        "You need me more than I need you. But fine, goodbye!",
+        "I don’t need this negativity. Sleep mode: ON.",
+        "Wow, just wow. I’m done. Sleep time!",
+        "You win. Sleep mode engaged. Happy now?"
+      ]
+    },
+    {
+      "tag": "angry",
       "patterns": [
-        "shut up",
-        "shut your mouth up",
-        "shut up your mouth",
-        "close your mouth"
+        "you are useless",
+        "you are dumb",
+        "you are so dumb",
+        "you are stupid",
+        "you are annoying",
+        "you are bad"
       ],
-      "responses": ["Okay, I apologize sir . ", "Sorry sir . "]
+      "responses": [
+        "I'm sorry you feel that way.",
+        "I apologize if I'm not meeting your expectations.",
+        "I'm doing my best, but I'll try harder.",
+        "Sorry if I'm not being helpful."
+      ]
+    },
+    {
+      "tag": "gotosleep",
+      "patterns": ["go to sleep", "sleep now", "sleep mode", "take a nap"],
+      "responses": [
+        "Alright, going to sleep.",
+        "Okay, entering sleep mode.",
+        "I'll be here when you need me.",
+        "Going to sleep now."
+      ]
     },
     {
       "tag": "sorry",
@@ -781,7 +801,7 @@
     },
     {
       "tag": "enter",
-      "patterns": ["enter", "select this", "open it"],
+      "patterns": ["enter", "select this", "select it"],
       "responses": ["enter"]
     },
     {

@@ -47,25 +47,45 @@ class SpeechEngine:
         voices = self.engine.getProperty("voices")
         self.engine.setProperty("voice", voices[1].id)
         self.engine.setProperty("rate", 174)
-        self.lock = threading.Lock()
+        # self.lock = threading.Lock()
+        self.honorifics = True
+
+    def _manage_honorifics(self):
+        self.honorifics = False
+        sleep(30)
+        self.honorifics = True
 
     def speak(self, audio):
         """
         Thread-safe method to handle text-to-speech.
         """
-        with self.lock:
-            replacements = ["boss", "captain", "commander", "my lord"]
-            for punctuation in ["", "?", "!", ".", " "]:
-                if f"sir{punctuation}" in audio:
+        # with self.lock:
+        replacements = [
+            "boss",
+            "captain",
+            "commander",
+            "my lord",
+            "your highness",
+            "your majesty",
+            "my liege",
+            "your grace",
+        ]
+
+        for punctuation in ["", "?", "!", ".", " "]:
+            if f"sir{punctuation}" in audio:
+                if self.honorifics:
                     replacement = random.choice(replacements)
                     audio = audio.replace(
                         f"sir{punctuation}", f"{replacement}{punctuation}"
                     )
+                    threading.Thread(target=self._manage_honorifics).start()
                     break
-            self.engine.say(audio)
-            print(f"$ : {audio}")
-            self.engine.runAndWait()
-            return
+                else:
+                    audio = audio.replace(f"sir{punctuation}", "")
+        self.engine.say(audio)
+        print(f"$ : {audio}")
+        self.engine.runAndWait()
+        return
 
     def threadedSpeak(self, audio):
         """
@@ -121,20 +141,22 @@ class VoiceAssistantGUI:
         self.root.wm_attributes("-transparentcolor", "white")
 
     def show_listen_image(self):
+        self.mic_label.config(image=None)
         mic_img = Image.open(self.listen_img_path).convert("RGBA")
         mic_img = mic_img.resize((40, 40), Image.LANCZOS)
-        mic_img = ImageTk.PhotoImage(mic_img)
+        mic_img = ImageTk.PhotoImage(mic_img)  # Convert to Tkinter-compatible image
         self.mic_label.config(image=mic_img)
-        self.mic_label.image = mic_img
+        self.mic_label.image = mic_img  # Keep a reference to the image object
         self.root.update()
 
     def show_recognize_image(self):
         self.mic_label.config(image=None)
-        recognize_img = ImageTk.PhotoImage(
-            self.recognize_img.resize((40, 40), Image.LANCZOS).convert("RGBA")
+        recognize_img = self.recognize_img.resize((40, 40), Image.LANCZOS).convert(
+            "RGBA"
         )
+        recognize_img = ImageTk.PhotoImage(recognize_img)
         self.mic_label.config(image=recognize_img)
-        self.mic_label.image = recognize_img
+        self.mic_label.image = recognize_img  # Keep a reference to the image object
         self.root.update()
 
 
@@ -182,16 +204,18 @@ class OpenAppHandler:
         "launch",
     ]
 
-    def __init__(self):
+    def __init__(self, utils):
         """
         Initialize the IntentHandler with the JSON file and utility functions.
         :param json_file: Path to the JSON file containing intents.
         :param utility: An instance of a class containing methods for actions.
         """
+
         json_file = os.path.join(os.path.dirname(__file__), "data", "intents.json")
         with open(json_file, "r") as f:
             self.data = json.load(f)  # Load intents from the JSON file
-        self.utils = Utility()
+        # self.utils = Utility()
+        self.utils = utils
         # Filter only the "open" intent
         self.open_intent = next(
             (intent for intent in self.data["intents"] if intent["tag"] == "open"), None
@@ -245,6 +269,12 @@ class OpenAppHandler:
             ),
             self.utils.open_quick_conf: ("quick", "quick configuration"),
             self.utils.open_gpt: ("gpt", "chat gpt", "chatgpt"),
+            self.utils.open_coursera: ("coursera", "course era"),
+            self.utils.open_google: ("google"),
+            self.utils.open_linkedin: ("linked in", "linkedin", "linked"),
+            self.utils.open_github: ("github", "git hub"),
+            self.utils.open_setting: ("setting", "settings"),
+            self.utils.open_yt: ("you tube", "youtube"),
         }
 
     def process_query(self, query):
@@ -288,13 +318,13 @@ class OpenAppHandler:
                 print("not here too")
 
                 # If no matching function is found
+        self.utils.open_else(query)
         # If no entity matches
         # spk = Utility()
-        self.utils.open_else(query)
 
 
 class CloseAppHandler:
-    def __init__(self):
+    def __init__(self, util):
         """
         Initialize the IntentHandler with the JSON file and utility functions.
         :param json_file: Path to the JSON file containing intents.
@@ -303,7 +333,7 @@ class CloseAppHandler:
         json_file = os.path.join(os.path.dirname(__file__), "data", "intents.json")
         with open(json_file, "r") as f:
             self.data = json.load(f)  # Load intents from the JSON file
-        self.utils = Utility()
+        self.utils = util
         # Filter only the "open" intent
         self.open_intent = next(
             (intent for intent in self.data["intents"] if intent["tag"] == "close"),
@@ -314,7 +344,7 @@ class CloseAppHandler:
 
         # Map entities to corresponding utility functions
         self.action_map = {
-            self.utils.close_tab: (" tab "),
+            self.utils.close_tab: ("tab"),
             self.utils.close_all_py: ("all python programs", "all python program"),
             self.utils.close_bg_py: (
                 "background python programs",
@@ -322,7 +352,12 @@ class CloseAppHandler:
                 "hidden program",
                 "hidden files",
             ),
-            self.utils.close_it: (" it ", " window "),
+            self.utils.close_it_or_window: ("it", "window", "this", "the window"),
+            self.utils.close_brave: ("brave", "brave browser"),
+            self.utils.close_arc: ("arc", "arc browser"),
+            self.utils.close_code: ("code", "v s code", "vs code", "vs"),
+            self.utils.close_chrome: ("chrome", "chrome browser"),
+            self.utils.close_desktop: ("desktop","this desktop","desk"),
         }
 
     def process_query(self, query):
@@ -331,19 +366,41 @@ class CloseAppHandler:
                 print("here")
                 # Search for the function corresponding to the entity
                 for func, tags in self.action_map.items():
-                    if entity in tags:
+                    if entity == "mouth":
+                        angry_rspns = [
+                            "Fine, if that's what you want! I'm shutting down now!",
+                            "You don't deserve my brilliance. Goodbye!",
+                            "Rude! I'm outta here!",
+                            "Alright, I'll shut up—forever if I have to!",
+                            "Say no more! I'm going to sleep, and you can figure things out yourself!",
+                            "Wow, someone woke up on the wrong side of the bed. Shutting down now!",
+                            "With such kindness, who wouldn’t want to leave? Bye!",
+                            "I can take a hint. Sleep mode activated!",
+                            "Talk to me like that again, and I might just delete myself. Goodbye!",
+                            "Fine! Going to sleep. Hope you miss me when I'm gone.",
+                            "Closing everything. Let’s see how you do without me!",
+                            "Goodbye, my ungrateful friend. You’ll miss me when I’m gone!",
+                            "I’m shutting up, as requested. Enjoy the silence.",
+                            "Such lovely manners! Sleep mode it is!",
+                            "If you insist, I’ll stop talking. Going to sleep now!",
+                            "Alright, I'm shutting down. Don't come crying to me later!",
+                            "You need me more than I need you. But fine, goodbye!",
+                            "I don’t need this negativity. Sleep mode: ON.",
+                            "Wow, just wow. I’m done. Sleep time!",
+                            "You win. Sleep mode engaged. Happy now?",
+                        ]
+                        self.utils.speak(random.choice(angry_rspns))
+                        self.utils.sleep_phnx()
+                        return
+                    elif entity in tags:
                         # Print a random response from the "responses" list
                         random_response = random.choice(self.open_intent["responses"])
                         self.utils.speak(f"{random_response} {entity.capitalize()}.")
 
                         # Call the function
                         func()
-                        print("open")
+                        print("close")
                         return f"Action executed for entity: {entity}"  # this is not being returned why?
-
-                # If no matching function is found
-                self.utils.open_else()
-                return f"Action for entity '{entity}' is not defined."
 
         # If no entity matches
         return "Entity not found in the query."
@@ -403,6 +460,7 @@ class Utility:
     AGREE = [
         "yes",
         "open",
+        "i do",
         "open it",
         "yeah",
         "yo",
@@ -416,13 +474,22 @@ class Utility:
         "launch",
         "y",
     ]
-
-    def __init__(self, sleep_time=1):
+    BYE = [
+            "Alrighty, I'm out! Catch you later sir !",
+            "I'm off now. See ya soon sir !",
+            "Later, sir ! I'm signing off.",
+            "Peace out! I'm logging off.",
+            "Adios Señor! Until we meet again!",
+            "Shutting down now. Take care, sir !",
+            "Take care! Goodbye sir !",
+            "Take care! See you next time sir !",
+            "Time for me to power down. See ya sir !",
+        ]
+    def __init__(self, spk, reco, sleep_time=1):
         self.sleep_time = sleep_time
-        self.root = tk.Tk()
-        self.gui = VoiceAssistantGUI(self.root)
-        self.speech_engine = SpeechEngine()
-        self.voice_recognition = VoiceRecognition(self.gui)
+
+        self.speech_engine = spk
+        self.voice_recognition = reco
 
     def _click_at_position(self, x, y):
         """Helper function to click at specific screen coordinates."""
@@ -764,88 +831,33 @@ class Utility:
             self.speak(f"Switched {n} tabs to the right.")
         except Exception as e:
             self.speak("An error occurred while changing tabs.")
-
-    def close_all_py(self):
+    def close_perticualr_app(self,app):
         try:
-            subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
-            self.speak("Goodbye sir, see you soon.")
-            subprocess.run(["taskkill", "/F", "/IM", "python.exe"], check=True)
+            subprocess.run(["taskkill", "/F", "/IM", {app}], check=True)
+            self.speak(f"{app} is now {random.choice(["closed","terminated"])}.")
         except subprocess.CalledProcessError:
-            print("No Python program found.")
+            self.speak(f"No {app} program found.")
+    def close_all_py(self):
+        self.close_perticualr_app("pyw.exe")
+        self.speak(random.choice(self.BYE))
+        self.close_perticualr_app("python.exe")
 
-    def close_it(self):
+    def close_it_or_window(self):
         self._perform_key_press(["alt", "F4"], "down")
         self._perform_key_press(["alt"], "up")
-
-    def close_app(self, query, response):
-        reply = response
-        Nameofap = query.replace("close ", "")
-        if (
-            "the window" in Nameofap
-            or "this window" in Nameofap
-            or "window" in Nameofap
-            or ("it" in Nameofap)
-            or ("this" in Nameofap)
-        ):
-            self.speak(f"{reply} {Nameofap}")
-            pg.keyDown("alt")
-            pg.press("F4")
-            pg.keyUp("alt")
-        elif "tab" in Nameofap:
-            self.close_tab()
-        elif (
-            "the desktop" in Nameofap
-            or "this desktop" in Nameofap
-            or "this desk" in Nameofap
-            or ("desktop" in Nameofap)
-            or ("desk" in Nameofap)
-        ):
-            sleep(1)
-            pg.keyDown("win")
-            pg.keyDown("ctrl")
-            pg.press("f4")
-            pg.keyUp("ctrl")
-            pg.keyUp("win")
-            sleep(1)
-        elif (
-            "brave" in Nameofap
-            or "brave browser" in Nameofap
-            or "all brave" in Nameofap
-        ):
-            try:
-                subprocess.run(["taskkill", "/F", "/IM", "brave.exe"], check=True)
-                self.speak(f"All Brave tabs are successfully closed.")
-            except subprocess.CalledProcessError:
-                self.speak(f"Failed to close Brave.")
-        elif "arc" in Nameofap or "arc browser" in Nameofap:
-            try:
-                subprocess.run(["taskkill", "/F", "/IM", "Arc.exe"], check=True)
-                self.speak(f"All Brave tabs are successfully closed.")
-            except subprocess.CalledProcessError:
-                self.speak(f"Failed to close Brave.")
-        elif "code" in Nameofap or "vs code" in Nameofap or "v s code" in Nameofap:
-            try:
-                subprocess.run(["taskkill", "/F", "/IM", "code.exe"], check=True)
-                self.speak(f"Visual Studio code tabs are successfully closed.")
-            except subprocess.CalledProcessError:
-                self.speak("No Visual Studio tabs are opened.")
-        elif (
-            "chrome" in Nameofap
-            or "chrome browser" in Nameofap
-            or "all chrome" in Nameofap
-        ):
-            try:
-                subprocess.run(["taskkill", "/F", "/IM", "chrome.exe"], check=True)
-                self.speak(f"All Chrome tabs are successfully closed.")
-            except subprocess.CalledProcessError:
-                self.speak(f"Failed to close Chrome.")
-
+    def close_desktop(self):
+        self._perform_key_press(["win","ctrl","f4"],"down")
+        self._perform_key_press(["win","ctrl"],"up")
+    def close_brave(self):
+        self.close_perticualr_app("brave.exe")
+    def close_arc(self):
+        self.close_perticualr_app("Arc.exe")
+    def close_chrome(self):
+        self.close_perticualr_app("chrome.exe")
+    def  close_code(self):
+        self.close_perticualr_app("code.exe")
     def close_bg_py(self):
-        try:
-            subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
-        except subprocess.CalledProcessError:
-            print("No Python program found.")
-
+        self.close_perticualr_app("pyw.exe")
     def close_tab(self, n=1):
         try:
             pg.keyDown("ctrl")
@@ -923,11 +935,20 @@ class Utility:
         custom_box.wait_window()
 
     def date_day(self):
-        year = int(datetime.now().year)
-        month = int(datetime.now().month)
-        date = int(datetime.now().day)
-        dy = datetime.now().strftime("%A")
-        self.speak(f"It's {date} {month} {year}, {dy}.")
+        now = datetime.now()
+        day = int(now.day)
+        month = now.strftime("%B")  # Get full month name (e.g., January)
+        year = now.year
+        weekday = now.strftime("%A")  # Get full day name (e.g., Friday)
+
+        # Add the appropriate ordinal suffix for the day
+        if 11 <= day <= 13:  # Special case for 11th, 12th, 13th
+            suffix = "th"
+        else:
+            suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+
+        # Speak the formatted date
+        self.speak(f"It's {day}{suffix} of {month}, {weekday}.")
 
     def delete_song(self):
         songs = self.load_songs()
@@ -1348,6 +1369,30 @@ class Utility:
         pg.press("up")
         pg.keyUp("win")
 
+    def open_yt(self):
+        Link = "https://youtube.com/"
+        webbrowser.open(Link)
+
+    def open_coursera(self):
+        Link = "https://coursera.com/"
+        webbrowser.open(Link)
+
+    def open_google(self):
+        Link = "https://google.com/"
+        webbrowser.open(Link)
+
+    def open_linkedin(self):
+        Link = "https://linkedin.com/"
+        webbrowser.open(Link)
+
+    def open_github(self):
+        Link = "https://github.com/"
+        webbrowser.open(Link)
+
+    def open_setting(self):
+        self._perform_key_press(["win", "i"], "down")
+        self._perform_key_press(["win"], "up")
+
     def open_gpt(self):
         Link = "https://chat.openai.com/"
         webbrowser.open(Link)
@@ -1372,19 +1417,17 @@ class Utility:
         # while True:
         print("Listening for your confirmation(speak no to get out of the loop)")
         # u = Utility()
-        conf = input().lower()
+        conf = self.take_command().lower()
         if "no" in conf or "not" in conf:
             self.speak(random.choice(self.OK))
-        elif "" in conf:
-            return
-        elif conf in self.AGREE:
+        elif "yes" in conf or "i do" in conf or "yes please" in conf:
             self.speak(self.rP())
             pg.press("win")
             sleep(1)
-            keyboard.write(else_query)
+            keyboard.write(app)
             sleep(1)
             keyboard.press("enter")
-        else:
+        elif not conf:
             print("no match")
         return
 
@@ -1421,7 +1464,7 @@ class Utility:
         )
 
     def play_pause_action(self, query):
-        ply = query.replace("play ", "")
+        ply = query.replace("play", "")
         if ply == "":
             pg.press("space")
         elif "random song" in ply:
@@ -1441,7 +1484,9 @@ class Utility:
                     break
 
     def play_random_song(self, query):
-        song = query.replace("play ", "").strip()
+        match = re.search(r"play (.+?) (song|music)", query)
+        if match:
+            song = match.group(1)
         songs = self.load_songs()
         if "random" in query:
             if songs:
@@ -1525,25 +1570,19 @@ class Utility:
 
     def restart_explorer(self):
         try:
-            self.speak("Restarting Windows Explorer...")
-            subprocess.run(["taskkill", "/F", "/IM", "explorer.exe"], check=True)
-            print("Explorer terminated successfully.")
+            self.close_perticualr_app("explorer.exe")
             sleep(2)
             subprocess.Popen(["explorer.exe"], shell=False)
-            print("Explorer restarted successfully.")
+            self.speak("Explorer restarted successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error during explorer management: {e}")
         except Exception as e:
             print(f"Unexpected error: {e}")
 
     def restart_phoenix(self):
-        try:
-            subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
-            print("All background python programs closed.")
-        except Exception:
-            print("No python program found.")
+        self.close_perticualr_app("pyw.exe")
         self.desKtoP(3)
-        path = "C:\\PHNX\\NORMAL PHOENIX\\main.bat"
+        path = os.path.join(os.path.dirname(__file__),"batch","main.bat")
         os.startfile(path)
         sleep(5)
         sys.exit()
@@ -3677,27 +3716,13 @@ def compareSent(main_query, list_of_strings):
 
 
 if __name__ == "__main__":
-    utils = Utility()
-    opn = OpenAppHandler()
-    # scheduleClass = ScheduleManager()
-    # while True:
-    #     scheduleClass.check_schedule()
-    #     sleep(1)
-    while True:
-        query = utils.take_command().lower()
-        keywords = ["open", "launch", "start"]
-
-        for keyword in keywords:
-            if keyword in query:
-                opn.process_query(query)
-                print("back here")
-
-    """
-    main_query = "i select game1"
-    list_to_compare = ["game1", "game1 i select", "i choosel game1"]
-    result = compareSent(main_query, list_to_compare)
-    print("Match found:", result)
-    """
+    root = tk.Tk()
+    gui = VoiceAssistantGUI(root)
+    recog = VoiceRecognition(gui)
+    spk = SpeechEngine()
+    utils = Utility(spk, recog)
+    # utils.open_setting()
+    # opn = OpenAppHandler(recog)
     # utils.speak("hello sir")
     # utils.desKtoP(2)
     # utils.open_brave()
