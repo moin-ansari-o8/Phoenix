@@ -1,0 +1,12 @@
+{
+    "reminders": [
+        {
+            "date": "20-01-25",
+            "day": "MO",
+            "id": "R_141547",
+            "message": "tomorrow",
+            "reminded": false,
+            "time": "09:00"
+        }
+    ]
+}

@@ -13,17 +13,34 @@ from HelperPHNX import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
+    TimerHandle,
+    AlarmHandle,
+    ReminderHandle,
+    ScheduleHandle,
 )
 
 
 class PhoenixAssistant:
 
-    def __init__(self, utility, open_handler, close_handler):
+    def __init__(
+        self,
+        utility,
+        open_handler,
+        close_handler,
+        timer_handle,
+        alarm_handle,
+        schedule_handle,
+        reminder_handle,
+    ):
         self.AGREE = ["yes", "open", "yeah", "start", "launch"]
         current_dir = os.path.dirname(__file__)
         self.intents_file_path = os.path.join(current_dir, "data", "intents.json")
         self.intents = self.load_intents(self.intents_file_path)
         self.utility = utility
+        self.timer_handle = timer_handle
+        self.alarm_handle = alarm_handle
+        self.schedule_handle = schedule_handle
+        self.reminder_handle = reminder_handle
         self.tag_to_patterns = self.preprocess_patterns(self.intents)
         self.loop = False
         self.voice = False
@@ -87,8 +104,8 @@ class PhoenixAssistant:
             "fullscreen": self.utility.toggle_fullscreen,
             "hide": self.utility.hide_window,
             "hotspot": self.utility.hotspot,
-            "maximize": self.utility.maximize_window,
-            "minimize": self.utility.minimize_window,
+            "maximize": lambda x: self.utility.maximize_window(x),
+            "minimize": lambda x: self.utility.minimize_window(x),
             "muteSpeaker": self.utility.mute_speaker,
             "newtab": self.utility.new_tab,
             "openelse": lambda query: self.utility.open_else(query),
@@ -108,7 +125,13 @@ class PhoenixAssistant:
             "select": lambda query, response: self.utility.select_action(
                 query, response
             ),
-            "setTimer": lambda x: self.utility.setTimer(x),
+            "setTimer": lambda x: self.timer_handle.setTimer(x),
+            "viewTimer": self.timer_handle.viewTimer,
+            "setAlarm": lambda x: self.alarm_handle.setAlarm(x),
+            "viewAlarm": self.alarm_handle.viewAlarm,
+            "dltAlarm": self.alarm_handle.deleteAlarm,
+            "setReminder": lambda x: self.reminder_handle.setReminder(x),
+            "viewReminder": self.reminder_handle.viewReminders,
             "setfocus": self.utility.set_focus,
             "suggestsong": self.utility.suggest_song,
             "swtchTab": self.utility.switch_tab,
@@ -126,8 +149,13 @@ class PhoenixAssistant:
                 "type_text",
                 "setTimer",
                 "openelse",
+                "setTimer",
+                "setAlarm",
+                "setReminder",
             ]:
                 action_map[tag](query)
+            elif tag in ["maximize", "minimize"]:
+                action_map[tag](True)
             elif tag in ["open", "close", "select"]:
                 action_map[tag](query, self.tag_response)
             elif tag in ["forward", "backward"]:
@@ -171,7 +199,15 @@ class PhoenixAssistant:
             default=(None, 0),
         )
 
-        if best_tag == "openelse" or best_tag == "playsong" or highest_probability > 80:
+        if (
+            best_tag == "openelse"
+            or best_tag == "playsong"
+            or best_tag == "setTimer"
+            or best_tag == "setAlarm"
+            or best_tag == "setReminder"
+            or best_tag == "dltReminder"
+            or highest_probability > 80
+        ):
             response = self._get_response(best_tag)
             return {"tag": best_tag, "response": response}
 
@@ -229,7 +265,12 @@ class PhoenixAssistant:
             if "switch to chat" in sent:
                 self.chat = True
                 break
-            if "phoenix" in sent and self.loop == False:
+            if (
+                "phoenix" in sent
+                or "finish" in sent
+                or "feelings" in sent
+                or "feeling" in sent
+            ) and self.loop == False:
                 sent = self.remove_phoenix_except_folder(sent)
                 print(sent)
                 if sent:
@@ -318,6 +359,7 @@ class PhoenixAssistant:
             query = re.sub(r"play .+? (song|music)", "play {this} song", query)
         matched_intent = self._get_best_matching_intenty(query)
         if matched_intent:
+            # print(f"# : {query_main}")        ##will have to make a log file for it to print the user input and to store it in log file
             tag = matched_intent["tag"]
             print(tag)
             self.tag_response = matched_intent["response"]
@@ -367,5 +409,17 @@ if __name__ == "__main__":
     asutils = Utility(reco=recog, spk=spk)
     opn = OpenAppHandler(asutils)
     clse = CloseAppHandler(asutils)
-    phnx = PhoenixAssistant(asutils, open_handler=opn, close_handler=clse)
+    timer_handle = TimerHandle(asutils)
+    alarm_handle = AlarmHandle(asutils)
+    reminder_handle = ReminderHandle(asutils)
+    scheduler_handle = ScheduleHandle(asutils)
+    phnx = PhoenixAssistant(
+        asutils,
+        open_handler=opn,
+        close_handler=clse,
+        timer_handle=timer_handle,
+        alarm_handle=alarm_handle,
+        schedule_handle=scheduler_handle,
+        reminder_handle=reminder_handle,
+    )
     phnx.input_voice()

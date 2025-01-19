@@ -87,14 +87,17 @@
       "tag": "close",
       "patterns": ["close"],
       "entities": [
-        " tab ",
+        "tab",
+        "this tab",
+        "the tab",
         "all python programs",
         "all python program",
         "background python programs",
         "background python program",
-        " it ",
-        " window ",
-        " the window",
+        "it",
+        "window",
+        "this window",
+        "the window",
         "hidden program",
         "brave",
         "code",
@@ -953,7 +956,10 @@
         "view alarm",
         "view the alarm",
         "show me alarm",
-        "list out alarm"
+        "list out alarm",
+        "i want to see alarm details",
+        "please view all alarms",
+        "please view all alarms"
       ],
       "responses": ["viewAlarm"]
     },
@@ -964,7 +970,10 @@
         "delete the alarm",
         "delete an alarm",
         "remove alarm",
-        "remove an alarm"
+        "remove an alarm",
+        "i want to delete alarm",
+        "i want to remove the alarm",
+        "i want to remove an alarm"
       ],
       "responses": ["dltAlarm"]
     },
