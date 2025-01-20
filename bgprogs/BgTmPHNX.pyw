@@ -5,17 +5,19 @@ import time
 import tkinter as tk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from HelperPHNX import (
-    Utility,
+from helpers.TimeBasedHandlePHNX import AlarmHandle
+from helpers.UtilitiesPHNX import Utility
+from helpers.HelperPHNX import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
+)
+from helpers.TimeBasedRunPHNX import (
+    HandleTimeBasedFunctions,
     TimerManager,
     AlarmManager,
-    AlarmHandle,
-    ScheduleManager,
     ReminderManager,
-    HandleTimeBasedFunctions,
+    ScheduleManager,
 )
 
 

@@ -6,13 +6,9 @@ from time import sleep
 import threading
 from difflib import SequenceMatcher
 import os
-from HelperPHNX import (
-    Utility,
-    OpenAppHandler,
-    CloseAppHandler,
-    VoiceAssistantGUI,
-    VoiceRecognition,
-    SpeechEngine,
+from helpers.UtilitiesPHNX import Utility, CloseAppHandler, OpenAppHandler
+from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+from helpers.TimeBasedHandlePHNX import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,
@@ -48,12 +44,7 @@ class PhoenixAssistant:
         self.chat = False
         self.opn = open_handler
         self.clse = close_handler
-        self.clear_terminal_thread = threading.Thread(
-            target=self.clear_terminal_periodically, daemon=True
-        )
-        self.clear_terminal_thread.start()
-        sleep(2)
-        self.print_phoenix()
+        self.cls_print = True
 
     def _calculate_similarity(self, str1, str2):
         """
@@ -295,20 +286,22 @@ class PhoenixAssistant:
 
         # Print each line with a color and center it
         for line in list5:
-            print(
-                Fore.YELLOW + Style.BRIGHT + Style.BRIGHT + line.center(terminal_width)
-            )  # Change Fore.CYAN for different colors
-        print(Fore.YELLOW + Style.BRIGHT + Style.BRIGHT + "-" * terminal_width)
+            print(line.center(terminal_width))  # Change Fore.CYAN for different colors
+        print(" ", "=" * (terminal_width - 2))
 
-    def clear_terminal_periodically(self):
+    def check_cls_phnx(self):
+        self.cls_print = False
+        sleep(65)
+        self.cls_print = True
+        return
+
+    def cls_phnx(self):
         """
         Clears the terminal every 5 minutes.
         """
         os.system("cls" if os.name == "nt" else "clear")
-        while True:
-            sleep(65)
-            os.system("cls" if os.name == "nt" else "clear")
-            self.print_phoenix()
+        self.print_phoenix()
+        return True
 
     def handle_command(self, sent):
         if sent:
@@ -351,6 +344,12 @@ class PhoenixAssistant:
         self.chat = False
         self.loop = False
         while True:
+            if self.cls_print:
+                if self.cls_phnx():
+                    self.check_cls_phnx_thread = threading.Thread(
+                        target=self.check_cls_phnx, daemon=True
+                    )
+                    self.check_cls_phnx_thread.start()
             sent = self.takeCommand().lower().strip()
             if "switch to chat" in sent:
                 self.chat = True
