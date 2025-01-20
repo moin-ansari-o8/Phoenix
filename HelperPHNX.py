@@ -183,7 +183,7 @@ class VoiceRecognition:
             self.gui.show_recognize_image()
             print("<<<", end="\r")
             query = self.recognizer.recognize_google(audio, language="en-in")
-            print(f"# : {query}\n")
+            # print(f"# : {query}\n")
         except Exception as e:
             print("<!>", end="\r")
             self.gui.hide_listen_image()
@@ -284,7 +284,7 @@ class OpenAppHandler:
             self.utils.open_yt: ("you tube", "youtube"),
         }
 
-    def process_query(self, query):
+    def process_query(self, query, mQuery):
         """
         Process the query and execute the corresponding function based on the "open" intent.
         :param query: The user's input query.
@@ -306,7 +306,7 @@ class OpenAppHandler:
         # Iterate through entities in the intent
         for entity in self.open_intent["entities"]:
             if entity in query.lower():
-                print("here")
+                print(f"# : {mQuery}\n")
                 # Search for the function corresponding to the entity
                 for func, tags in self.action_map.items():
                     if entity in tags:
@@ -373,10 +373,10 @@ class CloseAppHandler:
             self.utils.close_desktop: ("desktop", "this desktop", "desk"),
         }
 
-    def process_query(self, query):
+    def process_query(self, query, mQuery):
         for entity in self.open_intent["entities"]:
             if entity in query.lower():
-                print("here")
+                print(f"# : {mQuery}\n")
                 # Search for the function corresponding to the entity
                 for func, tags in self.action_map.items():
                     if entity == "mouth":
@@ -1276,6 +1276,8 @@ class Utility:
 
     @staticmethod
     def intrOmsC():
+        import time
+
         """Plays a random system intro sound."""
         intr = ["robo1.wav", "robo2.wav"]
         x = random.choice(intr)
@@ -1377,6 +1379,46 @@ class Utility:
             pg.press(direction, 2)
         elif any((x in query for x in ["four", "4"])):
             pg.press(direction, 3)
+
+    def process_move_window(self, query):
+        json_file = os.path.join(os.path.dirname(__file__), "data", "intents.json")
+        with open(json_file, "r") as f:
+            self.data = json.load(f)  # Load intents from the JSON file
+
+        # Find the intent for "movewindow"
+        self.open_intent = next(
+            (
+                intent
+                for intent in self.data["intents"]
+                if intent["tag"] == "movewindow"
+            ),
+            None,
+        )
+        if not self.open_intent:
+            raise ValueError('No "movewindow" intent found in the provided JSON file.')
+
+        # Corrected action map
+        self.action_map = {
+            "study": (self.utils.move_window, 0),
+            "alpha": (self.utils.move_window, 1),
+            "extra": (self.utils.move_window, 2),
+            "trash": (self.utils.move_window, 3),
+        }
+
+        # Check entities in query
+        query = query.lower()
+        for entity in self.open_intent["entities"]:
+            if entity in query and entity in self.action_map:
+                func, arg = self.action_map[entity]
+                func(arg)  # Call the function with the argument
+                return f"Action executed for entity: {entity}"  # Return statement will now execute
+        return "Entity not found in the query."
+
+    def move_window(self, desk):
+        current_window = AppView.current()
+        target_desktop = VirtualDesktop(desk)
+        current_window.move(target_desktop)
+        print(f"Moved window {current_window.hwnd} to {target_desktop.number}")
 
     def mute_speaker(self):
         """Mute the system volume."""

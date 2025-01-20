@@ -42,15 +42,18 @@ class PhoenixAssistant:
         self.schedule_handle = schedule_handle
         self.reminder_handle = reminder_handle
         self.tag_to_patterns = self.preprocess_patterns(self.intents)
+        self.mQuery = None
         self.loop = False
         self.voice = False
         self.chat = False
         self.opn = open_handler
         self.clse = close_handler
-        # self.clear_terminal_thread = threading.Thread(
-        #     target=self.clear_terminal_periodically, daemon=True
-        # )
-        # self.clear_terminal_thread.start()
+        self.clear_terminal_thread = threading.Thread(
+            target=self.clear_terminal_periodically, daemon=True
+        )
+        self.clear_terminal_thread.start()
+        sleep(2)
+        self.print_phoenix()
 
     def _calculate_similarity(self, str1, str2):
         """
@@ -218,14 +221,94 @@ class PhoenixAssistant:
             if intent["tag"] == tag:
                 return random.choice(intent["responses"])
 
+    def print_phoenix(self):
+        from colorama import Fore, init, Style
+        import os
+
+        # Initialize colorama
+        init(autoreset=True)
+
+        list1 = [
+            "   ___ _  _  ___  ___ _  _ _____  __ ",
+            "  | _ \\ || |/ _ \\| __| \\| |_ _\\ \\/ / ",
+            "  |  _/ __ | (_) | _|| .` || | >  <  ",
+            "  |_| |_||_|\\___/|___|_|\\_|___/_/\\_\\ ",
+            "                                      ",
+        ]
+        list2 = [
+            "                                              ",
+            "   _______ _   _  ___  _____ _   _ ___ _____  ",
+            "  (   _   ) | | |/ _ \\|  ___) \\ | (   |_____) ",
+            "   | | | || |_| | | | | |_  |  \\| || |  ___   ",
+            "   | | | ||  _  | | | |  _) |     || | (___)  ",
+            "   | | | || | | | |_| | |___| |\\  || | _____  ",
+            "   |_| |_||_| |_|\\___/|_____)_| \\_(___|_____) ",
+            "                                              ",
+            "                                              ",
+        ]
+
+        list3 = [
+            "  _____ __  __  _____  _____ __  __ __ _  _    ",
+            "  ||_// ||==|| ((   )) ||==  ||\\\\|| || \\\\//    ",
+            "  ||    ||  ||  \\\\_//  ||___ || \\|| || //\\\\    ",
+        ]
+
+        list4 = [
+            "   ____  __  __   ___    ____ __  __ __ _   _   ",
+            "   || \\\\ ||  ||  // \\\\  ||    ||\\ || || \\\\ //   ",
+            "   ||_// ||==|| ((   )) ||==  ||\\\\|| ||  )X(    ",
+            "   ||    ||  ||  \\\\_//  ||___ || \\|| || // \\\\   ",
+            "                                                ",
+        ]
+        list5 = ["   +-+-+-+-+-+-+-+ ", "   |P|H|O|E|N|I|X| ", "   +-+-+-+-+-+-+-+ "]
+
+        list6 = [
+            "     _   _   _   _   _   _   _   ",
+            "    / \\ / \\ / \\ / \\ / \\ / \\ / \\  ",
+            "   ( P | H | O | E | N | I | X ) ",
+            "    \\_/ \\_/ \\_/ \\_/ \\_/ \\_/ \\_/  ",
+        ]
+
+        list7 = [
+            "   ___   _     ___   ____  _      _   _        ",
+            "  | |_) | |_| / / \\ | |_  | |\\ | | | \\ \\_/     ",
+            "  |_|   |_| | \\_\\_/ |_|__ |_| \\| |_| /_/ \\     ",
+        ]
+        list8 = [
+            ".-.-. .-. .-. .---. .----..-. .-..-..-..-.    ",
+            "| } }}{ {_} |/ {-. \\} |__}|  \\{ |{ |\\ {} /    ",
+            "| |-' | { } }\\ '-} /} '__}| }\\  {| }/ {} \\    ",
+            "`-'   `-' `-' `---' `----'`-' `-'`-'`-'`-'    ",
+            "                                               ",
+        ]
+
+        list9 = ["|'|-|()[-|\\||>< "]
+
+        list10 = [
+            "  _     _  __   ___\\ /   ",
+            " |_)|_|/ \\|_ |\\| |  X    ",
+            " |  | |\\_/|__| |_|_/ \\   ",
+        ]
+
+        # Get terminal width
+        terminal_width = os.get_terminal_size().columns
+
+        # Print each line with a color and center it
+        for line in list5:
+            print(
+                Fore.YELLOW + Style.BRIGHT + Style.BRIGHT + line.center(terminal_width)
+            )  # Change Fore.CYAN for different colors
+        print(Fore.YELLOW + Style.BRIGHT + Style.BRIGHT + "-" * terminal_width)
+
     def clear_terminal_periodically(self):
         """
         Clears the terminal every 5 minutes.
         """
         os.system("cls" if os.name == "nt" else "clear")
         while True:
-            sleep(300)
+            sleep(65)
             os.system("cls" if os.name == "nt" else "clear")
+            self.print_phoenix()
 
     def handle_command(self, sent):
         if sent:
@@ -238,16 +321,23 @@ class PhoenixAssistant:
 
     def input_chat(self):
         self.voice = False
+        self.loop = False
         while True:
             sent = input("Enter command: ").lower().strip()
             if "switch to voice" in sent:
                 self.voice = True
                 break
-            if "phoenix" in sent and self.loop == False:
+            if (
+                "phoenix" in sent
+                or "finish" in sent
+                or "feelings" in sent
+                or "feeling" in sent
+            ) and self.loop == False:
+                self.mQuery = sent
                 sent = self.remove_phoenix_except_folder(sent)
+                print(sent)
                 if sent:
                     self.handle_command(sent)
-                    self.loop = True
             elif self.loop == True:
                 self.handle_command(sent)
             elif not sent:
@@ -271,8 +361,8 @@ class PhoenixAssistant:
                 or "feelings" in sent
                 or "feeling" in sent
             ) and self.loop == False:
+                self.mQuery = sent
                 sent = self.remove_phoenix_except_folder(sent)
-                print(sent)
                 if sent:
                     self.handle_command(sent)
             elif self.loop == True:
@@ -348,20 +438,20 @@ class PhoenixAssistant:
         query = self.remove_phoenix_except_folder(sent)
         keywords = ["open", "launch", "start"]
         for keyword in keywords:
-            if keyword in query:
-                self.opn.process_query(query)
+            if keyword in query and "restart" not in query:
+                self.opn.process_query(query, self.mQuery)
                 return
         if "close" in query:
-            self.clse.process_query(query)
+            self.clse.process_query(query, self.mQuery)
             return
         match = re.search(r"play (.+?) song", query)
         if match:
             query = re.sub(r"play .+? (song|music)", "play {this} song", query)
         matched_intent = self._get_best_matching_intenty(query)
         if matched_intent:
-            # print(f"# : {query_main}")        ##will have to make a log file for it to print the user input and to store it in log file
+            # print(f" : {query_main}")        ##will have to make a log file for it to print the user input and to store it in log file
             tag = matched_intent["tag"]
-            print(tag)
+            print(f"# : {self.mQuery}\n")
             self.tag_response = matched_intent["response"]
             if tag not in no_response_tag:
                 self.speak(self.tag_response)
