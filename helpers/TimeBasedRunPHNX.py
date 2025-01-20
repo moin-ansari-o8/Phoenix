@@ -327,7 +327,7 @@ class ScheduleManager:
                     schedule_time = schedule["time"]
                     # print(current_time, schedule_time)
                     if (current_time == schedule_time) and (self.halt == False):
-                        self.speak("Time to ", schedule["message"])
+                        self.speak(f"Time to {(schedule['message'])}")
                         threading.Thread(target=self._do_halt).start()
                 except Exception as e:
                     print(f"Error processing schedule entry '{schedule}': {e}")

@@ -283,7 +283,6 @@ class PhoenixAssistant:
 
         # Get terminal width
         terminal_width = os.get_terminal_size().columns
-
         # Print each line with a color and center it
         for line in list5:
             print(line.center(terminal_width))  # Change Fore.CYAN for different colors
