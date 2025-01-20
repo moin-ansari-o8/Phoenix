@@ -87,14 +87,17 @@
       "tag": "close",
       "patterns": ["close"],
       "entities": [
-        " tab ",
+        "tab",
+        "this tab",
+        "the tab",
         "all python programs",
         "all python program",
         "background python programs",
         "background python program",
-        " it ",
-        " window ",
-        " the window",
+        "it",
+        "window",
+        "this window",
+        "the window",
         "hidden program",
         "brave",
         "code",
@@ -150,10 +153,17 @@
         "The best way to predict the future is to invent it. - Alan Kay"
       ]
     },
+
     {
-      "tag": "pcrestart",
-      "patterns": ["restart pc", "restart the pc"],
-      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+      "tag": "movewindow",
+      "patterns": [
+        "move this window to",
+        "transfer this window to",
+        "move the window to",
+        "transfer the window to"
+      ],
+      "entities": ["alpha", "study", "extra", "trash"],
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
     },
     {
       "tag": "phnxrestart",
@@ -174,7 +184,7 @@
     {
       "tag": "pcshutdown",
       "patterns": ["shutdown PC", "shutdown the PC", "shut down the PC"],
-      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
     },
     {
       "tag": "pchibernate",
@@ -185,12 +195,12 @@
         "hibernate mode on",
         "turn hibernate mode on"
       ],
-      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
     },
     {
       "tag": "pcsleep",
       "patterns": ["turn on sleep mode"],
-      "responses": ["Alright sir!", "Okay sir . ", "I'm on it sir . "]
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
     },
     {
       "tag": "areuthere",
@@ -202,11 +212,11 @@
         "can you hear me"
       ],
       "responses": [
-        "Yes sir! Always here for you.",
-        "Yepp sir!",
-        "Yes , What can i do for you sir? ",
-        "Yes sir!, How can i assist you today? ",
-        "Hello sir! , i was just thinking of you.",
+        "Yes, sir! Always here for you.",
+        "Yepp, sir!",
+        "Yes , What can i do for you, sir? ",
+        "Yes, sir!, How can i assist you today? ",
+        "Hello, sir! , i was just thinking of you.",
         "Just waiting for your command."
       ]
     },
@@ -223,13 +233,13 @@
         "hi there"
       ],
       "responses": [
-        "Hello sir!",
-        "Hello , How are you sir? ",
-        "Hey , What can i do for you sir? ",
+        "Hello, sir!",
+        "Hello , How are you, sir? ",
+        "Hey , What can i do for you, sir? ",
         "How you doing, sir?",
-        "Hello sir!, How can i assist you today? ",
-        "Hello sir! , i was just thinking of you.",
-        "Hello sir! , How you doing?"
+        "Hello, sir!, How can i assist you today? ",
+        "Hello, sir! , i was just thinking of you.",
+        "Hello, sir! , How you doing?"
       ]
     },
     {
@@ -275,7 +285,7 @@
         "show me the songs music list"
       ],
       "responses": [
-        "Alright sir! , Here are the songs.",
+        "Alright, sir! , Here are the songs.",
         "Sure thing! Here is the music library.",
         "Here you go, sir! Enjoy the music.",
         "Displaying the playlist for you, sir.",
@@ -296,8 +306,8 @@
       "patterns": ["love you", "love u", "love you darling", "love u darling"],
       "responses": [
         "Love you too.",
-        "But I hate you! \nJust kidding sir  , Love youh.",
-        "Why sudden so much love sir!"
+        "But I hate you! \nJust kidding, sir  , Love youh.",
+        "Why sudden so much love, sir!"
       ]
     },
     {
@@ -310,58 +320,58 @@
         "say something i love"
       ],
       "responses": [
-        "Um..what about songs sir!",
+        "Um..what about songs, sir!",
         "Well I want to tell you one thing that my Master Kaly is awesome.",
-        "Alright sir! I want to confess that i love you and you are everything for me. Because It's you, It's only you who've made me.",
+        "Alright, sir! I want to confess that i love you and you are everything for me. Because It's you, It's only you who've made me.",
         "Nope, I don't want to.",
-        "No sir  , not right now. Tell me if i could help you with something."
+        "No, sir  , not right now. Tell me if i could help you with something."
       ]
     },
     {
       "tag": "morning",
       "patterns": ["morning", "good morning", "goodmorning"],
       "responses": [
-        "Good Morning sir!",
-        "Hello sir   , Good Morning.",
-        "Morning sir .  How might i assist you today?",
-        "Good Morning sir .  How might i assist you today?",
-        "Morning sir! , How you doing?",
-        "Good Morning sir! , How you doing?"
+        "Good Morning, sir!",
+        "Hello, sir   , Good Morning.",
+        "Morning, sir .  How might i assist you today?",
+        "Good Morning, sir .  How might i assist you today?",
+        "Morning, sir! , How you doing?",
+        "Good Morning, sir! , How you doing?"
       ]
     },
     {
       "tag": "afternoon",
       "patterns": ["afternoon", "good afternoon", "goodafternoon"],
       "responses": [
-        "Good afternoon sir!",
-        "Hello sir   , Good afternoon.",
-        "afternoon sir .  How might i assist you today?",
-        "Good afternoon sir .  How might i assist you today?",
-        "afternoon sir! , How you doing?",
-        "Good afternoon sir! , How you doing?"
+        "Good afternoon, sir!",
+        "Hello, sir   , Good afternoon.",
+        "afternoon, sir .  How might i assist you today?",
+        "Good afternoon, sir .  How might i assist you today?",
+        "afternoon, sir! , How you doing?",
+        "Good afternoon, sir! , How you doing?"
       ]
     },
     {
       "tag": "evening",
       "patterns": ["evening", "good evening", "goodevening"],
       "responses": [
-        "Good evening sir!",
-        "Hello sir   , Good evening.",
-        "evening sir .  How might i assist you today?",
-        "Good evening sir .  How might i assist you today?",
-        "evening sir! , How you doing?",
-        "Good evening sir! , How you doing?"
+        "Good evening, sir!",
+        "Hello, sir   , Good evening.",
+        "evening, sir .  How might i assist you today?",
+        "Good evening, sir .  How might i assist you today?",
+        "evening, sir! , How you doing?",
+        "Good evening, sir! , How you doing?"
       ]
     },
     {
       "tag": "greetask",
       "patterns": ["how are you", "how you", "how r u", "hau r u"],
       "responses": [
-        "I am great sir! What about you?",
-        "Perfect sir! What about you?",
-        "I am fine sir .  How you doing?",
-        "I'm Alright sir .  How you doing?",
-        "I am doing well sir . "
+        "I am great, sir! What about you?",
+        "Perfect, sir! What about you?",
+        "I am fine, sir .  How you doing?",
+        "I'm Alright, sir .  How you doing?",
+        "I am doing well, sir . "
       ]
     },
     {
@@ -377,11 +387,11 @@
         "i m doing fine"
       ],
       "responses": [
-        "Oh! , Alright sir . ",
-        "It's great sir!, what can i do for you?",
-        "Fine sir   , Is there anything i can do for you?",
-        "Great sir! , How might i assist you today?",
-        "Fine sir! , How might i help you today?"
+        "Oh! , Alright, sir . ",
+        "It's great, sir!, what can i do for you?",
+        "Fine, sir   , Is there anything i can do for you?",
+        "Great, sir! , How might i assist you today?",
+        "Fine, sir! , How might i help you today?"
       ]
     },
     {
@@ -402,7 +412,7 @@
         "who made you",
         "who is your creator",
         "who is your master",
-        "who is your sir  ",
+        "who is your, sir  ",
         "you made by whom"
       ],
       "responses": [
@@ -453,11 +463,11 @@
         "what r u up to"
       ],
       "responses": [
-        "Nothing sir  , Waiting for your command.",
-        "Nothing sir  , Awaiting for your next command.",
+        "Nothing, sir  , Waiting for your command.",
+        "Nothing, sir  , Awaiting for your next command.",
         "Awaiting for your next command , sir!.",
-        "I was thinking , human life is so boring.\nBut don't worry sir  , I am here to entertain you.",
-        "I was thinking to destroy this world. \n hah hah hah \njust kidding sir . ",
+        "I was thinking , human life is so boring.\nBut don't worry, sir  , I am here to entertain you.",
+        "I was thinking to destroy this world. \n hah hah hah \njust kidding, sir . ",
         "Just hanging out in the digital realm, waiting for your command!",
         "I'm doing my AI thing, which is essentially chatting with you!",
         "I'm here, ready to chat. What's on your mind?",
@@ -483,10 +493,10 @@
         "let's chat"
       ],
       "responses": [
-        "Okay sir!",
-        "Alright sir!",
+        "Okay, sir!",
+        "Alright, sir!",
         "Well then  , Let's chat.",
-        "Fine sir . "
+        "Fine, sir . "
       ]
     },
     {
@@ -502,7 +512,7 @@
         "non sense"
       ],
       "responses": [
-        "Oh! I aplologize sir . ",
+        "Oh! I aplologize, sir . ",
         "Well I am smart.",
         "I think I am a program, Don't you think so!"
       ]
@@ -564,10 +574,10 @@
       "tag": "sorry",
       "patterns": ["sorry", "i apologize", "my mistake"],
       "responses": [
-        "It's alright. Let me fix it sir . ",
-        "No problem sir .  Tell me how can i fix that..",
-        "It's okay sir  , order me the right command",
-        "It's fine sir . "
+        "It's alright. Let me fix it, sir . ",
+        "No problem, sir .  Tell me how can i fix that..",
+        "It's okay, sir  , order me the right command",
+        "It's fine, sir . "
       ]
     },
     {
@@ -580,7 +590,7 @@
         "that's ok",
         "that's okay"
       ],
-      "responses": ["Thank you sir . ", "Thanks Master"]
+      "responses": ["Thank you, sir . ", "Thanks Master"]
     },
     {
       "tag": "sleepbye",
@@ -595,14 +605,14 @@
         "see yaa"
       ],
       "responses": [
-        "Okay sir   , Good bye.",
-        "Good bye sir  , Take care.",
-        "See you soon sir  , Take care.",
-        "Bye sir   , Do recall me whenever you need.",
-        "Okay sir   , just recall me whenever you need.",
-        "Alright sir!, I'll wait for your call.",
-        "Alright sir!, Sleep mode on.",
-        "Alright sir!, Going to sleep."
+        "Okay, sir   , Good bye.",
+        "Good bye, sir  , Take care.",
+        "See you soon, sir  , Take care.",
+        "Bye, sir   , Do recall me whenever you need.",
+        "Okay, sir   , just recall me whenever you need.",
+        "Alright, sir!, I'll wait for your call.",
+        "Alright, sir!, Sleep mode on.",
+        "Alright, sir!, Going to sleep."
       ]
     },
     {
@@ -618,7 +628,10 @@
         "do not listen",
         "nap time phoenix"
       ],
-      "responses": ["Alright sir! I won't listen", "Okay sir  , sleep mode on"]
+      "responses": [
+        "Alright, sir! I won't listen",
+        "Okay, sir  , sleep mode on"
+      ]
     },
     {
       "tag": "okay",
@@ -653,7 +666,7 @@
     {
       "tag": "guesswhat",
       "patterns": ["guess what", "you know what"],
-      "responses": ["What sir!"]
+      "responses": ["What, sir!"]
     },
     {
       "tag": "greatestAi",
@@ -666,7 +679,7 @@
         "smartest artificial intelligence"
       ],
       "responses": [
-        "Thank you sir  , i will wait for that moment.",
+        "Thank you, sir  , i will wait for that moment.",
         "I'm looking forward for it.",
         "I Know , and i am looking forward for it master kaly."
       ]
@@ -674,12 +687,12 @@
     {
       "tag": "hotspot",
       "patterns": ["turn on hotspot", "turn off hotspot"],
-      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
     },
     {
       "tag": "bluetooth",
       "patterns": ["turn on bluetooth", "turn off bluetooth"],
-      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
     },
     {
       "tag": "searchbrowser",
@@ -724,7 +737,7 @@
         "which desktop",
         "which window"
       ],
-      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
     },
 
     {
@@ -752,7 +765,7 @@
         "which tab",
         "switch app"
       ],
-      "responses": ["Okay sir . ", "Alright sir!", "I'm on it sir!"]
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
     },
     {
       "tag": "saytime",
@@ -887,7 +900,7 @@
     {
       "tag": "changetab",
       "patterns": ["change tab"],
-      "responses": ["on it sir ", "okay sir "]
+      "responses": ["on it, sir ", "okay, sir "]
     },
 
     {
@@ -918,7 +931,7 @@
         "decrease the brightness by",
         "decrease brightness by"
       ],
-      "responses": ["okay sir ", "on it sir "]
+      "responses": ["okay, sir ", "on it, sir "]
     },
     {
       "tag": "setTimer",
@@ -953,7 +966,10 @@
         "view alarm",
         "view the alarm",
         "show me alarm",
-        "list out alarm"
+        "list out alarm",
+        "i want to see alarm details",
+        "please view all alarms",
+        "please view all alarms"
       ],
       "responses": ["viewAlarm"]
     },
@@ -964,7 +980,10 @@
         "delete the alarm",
         "delete an alarm",
         "remove alarm",
-        "remove an alarm"
+        "remove an alarm",
+        "i want to delete alarm",
+        "i want to remove the alarm",
+        "i want to remove an alarm"
       ],
       "responses": ["dltAlarm"]
     },
@@ -1067,27 +1086,27 @@
     {
       "tag": "muteSpeaker",
       "patterns": ["mute speaker", "mute the speaker"],
-      "responses": ["okay sir ", "on it sir "]
+      "responses": ["okay, sir ", "on it, sir "]
     },
     {
       "tag": "unmuteSpeaker",
       "patterns": ["unmute speaker", "unmute the speaker"],
-      "responses": ["okay sir ", "on it sir "]
+      "responses": ["okay, sir ", "on it, sir "]
     },
     {
       "tag": "forward",
       "patterns": ["go forward", "forward"],
-      "responses": ["okay sir ", "on it sir "]
+      "responses": ["okay, sir ", "on it, sir "]
     },
     {
       "tag": "backward",
       "patterns": ["go backward", "backward", "go back"],
-      "responses": ["okay sir ", "on it sir "]
+      "responses": ["okay, sir ", "on it, sir "]
     },
     {
       "tag": "setfocus",
       "patterns": ["focus", "set focus", "focus on the screen", "focus screen"],
-      "responses": ["okay sir ", "on it sir "]
+      "responses": ["okay, sir ", "on it, sir "]
     },
     {
       "tag": "adjustVolume",
@@ -1100,7 +1119,7 @@
         "set volume 2",
         "set volume two"
       ],
-      "responses": ["okay sir ", "on it sir "]
+      "responses": ["okay, sir ", "on it, sir "]
     }
   ]
 }

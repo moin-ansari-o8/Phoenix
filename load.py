@@ -3,10 +3,15 @@ import sys
 import subprocess
 import pyautogui as pg
 from time import sleep
-from HelperPHNX import Utility
+from HelperPHNX import Utility, VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+import tkinter as tk
 from datetime import datetime
 
-utils = Utility()
+root = tk.Tk()
+gui = VoiceAssistantGUI(root)
+recog = VoiceRecognition(gui)
+spk = SpeechEngine()
+utils = Utility(reco=recog, spk=spk)
 
 btry_check = os.path.join(os.path.dirname(__file__), "data", "intents.json")
 
@@ -30,9 +35,9 @@ def startup_phnx():
 def load_phnx():
     sleep(3)
     paths = [
-        "E:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
-        "E:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
-        "E:\\STDY\\GIT_PROJECTS\\Phoenix\\batch\\main.bat",
+        "C:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
+        "C:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
+        "C:\\STDY\\GIT_PROJECTS\\Phoenix\\batch\\main.bat",
     ]
     ct = 0
     for path in paths:
@@ -65,5 +70,6 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
+    sleep(5)
+    sys.exit()

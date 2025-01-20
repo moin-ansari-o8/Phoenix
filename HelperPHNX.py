@@ -30,6 +30,13 @@ from PyQt5.QtGui import QPainter, QBrush, QColor
 import psutil
 import time
 from time import sleep
+import psutil
+import win32gui
+import win32process
+import win32con
+import win32api
+import ctypes
+from pyvda import AppView, get_apps_by_z_order, VirtualDesktop, get_virtual_desktops
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 temp_stdout = sys.stdout
@@ -176,7 +183,7 @@ class VoiceRecognition:
             self.gui.show_recognize_image()
             print("<<<", end="\r")
             query = self.recognizer.recognize_google(audio, language="en-in")
-            print(f"# : {query}\n")
+            # print(f"# : {query}\n")
         except Exception as e:
             print("<!>", end="\r")
             self.gui.hide_listen_image()
@@ -277,7 +284,7 @@ class OpenAppHandler:
             self.utils.open_yt: ("you tube", "youtube"),
         }
 
-    def process_query(self, query):
+    def process_query(self, query, mQuery):
         """
         Process the query and execute the corresponding function based on the "open" intent.
         :param query: The user's input query.
@@ -299,7 +306,7 @@ class OpenAppHandler:
         # Iterate through entities in the intent
         for entity in self.open_intent["entities"]:
             if entity in query.lower():
-                print("here")
+                print(f"# : {mQuery}\n")
                 # Search for the function corresponding to the entity
                 for func, tags in self.action_map.items():
                     if entity in tags:
@@ -344,7 +351,7 @@ class CloseAppHandler:
 
         # Map entities to corresponding utility functions
         self.action_map = {
-            self.utils.close_tab: ("tab"),
+            self.utils.close_tab: ("tab", "this tab", "the tab"),
             self.utils.close_all_py: ("all python programs", "all python program"),
             self.utils.close_bg_py: (
                 "background python programs",
@@ -352,18 +359,24 @@ class CloseAppHandler:
                 "hidden program",
                 "hidden files",
             ),
-            self.utils.close_it_or_window: ("it", "window", "this", "the window"),
+            self.utils.close_it_or_window: (
+                "it",
+                "window",
+                "this",
+                "the window",
+                "this window",
+            ),
             self.utils.close_brave: ("brave", "brave browser"),
             self.utils.close_arc: ("arc", "arc browser"),
             self.utils.close_code: ("code", "v s code", "vs code", "vs"),
             self.utils.close_chrome: ("chrome", "chrome browser"),
-            self.utils.close_desktop: ("desktop","this desktop","desk"),
+            self.utils.close_desktop: ("desktop", "this desktop", "desk"),
         }
 
-    def process_query(self, query):
+    def process_query(self, query, mQuery):
         for entity in self.open_intent["entities"]:
             if entity in query.lower():
-                print("here")
+                print(f"# : {mQuery}\n")
                 # Search for the function corresponding to the entity
                 for func, tags in self.action_map.items():
                     if entity == "mouth":
@@ -475,16 +488,17 @@ class Utility:
         "y",
     ]
     BYE = [
-            "Alrighty, I'm out! Catch you later sir !",
-            "I'm off now. See ya soon sir !",
-            "Later, sir ! I'm signing off.",
-            "Peace out! I'm logging off.",
-            "Adios Señor! Until we meet again!",
-            "Shutting down now. Take care, sir !",
-            "Take care! Goodbye sir !",
-            "Take care! See you next time sir !",
-            "Time for me to power down. See ya sir !",
-        ]
+        "Alrighty, I'm out! Catch you later, sir !",
+        "I'm off now. See ya soon, sir !",
+        "Later, sir ! I'm signing off.",
+        "Peace out! I'm logging off.",
+        "Adios Señor! Until we meet again!",
+        "Shutting down now. Take care, sir !",
+        "Take care! Goodbye, sir !",
+        "Take care! See you next time, sir !",
+        "Time for me to power down. See ya, sir !",
+    ]
+
     def __init__(self, spk, reco, sleep_time=1):
         self.sleep_time = sleep_time
 
@@ -627,6 +641,118 @@ class Utility:
         """Convert word numbers to integers."""
         return Utility.WORD_TO_NUM.get(word.lower(), None)
 
+    def _find_terminal_window_by_pid(self, pid):
+        """Find the terminal window handle associated with a given PID."""
+
+        def callback(hwnd, hwnd_list):
+            _, win_pid = win32process.GetWindowThreadProcessId(hwnd)
+            if win_pid == pid:
+                hwnd_list.append(hwnd)
+
+        hwnd_list = []
+        win32gui.EnumWindows(callback, hwnd_list)
+        return hwnd_list
+
+    def _focus_window_by_hwnd(self, hwnd):
+        """
+        Bring a specific window to focus with simulated user interaction.
+        """
+        try:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+            # Simulate a mouse click inside the window to bring focus
+            rect = win32gui.GetWindowRect(hwnd)
+            x = rect[0] + 10  # Small offset from the top-left corner
+            y = rect[1] + 10
+
+            ctypes.windll.user32.SetCursorPos(x, y)
+            ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0)  # MOUSEEVENTF_LEFTDOWN
+            ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0)  # MOUSEEVENTF_LEFTUP
+
+            # Try to set the window to the foreground again
+            win32gui.SetForegroundWindow(hwnd)
+        except Exception as e:
+            print(f"Simulated interaction failed: {e}")
+
+    def tot_desk(self):
+        number_of_active_desktops = len(get_virtual_desktops())
+        print(f"There are {number_of_active_desktops} active desktops")
+
+    def get_cur_desk(self):
+        current_desktop = VirtualDesktop.current()
+        desk = current_desktop.number - 1  # for the utility open desktop
+        name = current_desktop.name
+        return desk, name
+
+    def move_cur_window_to_desk(self, desk, desk_name):
+        current_window = AppView.current()
+        target_desktop = VirtualDesktop(desk)
+        current_window.move(target_desktop)
+        print(f"Moved current window to {desk_name}")
+
+    @staticmethod
+    def get_active_window_info():
+        # Get the handle of the currently active window
+        hwnd = win32gui.GetForegroundWindow()
+
+        # Get the window title
+        window_title = win32gui.GetWindowText(hwnd)
+
+        # Get the process ID associated with the window
+        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+
+        # Get the process name using psutil
+        process_name = None
+        try:
+            process = psutil.Process(pid)
+            process_name = process.name()
+        except psutil.NoSuchProcess:
+            process_name = "Unknown"
+
+        return window_title, process_name
+
+    def get_window(self, script_name, process_name="python.exe"):
+        # process_name = process_name  # Replace with your interpreter name if different
+        # script_name = script_name  # Your script name
+        pid = None
+        parent_pid = None
+
+        # Find the PID of the running script
+        for proc in psutil.process_iter(["pid", "name", "cmdline", "ppid"]):
+            try:
+                if process_name in proc.info["name"] and script_name in " ".join(
+                    proc.info["cmdline"]
+                ):
+                    pid = proc.info["pid"]
+                    parent_pid = proc.info["ppid"]
+                    break
+            except (
+                psutil.NoSuchProcess,
+                psutil.AccessDenied,
+                psutil.ZombieProcess,
+            ):
+                continue
+
+        if pid and parent_pid:
+            print(f"Found process '{script_name}' with PID: {pid}")
+            print(f"Parent process ID (PPID): {parent_pid}")
+
+            # Look for terminal window using the parent PID
+            hwnd_list = self._find_terminal_window_by_pid(parent_pid)
+
+            if hwnd_list:
+                for hwnd in hwnd_list:
+                    window_title = win32gui.GetWindowText(hwnd)
+                    print(f"Found terminal window: {window_title} (HWND: {hwnd})")
+                    self._focus_window_by_hwnd(hwnd)
+                    print("Terminal window brought to focus.")
+                    return True
+            else:
+                print(f"No terminal windows found for Parent PID: {parent_pid}")
+        else:
+            print(f"Process '{script_name}' not found.")
+        return False
+
     def add_song(self):
         songs = self.load_songs()
         song_name = input("Enter the song name to add: ")
@@ -739,7 +865,7 @@ class Utility:
     def askDesk(self):
         rply = [
             "which desktop shall I open, sir?",
-            "which desktop would you like me to open sir?",
+            "which desktop would you like me to open, sir?",
         ]
         return random.choice(rply)
 
@@ -769,7 +895,7 @@ class Utility:
             elif battery_percentage >= 60 and battery_percentage < 80:
                 self.speak("Battery is ok, sir.")
             elif battery_percentage <= 35:
-                self.speak("Plug in the charger sir!")
+                self.speak("Plug in the charger, sir!")
 
     def bluetooth(self):
         try:
@@ -831,33 +957,49 @@ class Utility:
             self.speak(f"Switched {n} tabs to the right.")
         except Exception as e:
             self.speak("An error occurred while changing tabs.")
-    def close_perticualr_app(self,app):
+
+    def close_perticular_app(self, app):
         try:
-            subprocess.run(["taskkill", "/F", "/IM", {app}], check=True)
-            self.speak(f"{app} is now {random.choice(["closed","terminated"])}.")
+            # Ensure app is passed as a string
+            subprocess.run(["taskkill", "/F", "/IM", app], check=True)
+            if app.lower() == "explorer.exe":
+                subprocess.Popen(["explorer.exe"], shell=False)
+                self.speak("Explorer restarted successfully.")
+            else:
+                self.speak(f"{app} is now closed.")
         except subprocess.CalledProcessError:
             self.speak(f"No {app} program found.")
+        except Exception as e:
+            self.speak(f"An unexpected error occurred: {e}")
+
     def close_all_py(self):
-        self.close_perticualr_app("pyw.exe")
+        self.close_perticular_app("pyw.exe")
         self.speak(random.choice(self.BYE))
-        self.close_perticualr_app("python.exe")
+        self.close_perticular_app("python.exe")
 
     def close_it_or_window(self):
         self._perform_key_press(["alt", "F4"], "down")
         self._perform_key_press(["alt"], "up")
+
     def close_desktop(self):
-        self._perform_key_press(["win","ctrl","f4"],"down")
-        self._perform_key_press(["win","ctrl"],"up")
+        self._perform_key_press(["win", "ctrl", "f4"], "down")
+        self._perform_key_press(["win", "ctrl"], "up")
+
     def close_brave(self):
-        self.close_perticualr_app("brave.exe")
+        self.close_perticular_app("brave.exe")
+
     def close_arc(self):
-        self.close_perticualr_app("Arc.exe")
+        self.close_perticular_app("Arc.exe")
+
     def close_chrome(self):
-        self.close_perticualr_app("chrome.exe")
-    def  close_code(self):
-        self.close_perticualr_app("code.exe")
+        self.close_perticular_app("chrome.exe")
+
+    def close_code(self):
+        self.close_perticular_app("code.exe")
+
     def close_bg_py(self):
-        self.close_perticualr_app("pyw.exe")
+        self.close_perticular_app("pyw.exe")
+
     def close_tab(self, n=1):
         try:
             pg.keyDown("ctrl")
@@ -877,7 +1019,7 @@ class Utility:
     def coffE():
         """Returns a random reminder to drink coffee."""
         return random.choice(
-            ["Take a break, grab a cup of coffee.", "Have a cup of coffee sir."]
+            ["Take a break, grab a cup of coffee.", "Have a cup of coffee, sir."]
         )
 
     def custom_message(self, title, message):
@@ -892,7 +1034,12 @@ class Utility:
         x = screen_width - size[0] - 10
         custom_box.geometry(f"{size[0]}x{size[1]}+{int(x)}+10")
         canvas = tk.Canvas(
-            custom_box, width=300, height=150, bd=0, highlightthickness=0, bg="black"
+            custom_box,
+            width=300,
+            height=150,
+            bd=0,
+            highlightthickness=0,
+            bg="black",
         )
         canvas.pack()
         canvas.create_oval(0, 0, 30, 30, fill="#2c3e50", outline="#2c3e50")
@@ -1001,8 +1148,8 @@ class Utility:
         """Returns a random reminder to eat."""
         return random.choice(
             [
-                "Have you eaten something sir?",
-                "Did you have your dinner sir?",
+                "Have you eaten something, sir?",
+                "Did you have your dinner, sir?",
                 "Take a rest, eat something.",
             ]
         )
@@ -1010,7 +1157,7 @@ class Utility:
     @staticmethod
     def finRep():
         """Returns a random response to inquire about well-being."""
-        return random.choice(["Oh, it's great sir.", "Okay sir.", "Fine sir."])
+        return random.choice(["Oh, it's great, sir.", "Okay, sir.", "Fine, sir."])
 
     @staticmethod
     def greet(greeting_type):
@@ -1031,21 +1178,21 @@ class Utility:
             if 0 <= hour < 12:
                 self.speak(response)
             elif 12 <= hour < 18:
-                self.speak("You might have mistaken sir, It's Afternoon!")
+                self.speak("You might have mistaken, sir, It's Afternoon!")
             else:
-                self.speak("You might have mistaken sir, It's Evening!")
+                self.speak("You might have mistaken, sir, It's Evening!")
         elif tag == "afternoon":
             if 0 <= hour < 12:
-                self.speak("You might have mistaken sir, It's Morning!")
+                self.speak("You might have mistaken, sir, It's Morning!")
             elif 12 <= hour < 18:
                 self.speak(response)
             else:
-                self.speak("You might have mistaken sir, It's Evening!")
+                self.speak("You might have mistaken, sir, It's Evening!")
         elif tag == "evening":
             if 0 <= hour < 12:
-                self.speak("You might have mistaken sir, It's Morning!")
+                self.speak("You might have mistaken, sir, It's Morning!")
             elif 12 <= hour < 18:
-                self.speak("You might have mistaken sir, It's Afternoon!")
+                self.speak("You might have mistaken, sir, It's Afternoon!")
             else:
                 self.speak(response)
 
@@ -1072,26 +1219,26 @@ class Utility:
         """Returns a random greeting message."""
         return random.choice(
             [
-                "Hello sir!",
-                "Hello! How are you sir?",
+                "Hello, sir!",
+                "Hello! How are you, sir?",
                 "Hey love! How you doing!",
-                "Hello sir! I was just thinking of you.",
-                "Hello sir! How you doing?",
+                "Hello, sir! I was just thinking of you.",
+                "Hello, sir! How you doing?",
             ]
         )
 
     def hibernatE(self):
         self.lastChargeCheck()
         hib = [
-            "Alrighty, I'm out! Catch you later sir !",
-            "I'm off now. See ya soon sir !",
+            "Alrighty, I'm out! Catch you later, sir !",
+            "I'm off now. See ya soon, sir !",
             "Later, sir ! I'm signing off.",
             "Peace out! I'm logging off.",
             "Adios Señor! Until we meet again!",
             "Shutting down now. Take care, sir !",
-            "Take care! Goodbye sir !",
-            "Take care! See you next time sir !",
-            "Time for me to power down. See ya sir !",
+            "Take care! Goodbye, sir !",
+            "Take care! See you next time, sir !",
+            "Time for me to power down. See ya, sir !",
         ]
         hibi = random.choice(hib)
         self.speak(hibi)
@@ -1104,7 +1251,7 @@ class Utility:
         pg.keyDown("win")
         pg.press("m")
         pg.keyUp("win")
-        self.speak("Done sir!")
+        self.speak("Done, sir!")
 
     def hotspot(self):
         try:
@@ -1129,6 +1276,8 @@ class Utility:
 
     @staticmethod
     def intrOmsC():
+        import time
+
         """Plays a random system intro sound."""
         intr = ["robo1.wav", "robo2.wav"]
         x = random.choice(intr)
@@ -1193,7 +1342,7 @@ class Utility:
         return {}
 
     def maiNdesKtoP(self):
-        self.speak("which sir?")
+        self.speak("which, sir?")
         print("study(0),alpha(1),extra(2),trash(3)")
         dt = self.take_command().lower()
         if "study" in dt or "zero" in dt or "0" in dt:
@@ -1204,19 +1353,21 @@ class Utility:
             self.desKtoP(2)
         elif "trash" in dt or "3" in dt or "three" in dt or ("third" in dt):
             self.desKtoP(3)
-        self.speak("Done sir !")
+        self.speak("Done, sir !")
 
-    def maximize_window(self):
+    def maximize_window(self, say=False):
         pg.keyDown("win")
         pg.press("up")
         pg.keyUp("win")
-        self.speak("Done sir!")
+        if say:
+            self.speak("Done, sir!")
 
-    def minimize_window(self):
+    def minimize_window(self, say=False):
         pg.keyDown("win")
         pg.press("down")
         pg.keyUp("win")
-        self.speak("Done sir!")
+        if say:
+            self.speak("Done, sir!")
 
     def move_direction(self, tag, query):
         direction = "right" if tag == "forward" else "left"
@@ -1228,6 +1379,46 @@ class Utility:
             pg.press(direction, 2)
         elif any((x in query for x in ["four", "4"])):
             pg.press(direction, 3)
+
+    def process_move_window(self, query):
+        json_file = os.path.join(os.path.dirname(__file__), "data", "intents.json")
+        with open(json_file, "r") as f:
+            self.data = json.load(f)  # Load intents from the JSON file
+
+        # Find the intent for "movewindow"
+        self.open_intent = next(
+            (
+                intent
+                for intent in self.data["intents"]
+                if intent["tag"] == "movewindow"
+            ),
+            None,
+        )
+        if not self.open_intent:
+            raise ValueError('No "movewindow" intent found in the provided JSON file.')
+
+        # Corrected action map
+        self.action_map = {
+            "study": (self.utils.move_window, 0),
+            "alpha": (self.utils.move_window, 1),
+            "extra": (self.utils.move_window, 2),
+            "trash": (self.utils.move_window, 3),
+        }
+
+        # Check entities in query
+        query = query.lower()
+        for entity in self.open_intent["entities"]:
+            if entity in query and entity in self.action_map:
+                func, arg = self.action_map[entity]
+                func(arg)  # Call the function with the argument
+                return f"Action executed for entity: {entity}"  # Return statement will now execute
+        return "Entity not found in the query."
+
+    def move_window(self, desk):
+        current_window = AppView.current()
+        target_desktop = VirtualDesktop(desk)
+        current_window.move(target_desktop)
+        print(f"Moved window {current_window.hwnd} to {target_desktop.number}")
 
     def mute_speaker(self):
         """Mute the system volume."""
@@ -1249,11 +1440,11 @@ class Utility:
         """Returns a random welcome back message."""
         return random.choice(
             [
-                "Welcome back sir",
-                "Nice to see you again sir",
-                "Good to have you back sir.",
-                "It's great to see you again sir.",
-                "I'm glad to see you again sir. Let's get started!",
+                "Welcome back, sir",
+                "Nice to see you again, sir",
+                "Good to have you back, sir.",
+                "It's great to see you again, sir.",
+                "I'm glad to see you again, sir. Let's get started!",
             ]
         )
 
@@ -1445,7 +1636,7 @@ class Utility:
             pg.keyUp(action[0])
         else:
             pg.press(action)
-        self.speak("Done sir!")
+        self.speak("Done, sir!")
 
     @staticmethod
     def phN():
@@ -1534,14 +1725,14 @@ class Utility:
 
     def rP(self):
         rply = [
-            "I'm on it sir",
+            "I'm on it, sir",
             "Affirmative, moving on!",
             "Okie-dokie!, let’s rock!",
-            "On it sir",
+            "On it, sir",
             "Roger that, sir!",
             "Sure thing, sir!",
             "You got it!",
-            "as you speak sir",
+            "as you speak, sir",
             "you got it, sir!",
         ]
         return random.choice(rply)
@@ -1569,20 +1760,12 @@ class Utility:
         pg.press("enter")
 
     def restart_explorer(self):
-        try:
-            self.close_perticualr_app("explorer.exe")
-            sleep(2)
-            subprocess.Popen(["explorer.exe"], shell=False)
-            self.speak("Explorer restarted successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error during explorer management: {e}")
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+        self.close_perticular_app("explorer.exe")
 
     def restart_phoenix(self):
-        self.close_perticualr_app("pyw.exe")
+        self.close_perticular_app("pyw.exe")
         self.desKtoP(3)
-        path = os.path.join(os.path.dirname(__file__),"batch","main.bat")
+        path = os.path.join(os.path.dirname(__file__), "batch", "main.bat")
         os.startfile(path)
         sleep(5)
         sys.exit()
@@ -1711,7 +1894,10 @@ class Utility:
         time_until_reminder_seconds = time_until_reminder.total_seconds()
         time.sleep(time_until_reminder_seconds)
         notification.notify(
-            title="Reminder", message=reminder_message, app_name="Phoenix", timeout=10
+            title="Reminder",
+            message=reminder_message,
+            app_name="Phoenix",
+            timeout=10,
         )
         self.speak("Reminder notification delivered, sir!")
         import tkinter as tk
@@ -1774,13 +1960,13 @@ class Utility:
             "Your PC is about to shut down in less than 60 seconds.",
         ]
         sht2 = [
-            "Alrighty, I'm out! See you later sir!",
-            "I'm off now. See ya soon sir!",
+            "Alrighty, I'm out! See you later, sir!",
+            "I'm off now. See ya soon, sir!",
             "Peace out! I'm logging off.",
             "Adios Señor! Until we meet again!",
             "Shutting down now. Take care, sir!",
-            "Take care! See you next time sir!",
-            "Time for me to power down. See ya sir!",
+            "Take care! See you next time, sir!",
+            "Time for me to power down. See ya, sir!",
         ]
         shti1 = random.choice(sht1)
         shti2 = random.choice(sht2)
@@ -1926,12 +2112,12 @@ class Utility:
         return self.voice_recognition.take_command()
 
     def tim(self):
-        tt = time.strftime("%I:%M %p")
+        tt = datetime.now().strftime("%I:%M %p")
         self.speak(f"The time is {tt}.")
 
     def toggle_fullscreen(self):
         pg.press("f11")
-        self.speak("Done sir!")
+        self.speak("Done, sir!")
 
     def type_text(self, query):
         text = query.replace("type ", "")
@@ -1956,11 +2142,11 @@ class Utility:
         """Returns a random greeting when the user wakes up."""
         return random.choice(
             [
-                "Hello sir! I am listening.",
+                "Hello, sir! I am listening.",
                 "Hello! I am here for you.",
                 "Hey love! Phoenix is here.",
-                "Hello sir! Phoenix is always here for you.",
-                "Hello sir! How can I help you?",
+                "Hello, sir! Phoenix is always here for you.",
+                "Hello, sir! How can I help you?",
             ]
         )
 
@@ -1979,8 +2165,8 @@ class Utility:
         """Returns a random reminder to drink water."""
         return random.choice(
             [
-                "Be hydrated sir.",
-                "Drink some water sir, be hydrated.",
+                "Be hydrated, sir.",
+                "Drink some water, sir, be hydrated.",
                 "Do drink water, be hydrated.",
             ]
         )
@@ -2166,15 +2352,12 @@ class TimeBasedFunctionality:
 
 class TimerHandle:
 
-    def __init__(self):
+    def __init__(self, utility):
         self.timer_file = os.path.join(
             os.path.dirname(__file__), "data", "TimeData.json"
         )
         self._initialize_timer_file()
-        self.root = tk.Tk()
-        self.gui = VoiceAssistantGUI(self.root)
-        self.se = SpeechEngine()
-        self.recognizer = VoiceRecognition(self.gui)
+        self.utils = utility
 
     def _assign_thread_to_timer(self, timer):
         """
@@ -2258,7 +2441,7 @@ class TimerHandle:
                 timer_id = timer["id"]
                 ring_time = timer.get("ringTime", [])
                 if len(ring_time) != 3:
-                    print(f"Time's up sir. ")
+                    print(f"Time's up, sir. ")
                     return
                 hour, minute, second = ring_time
                 now = datetime.now()
@@ -2316,19 +2499,20 @@ class TimerHandle:
         set_time = (current_time.hour, current_time.minute, current_time.second)
         ring_time_tuple = (ring_time.hour, ring_time.minute, ring_time.second)
         create_date = current_time.strftime("%d-%m-%y")
+        diff = round((ring_time - current_time).total_seconds() / 60, 2)
         timer_details = {
-            "createDate": create_date,
             "id": timer_id,
+            "createDate": create_date,
+            "setTime": set_time,
             "ringTime": ring_time_tuple,
             "ringed": False,
-            "setTime": set_time,
         }
         with open(self.timer_file, "r+") as f:
             data = json.load(f)
             data["timers"].append(timer_details)
             f.seek(0)
             json.dump(data, f, indent=4)
-        print(f"Timer set successfully! Timer-ID:{timer_id}.")
+        self.utils.speak(f"Timer set successfully for {diff} minutes.")
 
     def viewTimer(self):
         """
@@ -2376,15 +2560,12 @@ class AlarmHandle:
         "sunday": "SU",
     }
 
-    def __init__(self):
+    def __init__(self, utility):
         self.alarm_file = os.path.join(
             os.path.dirname(__file__), "data", "TimeData.json"
         )
         self._initialize_alarm_file()
-        self.root = tk.Tk()
-        self.gui = VoiceAssistantGUI(self.root)
-        self.se = SpeechEngine()
-        self.recognizer = VoiceRecognition(self.gui)
+        self.utils = utility
 
     def _initialize_alarm_file(self):
         """Initialize the timer file if it doesn't exist."""
@@ -2433,11 +2614,16 @@ class AlarmHandle:
         try:
             with open(self.alarm_file, "r") as file:
                 data = json.load(file)
+            self.utils.speak("just a second, sir.")
+            idx, dsk_nm = self.utils.get_cur_desk()
+            print(idx, dsk_nm)
+            self.utils.get_window("MainPHNX.py")
             self.viewAlarm()
+            sleep(2)
+            self.utils.maximize_window()
+            self.utils.speak("Enter the Index number for the alarm you want to delete.")
             try:
-                alarm_index = (
-                    int(input("\nEnter the index of the alarm to delete: ")) - 1
-                )
+                alarm_index = int(input("\nEnter index to delete: ")) - 1
                 if 0 <= alarm_index < len(data["alarms"]):
                     data["alarms"][alarm_index]["delete"] = True
                     with open(self.alarm_file, "w") as file:
@@ -2454,6 +2640,11 @@ class AlarmHandle:
             print("Error decoding the JSON file. Please check the file format.")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
+        finally:
+            sleep(2)
+            self.utils.minimize_window()
+            self.utils.speak(f"Going back to {dsk_nm}")
+            self.utils.desKtoP(idx)
 
     def getRepeat(self, query):
         """
@@ -2486,40 +2677,37 @@ class AlarmHandle:
                     days = [self.days_mapping[day]]
                     break
         else:
-            print(
-                "Do you want the alarm for a specific day, weekly, or something else?"
+            self.utils.speak(
+                "Do you want the alarm for a specific day, weekly, or something else? please enter"
             )
-            user_input = (
-                input(
-                    "Type 'weekly', 'daily', or leave blank for default (once today): "
-                )
-                .strip()
-                .lower()
-            )
+            user_input = self.utils.take_command().lower()
             if user_input == "daily":
                 repeat = "daily"
                 days = ["TODAY"]
             elif user_input == "weekly":
                 repeat = "weekly"
+
+                self.utils.speak("Enter the days properly.")
                 days_input = (
                     input("Enter the days (e.g., monday tuesday friday): ")
                     .strip()
                     .lower()
                     .split()
                 )
+                sleep(3)
                 days = [
                     self.days_mapping[day]
                     for day in days_input
                     if day in self.days_mapping
                 ]
                 if not days:
-                    print(
+                    self.utils.speak(
                         "No valid days entered. Setting to default 'once' for 'TODAY'."
                     )
                     repeat = "once"
                     days = ["TODAY"]
             else:
-                print("Defaulting to 'once' for 'TODAY'.")
+                self.utils.speak("Defaulting to 'once' for 'TODAY'.")
                 repeat = "once"
                 days = ["TODAY"]
         return {repeat: days}
@@ -2540,11 +2728,10 @@ class AlarmHandle:
                 hour = int(time_match.group(1))
                 minute = int(time_match.group(2))
             else:
+                self.utils.speak("Time not recognized. Please enter time as shown. ")
                 while True:
-                    user_input = input(
-                        "Time not recognized. Please input time in HH:MM (24H) format (e.g., 23:45): "
-                    ).strip()
                     print("Type 'exit' to go out of the loop.")
+                    user_input = input("HH:MM (24H) format (e.g., 23:45) : ").strip()
                     if "exit" in user_input:
                         return (None, None)
                     try:
@@ -2562,7 +2749,7 @@ class AlarmHandle:
             return (hour, minute)
         return (None, None)
 
-    def handleAlarmPrompt(self, query):
+    def setAlarm(self, query):
         """
         Handles the alarm setup process, prompts for confirmation, and updates the alarm JSON file.
 
@@ -2576,26 +2763,20 @@ class AlarmHandle:
         repeat_dict = self.getRepeat(query)
         repeat = list(repeat_dict.keys())[0]
         days = repeat_dict[repeat]
+        self.utils.speak(f"What label should i give, sir?")
         while True:
-            print(
-                f"Enter label name or 'no' to just come out of the loop for: {hour}:{minute}:"
-            )
-            lbl = input()
+            print(f">>> Listening for Label:")
+            lbl = self.utils.take_command().lower()
             if lbl:
                 lbl = lbl.lower().strip()
-                if "no" in lbl:
+                if "no" in lbl or "don't" in lbl:
                     lbl = "alarm"
-                break
+                    break
+                elif lbl == "":
+                    continue
+                else:
+                    break
         unique_id = f"A_{uuid.uuid4().hex[:6]}"
-        print(
-            f"Please confirm the details:\nTime: {hour}:{minute} \nRepeat: {repeat}\nDays: {days}\nLabel: {lbl}"
-        )
-        confirmation = (
-            input("Type 'Y' to confirm, anything else to cancel: ").strip().lower()
-        )
-        if confirmation != "y":
-            print("Operation cancelled.")
-            return
         alarm_data = {
             "day": days,
             "delete": False,
@@ -2613,9 +2794,7 @@ class AlarmHandle:
         alarms["alarms"].append(alarm_data)
         with open(self.alarm_file, "w") as file:
             json.dump(alarms, file, indent=4)
-        print(
-            f"Alarm successfully set for {hour}:{minute} with repeat: {repeat} and days: {days}."
-        )
+        self.utils.speak(f"Alarm successfully set for {hour} hour {minute} minutes.")
 
     def removeDeletedAlarms(self):
         """
@@ -2693,51 +2872,49 @@ class AlarmHandle:
             table_data = []
             for idx, alarm in enumerate(data["alarms"], start=1):
                 row = [
-                    " ".join(map(str, alarm.get("ringAlarm", ["N/A"]))),
-                    ", ".join(alarm.get("day", [])),
-                    alarm.get("delete", False),
+                    idx,
                     alarm.get("label", "N/A"),
                     alarm.get("repeat", "N/A"),
+                    ", ".join(alarm.get("day", [])),
                     alarm.get("ringed", "N/A"),
-                    idx,
+                    alarm.get("delete", False),
+                    " ".join(map(str, alarm.get("ringAlarm", ["N/A"]))),
                 ]
                 table_data.append(row)
             headers = [
-                "Day",
-                "Delete",
                 "Index",
                 "Label",
                 "Repeat",
-                "RingAlarm",
+                "Day",
                 "Ringed",
+                "Delete",
+                "RingAlarm",
             ]
-            print("\nExisting Alarms:")
+            idx, dsk_nm = self.utils.get_cur_desk()
+            print(idx, dsk_nm)
+            self.utils.get_window("MainPHNX.py")
+            sleep(2)
+            self.utils.maximize_window()
+            self.utils.speak("here are the Existing Alarms:")
             print(tabulate(table_data, headers=headers, tablefmt="grid"))
         except FileNotFoundError:
             print("alarms.json file not found. Please create a schedule first.")
         except json.JSONDecodeError:
             print("Error decoding the JSON file. Please check the file format.")
+        finally:
+            print("keeping window for 10 seconds")
+            sleep(10)
+            self.utils.minimize_window()
+            self.utils.speak(f"Going back to {dsk_nm}")
+            self.utils.desKtoP(idx)
 
 
 class ReminderHandle:
-    days_mapping = {
-        "monday": "MO",
-        "tuesday": "TU",
-        "wednesday": "WE",
-        "thursday": "TH",
-        "friday": "FR",
-        "saturday": "ST",
-        "sunday": "SU",
-    }
-
-    def __init__(self):
+    def __init__(self, utility):
         self.reminder_file = os.path.join(
-            os.path.dirname(__file__), "data", "reminder.json"
+            os.path.dirname(__file__), "data", "TimeData.json"
         )
-        self.root = tk.Tk()
-        self.gui = VoiceAssistantGUI(self.root)
-        self.se = SpeechEngine()
-        self.recognizer = VoiceRecognition(self.gui)
+        self.utils = utility
 
     def deleteReminder(self):
         """
@@ -2749,28 +2926,21 @@ class ReminderHandle:
             if "reminders" not in data or not data["reminders"]:
                 print("No reminders found in the file.")
                 return
+            idx, dsk_nm = self.utils.get_cur_desk()
+            print(idx, dsk_nm)
+            self.utils.get_window("MainPHNX.py")
+            sleep(2)
+            self.utils.maximize_window()
             self.viewReminders()
             try:
                 reminder_index = (
                     int(input("\nEnter the index of the reminder to delete: ")) - 1
                 )
                 if 0 <= reminder_index < len(data["reminders"]):
-                    confirmation = (
-                        input(
-                            f"Are you sure you want to delete reminder {reminder_index + 1}? (y/n): "
-                        )
-                        .strip()
-                        .lower()
-                    )
-                    if confirmation == "y":
-                        removed_reminder = data["reminders"].pop(reminder_index)
-                        with open(self.reminder_file, "w") as file:
-                            json.dump(data, file, indent=4)
-                        print(
-                            f"Reminder '{removed_reminder['message']}' has been deleted."
-                        )
-                    else:
-                        print("Deletion canceled.")
+                    removed_reminder = data["reminders"].pop(reminder_index)
+                    with open(self.reminder_file, "w") as file:
+                        json.dump(data, file, indent=4)
+                    print(f"Reminder '{removed_reminder['message']}' has been deleted.")
                 else:
                     print("Invalid index. Please enter a valid index number.")
             except ValueError:
@@ -2781,6 +2951,11 @@ class ReminderHandle:
             print("Error decoding the JSON file. Please check the file format.")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
+        finally:
+            sleep(10)
+            self.utils.minimize_window()
+            self.utils.speak(f"Going back to {dsk_nm}")
+            self.utils.desKtoP(idx)
 
     def editReminder(self):
         """
@@ -2791,13 +2966,17 @@ class ReminderHandle:
             with open(self.reminder_file, "r") as file:
                 data = json.load(file)
             if "reminders" not in data or not data["reminders"]:
-                print("No reminders found in the file.")
+                self.utils.speak("No reminders found in the file.")
                 return
+            idx, dsk_nm = self.utils.get_cur_desk()
+            print(idx, dsk_nm)
+            self.utils.get_window("MainPHNX.py")
+            sleep(2)
+            self.utils.maximize_window()
             self.viewReminders()
             try:
-                reminder_index = (
-                    int(input("\nEnter the index of the reminder to edit: ")) - 1
-                )
+                self.utils.speak("Enter the index of the reminder to edit: ")
+                reminder_index = int(input()) - 1
                 if 0 <= reminder_index < len(data["reminders"]):
                     reminder = data["reminders"][reminder_index]
                 else:
@@ -2853,6 +3032,11 @@ class ReminderHandle:
             print("Error decoding the JSON file. Please check the file format.")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
+        finally:
+            sleep(10)
+            self.utils.minimize_window()
+            self.utils.speak(f"Going back to {dsk_nm}")
+            self.utils.desKtoP(idx)
 
     def filter_reminders(self):
         try:
@@ -2914,6 +3098,7 @@ class ReminderHandle:
         """
         Prompt the user to input time in HH:MM format and return it in 24-hour format.
         """
+        self.utils.speak("Enter time properly")
         while True:
             user_input = input(
                 "Please input time in HH:MM (24H) format (e.g., 23:45) (type exit to get out of the loop): "
@@ -2986,71 +3171,142 @@ class ReminderHandle:
 
     def setReminder(self, query):
         """
-        Set a reminder based on the query and save it to a JSON file.
+        Args:
+            query (str): The query string containing the reminder details.
+                        The query should include the time in HH:MM format and
+                        optionally the day (e.g., "tomorrow" or "next Monday")
+                        and the message for the reminder.
+
+        This method parses the query to extract the reminder time, date, and message.
+        If the date or time is not specified, it defaults to the next day at 09:00 AM.
+        The reminder is then saved to a JSON file with a unique ID.
         """
-        message = ""
-        reminder_date = ""
-        reminder_day = ""
-        reminder_time = ""
+        days_mapping = {
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+            "next",
+            "tomorrow",
+        }
+
         query = query.lower()
         today = datetime.now()
-        queries = query.split("for")
         reminder_date = None
         reminder_day = None
+        reminder_time = None
         message = None
-        time_match = re.search("(\\d{1,2}):(\\d{2})", query)
+
+        # Extract time from the query
+        time_match = re.search(r"(\d{1,2}):(\d{2})", query)
         if time_match:
             hour = int(time_match.group(1))
             minute = int(time_match.group(2))
             reminder_time = f"{hour:02}:{minute:02}"
-        if len(queries) > 1:
-            condition = queries[1].strip()
-            if "tomorrow" in condition:
-                next_day = today + datetime.timedelta(days=1)
-                reminder_date = next_day.strftime("%d-%m-%y")
-                reminder_day = self.days_mapping[next_day.strftime("%A").lower()]
-            elif "next" in condition:
-                for day in self.days_mapping.keys():
-                    if day in condition:
-                        reminder_date = self.get_next_day(day)
-                        reminder_day = self.days_mapping[day]
-                        break
-        message_match = re.search("to (.*?) (on|at)", query)
-        if message_match:
-            message = message_match.group(1).strip()
-        if len(queries) > 2:
-            message = queries[2].strip()
-        if not reminder_date or not reminder_day:
-            next_day = today + datetime.timedelta(days=1)
-            reminder_date = next_day.strftime("%d-%m-%y")
-            reminder_day = self.days_mapping[next_day.strftime("%A").lower()]
         if not reminder_time:
-            hr, min = self.get_time()
-        if hr is not None and min is not None:
-            reminder_time = f"{hr:02}:{min:02}"
-        else:
+            hour, minute = self.get_time()
+            reminder_time = f"{hour:02}:{minute:02}"
+        if not reminder_time:
             reminder_time = "09:00"
+
+        # Check for the word 'for' in the query
+        if "for" in query:
+            queries = query.split("for", 1)
+            after_for = queries[1].strip()
+
+            # Check for days in days_mapping after 'for'
+            # found_day = None
+            for day in days_mapping:
+                if day in after_for:
+                    found_day = day
+                    break
+            found_day = None
+            if found_day:
+                if "tomorrow" in after_for:
+                    next_day = today + timedelta(days=1)
+                    reminder_date = next_day.strftime("%d-%m-%y")
+                    reminder_day = next_day.strftime("%A").lower()
+                elif "next" in after_for:
+                    reminder_date = self.get_next_day(found_day)
+                    reminder_day = found_day
+                elif "yesterday" in after_for:
+                    ls = [
+                        "Are you a dumb?",
+                        "You have a time machine or what!!!",
+                        "You trying to check my abilities or what!!",
+                    ]
+                    rp = random.choice(ls)
+                    self.utils.speak(f"{rp}")
+                    return
+                else:
+                    reminder_date = self.get_next_day(found_day)
+                    reminder_day = found_day
+            else:
+                # If no day is found, treat it as a message
+                message = after_for.strip()
+
+        # Check for the word 'to' in the query
+        to_match = re.search(r"to (.*?)$", query)
+        if to_match:
+            potential_message = to_match.group(1).strip()
+            if potential_message:
+                message = potential_message
+
+        # If no valid date is found, ask the user for the date
+        if not reminder_date:
+            self.utils.speak("Enter date properly")
+        while not reminder_date:
+            new_date = input("Enter the new date (DD-MM-YY): ").strip()
+            if "break" in new_date:
+                print("Exiting reminder setup.")
+                return
+            elif not re.match(r"^\d{2}-\d{2}-\d{2}$", new_date):
+                print("Invalid date format. Please use DD-MM-YY format.")
+            else:
+                try:
+                    # Validate the date
+                    datetime.strptime(new_date, "%d-%m-%y")
+                    reminder_date = new_date
+                    reminder_day = (
+                        datetime.strptime(new_date, "%d-%m-%y").strftime("%A").lower()
+                    )
+                except ValueError:
+                    print("Invalid date. Please enter a valid date in DD-MM-YY format.")
+
+        # If no message is provided, ask for it
         while not message:
-            message = input("What is the reminder for? ").strip()
+            self.utils.speak("What is the message, sir?")
+            while True:
+                print(">>> Listening for Message:")
+                message = self.utils.take_command().lower()
+                if message:
+                    message = message.lower().strip()
+                    if "no" in message or "don't" in message:
+                        message = "reminder"
+                        break
+                    elif message == "":
+                        continue
+                    else:
+                        break
+
+        # Generate a unique ID and save the reminder
         id = f"R_{random.randint(100000, 999999)}"
         reminder = {
-            "date": reminder_date,
-            "day": reminder_day,
             "id": id,
+            "day": reminder_day,
+            "date": reminder_date,
             "message": message,
-            "reminded": False,
             "time": reminder_time,
+            "reminded": False,
         }
         self.save_to_json(reminder)
-        print(
-            f"Reminder set for '{message}'. I will remind you on {reminder_date.replace('-', ' ')}."
+        spoken_date = self.format_spoken_date(reminder_date)
+        self.utils.speak(
+            f"Reminder set for '{message}'. I will remind you on {spoken_date} at {reminder_time}."
         )
-
-    def speak(self, query):
-        self.speech_engine.speak(query)
-
-    def take_command(self):
-        return self.recognizer.take_command()
 
     def viewReminders(self):
         """
@@ -3072,25 +3328,48 @@ class ReminderHandle:
                     reminder.get("time", "N/A"),
                 ]
                 table_data.append(row)
-            headers = ["Date", "Index", "Message", "Reminded", "Time"]
-            print("\nExisting Reminders:")
+            headers = ["Index", "Date", "Message", "Reminded", "Time"]
+            idx, dsk_nm = self.utils.get_cur_desk()
+            print(idx, dsk_nm)
+            self.utils.get_window("MainPHNX.py")
+            sleep(2)
+            self.utils.maximize_window()
+            self.utils.speak("Here are the Existing Reminders:")
             print(tabulate(table_data, headers=headers, tablefmt="grid"))
         except FileNotFoundError:
             print("reminder.json file not found. Please create a reminder first.")
         except json.JSONDecodeError:
             print("Error decoding the JSON file. Please check the file format.")
+        finally:
+            sleep(10)
+            self.utils.minimize_window()
+            self.utils.speak(f"Going back to {dsk_nm}")
+            self.utils.desKtoP(idx)
+
+    def format_spoken_date(self, date_str):
+        """
+        Converts a date in DD-MM-YY format to a natural spoken format.
+        Args:
+            date_str (str): The date string in DD-MM-YY format.
+        Returns:
+            str: A natural spoken date, e.g., "2nd January".
+        """
+        date_obj = datetime.strptime(date_str, "%d-%m-%y")
+        day = date_obj.day
+        month = date_obj.strftime("%B")
+        suffix = (
+            "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        )
+        return f"{day}{suffix} {month}"
 
 
 class ScheduleHandle:
 
-    def __init__(self):
+    def __init__(self, utility):
         self.schedule_file = os.path.join(
             os.path.dirname(__file__), "data", "schedule.json"
         )
-        self.root = tk.Tk()
-        self.gui = VoiceAssistantGUI(self.root)
-        self.se = SpeechEngine()
-        self.recognizer = VoiceRecognition(self.gui)
+        self.utils = utility
 
     def addSchedule(self, query):
         """
@@ -3313,7 +3592,9 @@ class ScheduleHandle:
 
 class HandleTimeBasedFunctions:
 
-    def __init__(self):
+    def __init__(
+        self, timer_manager, alarm_manager, schedule_manager, reminder_manager, utility
+    ):
         self.time_data_file = os.path.join(
             os.path.dirname(__file__), "data", "TimeData.json"
         )
@@ -3322,12 +3603,11 @@ class HandleTimeBasedFunctions:
         self.today_reminders = {}
         self.today_alarms = {}
         self.today_schedule_events = {}
-        self.timerClass = TimerManager()
-        self.reminderClass = ReminderManager()
-        self.alarmClass = AlarmManager()
-        self.utils = Utility()
-        self.scheduleClass = ScheduleManager()
-        self.speech_engine = SpeechEngine()
+        self.timerClass = timer_manager
+        self.reminderClass = reminder_manager
+        self.alarmClass = alarm_manager
+        self.scheduleClass = schedule_manager
+        self.utils = utility
 
     def check_alarms(self):
         now = datetime.now()
@@ -3336,7 +3616,7 @@ class HandleTimeBasedFunctions:
         for alarm in self.data["alarms"]:
             alarm_time = f"{alarm['ringAlarm'][0]:02}:{alarm['ringAlarm'][1]:02}"
             if alarm_time == current_time:
-                self.speak(f"Ringing Alarm: {alarm['label']}")
+                self.utils.speak(f"Ringing Alarm: {alarm['label']}")
                 if alarm["repeat"] == "once":
                     continue
             self.today_alarms[alarm["label"]] = alarm_time
@@ -3351,9 +3631,9 @@ class HandleTimeBasedFunctions:
             if reminder["date"] == today_date:
                 reminder_time = datetime.strptime(reminder["time"], "%H:%M").time()
                 if now.time() >= reminder_time:
-                    self.speak(f"Reminder: {reminder['message'][0]}")
+                    self.utils.speak(f"Reminder: {reminder['message'][0]}")
                 else:
-                    self.speech_engine.speak(
+                    self.speech_engine.utils.speak(
                         f"You have missed reminder: {', '.join(reminder['message'])}"
                     )
             elif reminder["date"] > today_date:
@@ -3375,10 +3655,12 @@ class HandleTimeBasedFunctions:
         current_hour = current_time.hour
 
         if current_hour != previous_hour:
-            tt = time.strftime("%I:%M %p")  # Format current time as hh:mm AM/PM
-            self.speak(f"{self.utils.tM()} {tt}.")
-            time.sleep(15)  # Pause before announcing the weather report
-            self.speak(self.utils.wtR())
+            tt = datetime.now().strftime(
+                "%I:%M %p"
+            )  # Format current time as hh:mm AM/PM
+            self.utils.speak(f"{self.utils.tM()} {tt}.")
+            sleep(15)  # Pause before announcing the weather report
+            self.utils.speak(self.utils.wtR())
             return current_hour  # Update the previous_hour
         return previous_hour  # No change in hour, return the same previous_hour
 
@@ -3392,10 +3674,9 @@ class HandleTimeBasedFunctions:
         # self.today_alarms = {}
         # self.today_schedule_events = {}
         self.timerClass.check_timer()
+        self.alarmClass.check_alarms()
         self.reminderClass.ring_reminders()
         self.scheduleClass.check_schedule()
-        self.alarmClass.check_alarms()
-        time.sleep(1)
 
     def save_data(self):
         with open(self.time_data_file, "w") as f:
@@ -3407,11 +3688,12 @@ class HandleTimeBasedFunctions:
 
 class ReminderManager:
 
-    def __init__(self):
+    def __init__(self, util):
         self.reminder_file = os.path.join(
             os.path.dirname(__file__), "data", "TimeData.json"
         )
-        self.se = SpeechEngine()
+        self.ringing = False
+        self.utils = util
 
     def filter_reminders(self):
         try:
@@ -3447,37 +3729,56 @@ class ReminderManager:
                 reminder_datetime = datetime.combine(
                     reminder_date.date(), reminder_time
                 )
-                if current_datetime >= reminder_datetime and (not reminder["reminded"]):
-                    reminder["reminded"] = True
-                    self.speak(
-                        f"Sir, got a reminder message, {', '.join(reminder['message'])}"
-                    )
-                    changes = True
-                elif current_datetime > reminder_datetime and (
-                    not reminder["reminded"]
-                ):
-                    print(f"You have missed reminder: {', '.join(reminder['message'])}")
-                    reminder["reminded"] = True
-                    changes = True
+                if current_datetime.date() == reminder_date.date():
+                    if (
+                        reminder_time.hour > current_datetime.hour
+                        and reminder_time.minute > current_datetime.minute
+                        and not reminder["reminded"]
+                        and self.ringing == False
+                    ):
+                        reminder["reminded"] = True
+                        self.utils.speak(
+                            f"You have missed reminder: {(reminder['message'])}"
+                        )
+                        changes = True
+                        threading.Thread(target=self.ringing_reminder).start()
+
+                    elif (
+                        reminder_time.hour == current_datetime.hour
+                        and reminder_time.minute == current_datetime.minute
+                        and not reminder["reminded"]
+                        and self.ringing == False
+                    ):
+                        self.utils.speak(
+                            f"Sir, here's your reminder for today {reminder_time.hour}:{reminder_time.minute} to {reminder['message']}"
+                        )
+                        reminder["reminded"] = True
+                        changes = True
+                        threading.Thread(target=self.ringing_reminder).start()
             if changes:
                 with open(self.reminder_file, "w") as file:
                     json.dump(data, file, indent=4)
-            self.filter_reminders()
-            time.sleep(1)
+                self.filter_reminders()
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def speak(self, query):
-        self.se.speak(query)
+    def ringing_reminder(self):
+        self.ringing == True
+        sleep(65)
+        self.ringing == False
+
+
+import os
+import json
+from datetime import datetime, time
 
 
 class TimerManager:
-
-    def __init__(self):
+    def __init__(self, spk):
         self.timer_file = os.path.join(
             os.path.dirname(__file__), "data", "TimeData.json"
         )
-        self.se = SpeechEngine()
+        self.se = spk
 
     def _mark_timer_as_ringed(self, timer_id):
         """
@@ -3500,24 +3801,44 @@ class TimerManager:
         Checks timers for their ring time and alerts when the timer rings.
         """
         try:
-            self.remove_expired_timers()
             with open(self.timer_file, "r") as f:
                 data = json.load(f)
             if not data.get("timers"):
                 return
-            current_time = datetime.now().time()
             for timer in data["timers"]:
                 timer_id = timer["id"]
+                set_time = timer.get("setTime", [])
                 ring_time = timer.get("ringTime", [])
-                if len(ring_time) != 3:
-                    print(f"Timer {timer_id} has invalid ringTime, skipping.")
+
+                # Ensure setTime and ringTime are valid
+                if (
+                    len(set_time) != 3
+                    or len(ring_time) != 3
+                    or not all(isinstance(x, int) for x in set_time + ring_time)
+                ):
+                    print(
+                        f"Timer {timer_id} has invalid setTime or ringTime, skipping."
+                    )
                     continue
-                timer_time = datetime.time(*ring_time)
-                if current_time == timer_time and (not timer.get("ringed", False)):
-                    self._mark_timer_as_ringed(timer_id)
-                    self.speak(f"Timer {timer_id} is ringing! Ring time: {ring_time}")
+
+                # Calculate the difference in minutes
+                try:
+                    set_time_obj = time(*set_time)
+                    ring_time_obj = time(*ring_time)
+                    set_datetime = datetime.combine(datetime.today(), set_time_obj)
+                    ring_datetime = datetime.combine(datetime.today(), ring_time_obj)
+                    diff = round((ring_datetime - set_datetime).total_seconds() / 60, 2)
+
+                    # Check if the timer should ring
+                    current_time = datetime.now().time()
+                    if current_time >= ring_time_obj and not timer.get("ringed", False):
+                        self._mark_timer_as_ringed(timer_id)
+                        self.speak(f"Timer set for {diff} minutes has ended.")
+                except ValueError as e:
+                    print(f"Invalid time format for timer {timer_id}: {e}")
         except Exception as e:
             print(f"Error while checking timers: {e}")
+        self.remove_expired_timers()
 
     def remove_expired_timers(self):
         """
@@ -3526,16 +3847,28 @@ class TimerManager:
         try:
             with open(self.timer_file, "r") as f:
                 data = json.load(f)
-            current_time = datetime.now().time()
+            current_time = datetime.now().time()  # Current time as a time object
             valid_timers = []
+
             for timer in data.get("timers", []):
                 ring_time = timer.get("ringTime", [])
-                if len(ring_time) == 3:
-                    timer_time = datetime.time(*ring_time)
-                    if not timer.get("ringed", False) and timer_time >= current_time:
-                        valid_timers.append(timer)
+                if len(ring_time) == 3 and all(isinstance(x, int) for x in ring_time):
+                    try:
+                        timer_time = time(*ring_time)  # Convert to a time object
+                        if (
+                            not timer.get("ringed", False)
+                            and timer_time >= current_time
+                        ):
+                            valid_timers.append(timer)
+                    except ValueError as e:
+                        print(
+                            f"Invalid ringTime format for timer {timer['id']}: {e}, removing it."
+                        )
                 else:
-                    print(f"Invalid ringTime for timer {timer['id']}, removing it.")
+                    print(
+                        f"Invalid ringTime for timer {timer.get('id', 'unknown')}: {ring_time}, removing it."
+                    )
+
             data["timers"] = valid_timers
             with open(self.timer_file, "w") as f:
                 json.dump(data, f, indent=4)
@@ -3548,11 +3881,11 @@ class TimerManager:
 
 class ScheduleManager:
 
-    def __init__(self):
+    def __init__(self, spk):
         self.schedule_file = os.path.join(
             os.path.dirname(__file__), "data", "TimeData.json"
         )
-        self.se = SpeechEngine()
+        self.se = spk
         self.halt = False
 
     def _do_halt(self):
@@ -3572,11 +3905,13 @@ class ScheduleManager:
                 print("No active schedules to check.")
                 return
             current_time = datetime.now().strftime("%H:%M")
+            # print(current_time)
             for schedule in schedules:
                 try:
                     schedule_time = schedule["time"]
+                    # print(current_time, schedule_time)
                     if (current_time == schedule_time) and (self.halt == False):
-                        self.speak(schedule["message"])
+                        self.speak("Time to ", schedule["message"])
                         threading.Thread(target=self._do_halt).start()
                 except Exception as e:
                     print(f"Error processing schedule entry '{schedule}': {e}")
@@ -3612,60 +3947,88 @@ class AlarmManager:
         "sunday": "SU",
     }
 
-    def __init__(self):
+    def __init__(self, spk, alarm_handle):
         self.alarm_file = os.path.join(
             os.path.dirname(__file__), "data", "TimeData.json"
         )
-        self.se = SpeechEngine()
-        self.al = AlarmHandle()
+        self.se = spk
+        self.al = alarm_handle
+        self.ringing = False
+
+    def ring_thread(self):
+        self.ringing = True
+        sleep(65)
+        self.ringing = False
 
     def check_alarms(self):
         """
         Continuously monitors alarms and rings them at the correct time.
         """
-        self.al.removeDeletedAlarms()
         try:
+            # Load alarms from file
             with open(self.alarm_file, "r") as file:
                 data = json.load(file)
             alarms = data.get("alarms", [])
             if not alarms:
-                return
+                return  # No alarms to process
+
             current_time = datetime.now()
-            current_hour, current_minute, current_second = (
-                current_time.hour,
-                current_time.minute,
-                current_time.second,
-            )
-            today_date = current_time.date()
-            today = datetime.now().strftime("%A").lower()
+            current_hour = current_time.hour
+            current_minute = current_time.minute
+            today = current_time.strftime("%A").lower()
             today_abbr = self.days_mapping.get(today)
+
             if not today_abbr:
                 print("Could not determine today's day.")
                 return
+
+            # Track changes to the alarm data
+            data_changed = False
+
             for alarm in alarms:
                 try:
+                    # Extract alarm details
                     alarm_time = alarm.get("ringAlarm", [])
-                    alarm_hour, alarm_minute = alarm_time
+                    if len(alarm_time) != 2:
+                        continue  # Skip invalid alarm times
+                    alarm_hour, alarm_minute = alarm_time  #
                     alarm_day = alarm.get("day", [])
-                    repeat = alarm.get("repeat", "once")
+                    repeat = alarm.get("repeat", "once").lower()
                     delete = alarm.get("delete", False)
                     ringed = alarm.get("ringed", 0)
+
+                    # Check if the alarm should ring today
                     if today_abbr in alarm_day or "TODAY" in alarm_day:
                         if delete:
-                            return
+                            continue  # Skip deleted alarms
+
                         if (
                             current_hour == alarm_hour
                             and current_minute == alarm_minute
-                            and (current_second == 0)
+                            and self.ringing == False
                         ):
-                            self.speak(f"Alarm!! time for {alarm['label']}")
+                            # Alarm triggered
+                            self.speak(
+                                f"Alarm!! Time for {alarm.get('label', 'an event')}"
+                            )
+                            threading.Thread(target=self.ring_thread).start()
+
+                            # Update alarm status
                             alarm["ringed"] = ringed + 1
+                            data_changed = True
+
+                            # Mark non-repeating alarms for deletion
                             if repeat == "once":
                                 alarm["delete"] = True
+
                 except Exception as e:
                     print(f"Error processing alarm '{alarm.get('id', 'unknown')}': {e}")
-            with open(self.alarm_file, "w") as file:
-                json.dump(data, file, indent=4)
+
+            # Write back to the file if any data has changed
+            if data_changed:
+                with open(self.alarm_file, "w") as file:
+                    json.dump(data, file, indent=4)
+
         except KeyboardInterrupt:
             print("Alarm monitoring stopped by user.")
         except Exception as e:
@@ -3721,8 +4084,10 @@ if __name__ == "__main__":
     recog = VoiceRecognition(gui)
     spk = SpeechEngine()
     utils = Utility(spk, recog)
+    # utils = Utility(spk, recog)
     # utils.open_setting()
+    utils.get_window("Code.exe", "HelperPHNX.py")
     # opn = OpenAppHandler(recog)
-    # utils.speak("hello sir")
+    # utils.speak("hello, sir")
     # utils.desKtoP(2)
     # utils.open_brave()
