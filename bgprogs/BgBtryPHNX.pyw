@@ -4,7 +4,7 @@ import os
 from time import sleep
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from HelperPHNX import SpeechEngine
+from helpers.HelperPHNX import SpeechEngine
 
 
 class BatteryMonitor:

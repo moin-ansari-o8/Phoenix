@@ -3,7 +3,8 @@ import sys
 import subprocess
 import pyautogui as pg
 from time import sleep
-from HelperPHNX import Utility, VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+from helpers.UtilitiesPHNX import Utility
+from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
 import tkinter as tk
 from datetime import datetime
 
@@ -12,8 +13,6 @@ gui = VoiceAssistantGUI(root)
 recog = VoiceRecognition(gui)
 spk = SpeechEngine()
 utils = Utility(reco=recog, spk=spk)
-
-btry_check = os.path.join(os.path.dirname(__file__), "data", "intents.json")
 
 
 def startup_phnx():
