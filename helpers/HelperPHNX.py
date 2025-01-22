@@ -33,14 +33,18 @@ class SpeechEngine:
         """
         # with self.lock:
         replacements = [
+            # "boss",
+            # "captain",
+            # "commander",
+            # "my lord",
+            # "your highness",
+            # "your majesty",
+            # "my liege",
+            # "your grace",
+            "sir",
             "boss",
-            "captain",
-            "commander",
-            "my lord",
-            "your highness",
-            "your majesty",
-            "my liege",
-            "your grace",
+            "master",
+            "sensei",
         ]
 
         for punctuation in ["", "?", "!", ".", " "]:
