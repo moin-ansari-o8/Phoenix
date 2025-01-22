@@ -41,7 +41,7 @@ def load_phnx():
     ct = 0
     for path in paths:
         if ct == 2:
-            utils.desKtoP(3)
+            utils.desKtoP(4)
         os.startfile(path)
         sleep(10)
         ct += 1

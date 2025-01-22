@@ -275,6 +275,19 @@ class AlarmHandle:
         try:
             with open(self.alarm_file, "r") as file:
                 data = json.load(file)
+            # Check if there is only one alarm
+            if len(data["alarms"]) == 1:
+                alarm_time = f"{data['alarms'][0]['ringAlarm'][0]:02}:{data['alarms'][0]['ringAlarm'][1]:02}"
+                self.utils.speak(
+                    f"There is only one alarm at {alarm_time}. It will be marked for deletion."
+                )
+                data["alarms"][0]["delete"] = True
+                with open(self.alarm_file, "w") as file:
+                    json.dump(data, file, indent=4)
+                print(f"The only alarm at {alarm_time} has been marked for deletion.")
+                self.removeDeletedAlarms()
+                return
+
             self.utils.speak("just a second, sir.")
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
@@ -439,13 +452,13 @@ class AlarmHandle:
                     break
         unique_id = f"A_{uuid.uuid4().hex[:6]}"
         alarm_data = {
-            "day": days,
-            "delete": False,
             "id": unique_id,
-            "label": lbl,
-            "repeat": repeat,
             "ringAlarm": [hour, minute],
+            "label": lbl,
+            "day": days,
+            "repeat": repeat,
             "ringed": 0,
+            "delete": False,
         }
         try:
             with open(self.alarm_file, "r") as file:

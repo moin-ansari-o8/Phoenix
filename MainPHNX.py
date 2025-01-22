@@ -40,8 +40,7 @@ class PhoenixAssistant:
         self.tag_to_patterns = self.preprocess_patterns(self.intents)
         self.mQuery = None
         self.loop = False
-        self.voice = False
-        self.chat = False
+        self.voice = None
         self.opn = open_handler
         self.clse = close_handler
         self.cls_print = True
@@ -68,10 +67,11 @@ class PhoenixAssistant:
                 "fullscreen",
             ),
             self.utility.sleep_phnx: ("sleepbye", "donotlisten"),
+            self.hib_phnx: ("gotosleep", "hib-phnx"),
         }
         for func, tags in common_tags.items():
             if tag in tags:
-                if func == self.utility.sleep_phnx:
+                if func == self.utility.sleep_phnx or func == self.hib_phnx:
                     func()
                 elif func == self.utility.perform_window_action:
                     func(tag)
@@ -132,6 +132,10 @@ class PhoenixAssistant:
             "type": lambda query: self.utility.type_text(query),
             "unmuteSpeaker": self.utility.unmute_speaker,
             "viewsongs": self.utility.view_songs,
+            "pinwind": self.utility.pin_wind,
+            "movewind": lambda x: self.utility.process_move_window(x),
+            "switchdesk": lambda x: self.utility.switch_desk(x),
+            "play-game": lambda x: self.utility.switch_desk(x),
         }
         if tag in action_map:
             if tag in [
@@ -146,6 +150,8 @@ class PhoenixAssistant:
                 "setTimer",
                 "setAlarm",
                 "setReminder",
+                "movewind",
+                "switchdesk",
             ]:
                 action_map[tag](query)
             elif tag in ["maximize", "minimize"]:
@@ -183,27 +189,46 @@ class PhoenixAssistant:
         Returns:
             dict: A dictionary with the best matching tag and a response, or None if no match is found.
         """
-        "\n        Find the best matching intent for a given sentence based on the highest similarity probability.\n        "
-        best_tag, highest_probability = max(
-            (
-                (tag, self._getSentProbability(sent, patterns))
-                for tag, patterns in self.tag_to_patterns.items()
-            ),
-            key=lambda x: x[1],
-            default=(None, 0),
-        )
-
-        if (
-            best_tag == "openelse"
-            or best_tag == "playsong"
-            or best_tag == "setTimer"
-            or best_tag == "setAlarm"
-            or best_tag == "setReminder"
-            or best_tag == "dltReminder"
-            or highest_probability > 80
+        # Step 1: Check explicitly for "aboutme" and "whois"
+        if any(
+            keyword in sent.lower()
+            for keyword in [
+                "made you",
+                "your creator",
+                "your master",
+                "your sir",
+                "made by whom",
+            ]
         ):
-            response = self._get_response(best_tag)
-            return {"tag": best_tag, "response": response}
+            response = self._get_response("aboutme")
+            return {"tag": "aboutme", "response": response}
+
+        elif "who is" in sent.lower():
+            response = self._get_response("whois")
+            return {"tag": "whois", "response": response}
+        else:
+            # Step 2: Probability-based matching for all other intents
+            best_tag, highest_probability = max(
+                (
+                    (tag, self._getSentProbability(sent, patterns))
+                    for tag, patterns in self.tag_to_patterns.items()
+                ),
+                key=lambda x: x[1],
+                default=(None, 0),
+            )
+            print(best_tag)
+            if (
+                best_tag == "openelse"
+                or best_tag == "playsong"
+                or best_tag == "setTimer"
+                or best_tag == "setAlarm"
+                or best_tag == "setReminder"
+                or best_tag == "whois"
+                or best_tag == "aboutme"
+                or highest_probability > 65
+            ):
+                response = self._get_response(best_tag)
+                return {"tag": best_tag, "response": response}
 
         return None
 
@@ -286,21 +311,24 @@ class PhoenixAssistant:
         # Print each line with a color and center it
         for line in list5:
             print(line.center(terminal_width))  # Change Fore.CYAN for different colors
+        # print(" ", Fore.YELLOW + "=" * (terminal_width - 2))
         print(" ", "=" * (terminal_width - 2))
+        return True
 
     def check_cls_phnx(self):
         self.cls_print = False
         sleep(65)
         self.cls_print = True
-        return
 
     def cls_phnx(self):
         """
         Clears the terminal every 5 minutes.
         """
         os.system("cls" if os.name == "nt" else "clear")
-        self.print_phoenix()
-        return True
+        # return True
+        # if self.print_phoenix():
+        #     sleep(1)
+        #     return True
 
     def handle_command(self, sent):
         if sent:
@@ -312,11 +340,10 @@ class PhoenixAssistant:
             self.loop = False
 
     def input_chat(self):
-        self.voice = False
         self.loop = False
         while True:
             sent = input("Enter command: ").lower().strip()
-            if "switch to voice" in sent:
+            if "switch to voice" in sent or "wake up" in sent:
                 self.voice = True
                 break
             if (
@@ -336,22 +363,22 @@ class PhoenixAssistant:
                 self.loop = False
             else:
                 self.loop = False
-        if self.voice:
-            self.input_voice()
 
     def input_voice(self):
-        self.chat = False
         self.loop = False
+        # self.cls_print = True
         while True:
-            if self.cls_print:
-                if self.cls_phnx():
-                    self.check_cls_phnx_thread = threading.Thread(
-                        target=self.check_cls_phnx, daemon=True
-                    )
-                    self.check_cls_phnx_thread.start()
+            if self.cls_print == True:
+                print("Refreshing terminal...")
+                os.system("cls" if os.name == "nt" else "clear")
+                self.print_phoenix()
+                threading.Thread(target=self.check_cls_phnx).start()
+                sleep(1)
+            if self.voice == False:
+                break
             sent = self.takeCommand().lower().strip()
             if "switch to chat" in sent:
-                self.chat = True
+                self.voice = False
                 break
             if (
                 "phoenix" in sent
@@ -364,21 +391,32 @@ class PhoenixAssistant:
                 if sent:
                     self.handle_command(sent)
             elif self.loop == True:
+                self.mQuery = sent
                 self.handle_command(sent)
             elif not sent:
                 self.loop = False
             else:
                 self.loop = False
-        if self.chat:
-            self.input_chat()
+
+    def main_phnx(self):
+        self.voice = True
+        while True:
+            if self.voice:
+                self.input_voice()
+            else:
+                self.input_chat()
 
     def load_intents(self, file_path):
         with open(file_path, "r") as file:
             return json.load(file)["intents"]
 
+    def hib_phnx(self):
+        self.voice = False
+
     def main(self, sent):
         no_response_tag = [
             "add",
+            "pinwind",
             "addSchedule",
             "addsong",
             "backspace",
@@ -431,6 +469,8 @@ class PhoenixAssistant:
             "whatyouknowabout",
             "whois",
             "wikiabout",
+            "switchdesk",
+            "open",
         ]
         query_main = self.remove_phoenix_except_folder(sent)
         query = self.remove_phoenix_except_folder(sent)
@@ -510,4 +550,4 @@ if __name__ == "__main__":
         schedule_handle=scheduler_handle,
         reminder_handle=reminder_handle,
     )
-    phnx.input_voice()
+    phnx.main_phnx()

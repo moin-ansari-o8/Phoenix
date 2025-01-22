@@ -1,6 +1,58 @@
 {
   "intents": [
     {
+      "tag": "phnxrestart",
+      "patterns": [
+        "restart the phoenix",
+        "restart phoenix",
+        "re start the poenix",
+        "re start the finish",
+        "re start phoenix"
+      ],
+      "responses": ["Restarting phoenix."]
+    },
+    {
+      "tag": "pcrestart",
+      "patterns": [
+        "restart the pc",
+        "restart pc",
+        "re start the pc",
+        "re start pc"
+      ],
+      "responses": ["Restarting pc.", "Restarting the device."]
+    },
+    {
+      "tag": "play-game",
+      "patterns": [
+        "i want to play game",
+        "i want to play a game",
+        "let's play a game",
+        "play a game",
+        "start a game",
+        "initiate a game"
+      ],
+      "responses": ["Restarting pc.", "Restarting the device."]
+    },
+    {
+      "tag": "hib-phnx",
+      "patterns": [
+        "go to hibernate mode",
+        "hibernate the phoenix",
+        "hibernate phoenix",
+        "put phoenix to sleep",
+        "put the phoenix to sleep",
+        "go to sleep phoenix",
+        "turn on chat mode"
+      ],
+      "responses": [
+        "Turning on chat mode..it will save battery",
+        "Alright, going to sleep.",
+        "Okay, entering sleep mode.",
+        "I'll be here when you need me.",
+        "Going to sleep now."
+      ]
+    },
+    {
       "tag": "open",
       "patterns": [" open ", " launch ", " start "],
       "entities": [
@@ -81,7 +133,7 @@
         "you tube",
         "youtube"
       ],
-      "responses": ["Launching", "Starting", "Opening"]
+      "responses": ["Launched", "Started", "Opened"]
     },
     {
       "tag": "close",
@@ -133,6 +185,16 @@
       ]
     },
     {
+      "tag": "pinwind",
+      "patterns": [
+        "pin this window",
+        "pin this current window",
+        "pin the current window",
+        "pin current window"
+      ],
+      "responses": ["pinwind"]
+    },
+    {
       "tag": "news",
       "patterns": ["tell me the news", "latest news", "news update"],
       "responses": ["Here are the latest headlines", "Today's top stories are"]
@@ -155,26 +217,17 @@
     },
 
     {
-      "tag": "movewindow",
+      "tag": "movewind",
       "patterns": [
         "move this window to",
         "transfer this window to",
         "move the window to",
-        "transfer the window to"
+        "move current window to",
+        "transfer the window to",
+        "transfer current window to"
       ],
       "entities": ["alpha", "study", "extra", "trash"],
       "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
-    },
-    {
-      "tag": "phnxrestart",
-      "patterns": [
-        "restart the phoenix",
-        "restart phoenix",
-        "re start the poenix",
-        "re start the finish",
-        "re start phoenix"
-      ],
-      "responses": ["Restarting phoenix."]
     },
     {
       "tag": "screenshot",
@@ -203,6 +256,16 @@
       "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
     },
     {
+      "tag": "switchdesk",
+      "patterns": [
+        "switch to alpha",
+        "switch to trash",
+        "switch to extra",
+        "switch to study"
+      ],
+      "responses": ["switchdesk"]
+    },
+    {
       "tag": "areuthere",
       "patterns": [
         "are you there",
@@ -216,7 +279,7 @@
         "Yepp, sir!",
         "Yes , What can i do for you, sir? ",
         "Yes, sir!, How can i assist you today? ",
-        "Hello, sir! , i was just thinking of you.",
+        "hello sir! , i was just thinking of you.",
         "Just waiting for your command."
       ]
     },
@@ -233,13 +296,13 @@
         "hi there"
       ],
       "responses": [
-        "Hello, sir!",
-        "Hello , How are you, sir? ",
-        "Hey , What can i do for you, sir? ",
+        "hello sir!",
+        "hello How are you, sir? ",
+        "hey What can i do for you, sir? ",
         "How you doing, sir?",
-        "Hello, sir!, How can i assist you today? ",
-        "Hello, sir! , i was just thinking of you.",
-        "Hello, sir! , How you doing?"
+        "hello sir!, How can i assist you today? ",
+        "hello sir! , i was just thinking of you.",
+        "hello sir! , How you doing?"
       ]
     },
     {
@@ -332,7 +395,7 @@
       "patterns": ["morning", "good morning", "goodmorning"],
       "responses": [
         "Good Morning, sir!",
-        "Hello, sir   , Good Morning.",
+        "hello sir   , Good Morning.",
         "Morning, sir .  How might i assist you today?",
         "Good Morning, sir .  How might i assist you today?",
         "Morning, sir! , How you doing?",
@@ -344,7 +407,7 @@
       "patterns": ["afternoon", "good afternoon", "goodafternoon"],
       "responses": [
         "Good afternoon, sir!",
-        "Hello, sir   , Good afternoon.",
+        "hello sir   , Good afternoon.",
         "afternoon, sir .  How might i assist you today?",
         "Good afternoon, sir .  How might i assist you today?",
         "afternoon, sir! , How you doing?",
@@ -356,7 +419,7 @@
       "patterns": ["evening", "good evening", "goodevening"],
       "responses": [
         "Good evening, sir!",
-        "Hello, sir   , Good evening.",
+        "hello sir   , Good evening.",
         "evening, sir .  How might i assist you today?",
         "Good evening, sir .  How might i assist you today?",
         "evening, sir! , How you doing?",
@@ -485,12 +548,12 @@
         "not today",
         "just talk with me",
         "just talk",
-        "just chat with me",
-        "just chat",
+        "just talk with me",
+        "just talk",
         "let us talk",
         "let's talk",
-        "let us chat",
-        "let's chat"
+        "let us talk",
+        "let's talk"
       ],
       "responses": [
         "Okay, sir!",
@@ -620,9 +683,7 @@
       "patterns": [
         "you may rest now",
         "go to rest",
-        "go to sleep",
         "rest now phoenix",
-        "go to sleep mode",
         "stop listening",
         "don't listen",
         "do not listen",

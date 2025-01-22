@@ -400,7 +400,7 @@ class AlarmManager:
 
             # Track changes to the alarm data
             data_changed = False
-
+            print(today_abbr)
             for alarm in alarms:
                 try:
                     # Extract alarm details
@@ -409,10 +409,10 @@ class AlarmManager:
                         continue  # Skip invalid alarm times
                     alarm_hour, alarm_minute = alarm_time  #
                     alarm_day = alarm.get("day", [])
+                    print(alarm_day)
                     repeat = alarm.get("repeat", "once").lower()
                     delete = alarm.get("delete", False)
                     ringed = alarm.get("ringed", 0)
-
                     # Check if the alarm should ring today
                     if today_abbr in alarm_day or "TODAY" in alarm_day:
                         if delete:
@@ -427,15 +427,12 @@ class AlarmManager:
                             self.speak(
                                 f"Alarm!! Time for {alarm.get('label', 'an event')}"
                             )
-                            threading.Thread(target=self.ring_thread).start()
-
-                            # Update alarm status
                             alarm["ringed"] = ringed + 1
                             data_changed = True
-
                             # Mark non-repeating alarms for deletion
                             if repeat == "once":
                                 alarm["delete"] = True
+                            threading.Thread(target=self.ring_thread).start()
 
                 except Exception as e:
                     print(f"Error processing alarm '{alarm.get('id', 'unknown')}': {e}")

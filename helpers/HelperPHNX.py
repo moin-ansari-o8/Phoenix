@@ -8,6 +8,7 @@ import speech_recognition as sr
 import tkinter as tk
 from PIL import Image, ImageTk
 from time import sleep
+from colorama import Fore
 
 
 class SpeechEngine:
@@ -17,6 +18,7 @@ class SpeechEngine:
         voices = self.engine.getProperty("voices")
         self.engine.setProperty("voice", voices[1].id)
         self.engine.setProperty("rate", 174)
+        # self.engine.setProperty("volume", 1.0)
         # self.lock = threading.Lock()
         self.honorifics = True
 
@@ -143,7 +145,7 @@ class VoiceRecognition:
         with sr.Microphone() as source:
             self.gui.show_listen_image()
             print(">>>", end="\r")
-            audio = self.recognizer.listen(source, 0, 5)
+            audio = self.recognizer.listen(source, 0, 6)
         try:
             self.recognizer.pause_threshold = 1
             self.gui.show_recognize_image()
@@ -173,10 +175,10 @@ if __name__ == "__main__":
     # utils = Utility(spk, recog)
     # utils.open_setting()
     # utils.get_window("Code.exe", "HelperPHNX.py")
-    spk.speak("hello")
-    recog.take_command()
-    music(recog)
-    print("oj")
+    spk.speak("oohoom..!")
+    # recog.take_command()
+    # music(recog)
+    # print("oj")
     # opn = OpenAppHandler(recog)
     # utils.speak("hello, sir")
     # utils.desKtoP(2)

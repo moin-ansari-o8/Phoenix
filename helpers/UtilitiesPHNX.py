@@ -23,6 +23,9 @@ from time import sleep
 import psutil
 import win32gui
 import win32process
+import pygetwindow as gw
+import subprocess
+
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -132,6 +135,26 @@ class OpenAppHandler:
             self.utils.open_yt: ("you tube", "youtube"),
         }
 
+    def open_app_if_running(self, app_name):
+
+        # Check if any window with the app name is open
+        windows = gw.getWindowsWithTitle(app_name)
+
+        if windows:
+            # If the app is running, bring it to focus
+            windows[0].activate()
+            print(f"{app_name} is open. Bringing it to focus.")
+            return True
+        else:
+            # If the app is not running, open it
+            try:
+                subprocess.Popen(app_name)  # Assuming app_name is the executable name
+                print(f"{app_name} was not open. Launching it.")
+            except Exception as e:
+                print(f"Failed to launch {app_name}: {e}")
+            finally:
+                return False
+
     def process_query(self, query, mQuery):
         """
         Process the query and execute the corresponding function based on the "open" intent.
@@ -150,20 +173,30 @@ class OpenAppHandler:
             "sticky notes",
             "whatsapp",
         ]
+
         # Check if the query contains any pattern for the "open" intent
         # Iterate through entities in the intent
         for entity in self.open_intent["entities"]:
             if entity in query.lower():
+
                 print(f"# : {mQuery}\n")
                 # Search for the function corresponding to the entity
+
                 for func, tags in self.action_map.items():
                     if entity in tags:
+                        if self.open_app_if_running(entity):
+                            self.utils.speak(
+                                f"{entity.capitalize()} is now {random_response}."
+                            )
+                            return
                         # Print a random response from the "responses" list
                         random_response = random.choice(self.open_intent["responses"])
-                        self.utils.speak(f"{random_response} {entity.capitalize()}.")
 
                         # Call the function
                         func()
+                        self.utils.speak(
+                            f"{entity.capitalize()} is now {random_response}."
+                        )
                         return f"Action executed for entity: {entity}"
                 print("didn't found")
                 # If the entity is in ls_app
@@ -705,7 +738,7 @@ class Utility:
         Automates the process of opening Armory Crate application
         and performing specific actions within it.
         """
-        self.desKtoP(4)
+        self.desKtoP(3)
         sleep(1)
         pg.keyDown("win")
         pg.press("7")
@@ -718,6 +751,9 @@ class Utility:
             "which desktop would you like me to open, sir?",
         ]
         return random.choice(rply)
+
+    def pin_wind(self):
+        AppView.current().pin()
 
     @staticmethod
     def awaK():
@@ -972,14 +1008,15 @@ class Utility:
 
     def desKtoP(self, screen_index):
         """Generalized method for desk-to-previous method calls."""
-        positions = {1: (466, 945), 1: (709, 945), 2: (958, 945), 3: (1201, 945)}
-        if screen_index not in positions:
-            print(f"Invalid screen index: {screen_index}")
-            return
-        sleep(self.sleep_time)
-        self._perform_key_press(["win", "tab"], "down")
-        self._perform_key_press(["win"], "up")
-        self._click_at_position(*positions[screen_index])
+        # positions = {1: (466, 945), 2: (709, 945), 3: (958, 945), 4: (1201, 945)}
+        # if screen_index not in positions:
+        #     print(f"Invalid screen index: {screen_index}")
+        #     return
+        # sleep(self.sleep_time)
+        # self._perform_key_press(["win", "tab"], "down")
+        # self._perform_key_press(["win"], "up")
+        # self._click_at_position(*positions[screen_index])
+        VirtualDesktop(screen_index).go()
 
     def desKtoP_4(self):
         """Perform a specific sequence for screen 4."""
@@ -1093,9 +1130,9 @@ class Utility:
         hibi = random.choice(hib)
         self.speak(hibi)
         os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
-        sleep(40)
-        self.restart_explorer()
+        sleep(35)
         self.speak(self.onL())
+        self.restart_explorer()
 
     def hide_window(self):
         pg.keyDown("win")
@@ -1241,11 +1278,7 @@ class Utility:
 
         # Find the intent for "movewindow"
         self.open_intent = next(
-            (
-                intent
-                for intent in self.data["intents"]
-                if intent["tag"] == "movewindow"
-            ),
+            (intent for intent in self.data["intents"] if intent["tag"] == "movewind"),
             None,
         )
         if not self.open_intent:
@@ -1253,10 +1286,10 @@ class Utility:
 
         # Corrected action map
         self.action_map = {
-            "study": (self.utils.move_window, 1),
-            "alpha": (self.utils.move_window, 2),
-            "extra": (self.utils.move_window, 3),
-            "trash": (self.utils.move_window, 4),
+            "study": (self.move_window, 1),
+            "alpha": (self.move_window, 2),
+            "extra": (self.move_window, 3),
+            "trash": (self.move_window, 4),
         }
 
         # Check entities in query
@@ -1394,10 +1427,20 @@ class Utility:
         self.desKtoP(2)
 
     def open_extra_desk(self):
-        self.desKtoP(2)
+        self.desKtoP(3)
 
     def open_trash_desk(self):
-        self.desKtoP(3)
+        self.desKtoP(4)
+
+    def switch_desk(self, query):
+        if "study" in query:
+            self.open_study_desk()
+        elif "alpha" in query:
+            self.open_alpha_desk()
+        elif "extra" in query:
+            self.open_extra_desk()
+        elif "trash" in query:
+            self.open_trash_desk()
 
     def open_armoury_crate(self):
         self.arMcratE()
@@ -1621,7 +1664,9 @@ class Utility:
     def restart_phoenix(self):
         self.close_perticular_app("pyw.exe")
         self.desKtoP(4)
-        path = os.path.join(os.path.dirname(__file__), "..", "batch", "main.bat")
+        path = os.path.join(
+            os.path.dirname(__file__), "..", "batch", "on_boot_startup.bat"
+        )
         os.startfile(path)
         sleep(5)
         sys.exit()
@@ -1874,8 +1919,36 @@ class Utility:
     def sleep_phnx(self):
         while True:
             cmnd2 = self.take_command().lower()
-            if cmnd2 in ["hello phoenix", "wake up phoenix"]:
+            if cmnd2 in [
+                "hello phoenix",
+                "wake up phoenix",
+                "are you there phoenix",
+                "am i audible to you phoenix",
+                "am i audible phoenix",
+            ]:
                 self.speak(self.wakE())
+                break
+            else:
+                continue
+
+    def play_game(self):
+        print("System has these games:")
+        print("\n1.SpaceJunkies")
+        print("2.Valorant")
+        self.speak("say which game you want to play..")
+        print("speak game name or index:")
+        while True:
+            gm = self.take_command().lower().strip()
+            if "one" in gm or "1" in gm or "space" in gm or "junkies" in gm:
+                path = r"C:\PROJECT_VB\Game1\Game1\bin\Debug\Game1.exe"
+                os.startfile(path)
+                break
+            elif "two" in gm or "2" in gm or "valo" in gm or "valorant" in gm:
+                pg.press("win")
+                sleep(1)
+                keyboard.write("valorant")
+                sleep(1)
+                keyboard.press("enter")
                 break
             else:
                 continue
@@ -2034,4 +2107,5 @@ if __name__ == "__main__":
     recog = VoiceRecognition(gui)
     speach = SpeechEngine()
     utils = Utility(spk=speach, reco=recog)
-    utils.desKtoP(1)
+    # utils.desKtoP(1)
+    utils.play_game()
