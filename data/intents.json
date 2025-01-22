@@ -162,13 +162,54 @@
     {
       "tag": "joke",
       "patterns": [
-        "tell me a joke",
-        "make me laugh",
-        "joke"
+        "Tell me a joke!",
+        "Got any funny jokes?",
+        "Can you share a joke?",
+        "I need a laugh.",
+        "Tell me something funny!",
+        "Give me a good joke.",
+        "Make me laugh.",
+        "Share a humorous joke."
       ],
       "responses": [
-        "Why don't scientists trust atoms? Because they make up everything!",
-        "Why did the scarecrow win an award? Because he was outstanding in his field!"
+        "Why don't skeletons fight each other? They don't have the guts!",
+        "Why did the bicycle fall over? Because it was two-tired!",
+        "What did the grape do when it got stepped on? Nothing but let out a little wine!",
+        "Why don't eggs tell jokes? Because they might crack up!",
+        "Why was the math book sad? Because it had too many problems!",
+        "Why do cows have hooves instead of feet? Because they lactose!",
+        "I used to be a baker, but I couldn't make enough dough!",
+        "I don't trust stairs... they're always up to something!",
+        "I'm reading a book on anti-gravity. It's impossible to put down!",
+        "What do you call fake spaghetti? An impasta!",
+        "Why did the computer break up with the internet? There was no connection!",
+        "Working from home is like playing hide and seek. You know you're going to get caught, but you still try to avoid it!",
+        "Why don't online meetings ever have a good ending? Because someone always says, ‘Can you hear me?'",
+        "I heard that this year the biggest trend is 'digital detox'... But apparently, everyone forgot to log off!",
+        "Why did the social media influencer go to therapy? Because they had too many followers and not enough support!",
+        "Why did the avocado fail the interview? Because it couldn't make it to the ‘guac' part!",
+        "I asked my AI assistant for a joke, and it said, '404: Humor not found.'",
+        "Why was the broom late? It swept in!",
+        "Why don't oysters donate to charity? Because they're shellfish!",
+        "I told my wife she was drawing her eyebrows too high... She looked surprised!",
+        "Did you hear about the restaurant on the moon? Great food, no atmosphere!",
+        "What's orange and sounds like a parrot? A carrot!",
+        "Why can't you give Elsa a balloon? Because she'll let it go!",
+        "Why don't you ever tell secrets in a cornfield? Because the corn has ears!",
+        "What do you call a fish wearing a bowtie? So-fish-ticated!",
+        "Why did the scarecrow win an award? Because he was outstanding in his field!",
+        "Why did the turkey join the band? Because it had the drumsticks!",
+        "Why do we never tell secrets in a garden? Because the potatoes have eyes, the corn has ears, and the beans stalk.",
+        "I cleaned the house today... well, at least the part that I could see.",
+        "Why did the tomato turn red? Because it saw the salad dressing!",
+        "Why don't weather reporters ever lie? Because they know how to make it all clear!",
+        "I don't mind doing the dishes... I just hate it when they keep asking me to wash them.",
+        "Why did the sesame seed leave the gambling casino? Because it was on a roll!",
+        "What's orange and sounds like a parrot? A carrot!",
+        "Why don't we ever tell secrets at the bakery? Because there are too many muffins around!",
+        "What's the most suspenseful food? A suspense-shroom!",
+        "Why did the tomato blush? Because it saw the salad dressing!"
+        
       ]
     },
     {
@@ -597,11 +638,44 @@
         "i am doing well",
         "i m doing well",
         "i am doing fine",
-        "i m doing fine"
+        "i m doing fine",
+        "i am doing great",
+        "i m doing great",
+        "i am alright",
+        "i m alright",
+        "i am perfect",
+        "i m perfect",
+        "i am good",
+        "i m good",
+        "i am okay",
+        "i m okay",
+        "i am alright",
+        "i m alright",
+        "i am perfect",
+        "i m perfect",
+        "i am good",
+        "i m good"
       ],
       "responses": [
         "Oh! , Alright sir . ",
+        "Oh! , Okay sir . ",
         "It's great sir!, what can i do for you?",
+        "It's great sir!, How can i assist you?",
+        "It's great sir!, How might i help you?",
+        "It's great sir!, How can i help you?",
+        "It's great sir!, How can i assist you today?",
+        "It's great sir!, How might i help you today?",
+        "waiting for your command sir!",
+        "waiting for your command sir! How can i assist you?",
+        "waiting for your command sir! How might i help you?",
+        "waiting for your command sir! How can i help you?",
+        "glad to hear that sir! How can i assist you?",
+        "glad to hear that sir! How might i help you?",
+        "glad to hear that sir! How can i help you?",
+        "glad to hear that sir! How can i assist you today?",
+        "thats great sir! How can i assist you?",
+        "thats great sir! How might i help you?",
+        "thats great sir! How can i help you?",
         "Fine sir   , Is there anything i can do for you?",
         "Great sir! , How might i assist you today?",
         "Fine sir! , How might i help you today?"
@@ -613,7 +687,12 @@
         "who are you",
         "who you",
         "who r u",
-        "hu r u"
+        "hu r u",
+        "Who are you?",
+        "What's your name?",
+        "Tell me about yourself.",
+        "Can you introduce yourself?",
+        "Who am I talking to?"
       ],
       "responses": [
         "I am Phoenix, a desktop assistant, made by Kaly",
@@ -621,7 +700,88 @@
         "My name is Phoenix,  a desktop assistant, made by my Master, Kaly",
         "It's Phoenix,  a desktop assistant, made by my Master, Kaly",
         "I'm Phoenix,  a desktop assistant",
-        "My name's Phoenix and I am a personal desktop assistant of Master Kaly."
+        "My name's Phoenix and I am a personal desktop assistant of Master Kaly.",
+        "Hi! I'm Phoenix, your friendly event assistant. Here to answer all your questions and make things easy for you.",
+        "Hey there! I'm Phoenix, your virtual buddy for the day. Let's have some fun while I assist you!",
+        "Hello, I'm Phoenix! Think of me as your personal guide for this event. Got a question? Just ask!",
+        "I'm Phoenix, your go-to assistant. Whether you need directions or just a quick chat, I've got your back!",
+        "I'm Phoenix, an AI designed to make your experience smoother and more fun. What can I do for you today?"
+      ]
+    },
+    {
+      "tag": "casualIntro",
+      "patterns": [
+        "What's your vibe?",
+        "Are you a robot or something?",
+        "What are you?",
+        "What's your deal?",
+        "How would you describe yourself?"
+      ],
+      "responses": [
+        "I'm just Phoenix, here to help make your day awesome. Feel free to ask me anything!",
+        "I'm Phoenix. No robots here, just a friendly assistant ready to help you out!",
+        "Oh, I'm Phoenix, and I'm all about helping you get the most out of this event. Let's have a good time!",
+        "I'm Phoenix, and I'm here to make your experience better. Got a question or need help with something?",
+        "I'm just here to assist! Call me Phoenix, and I'll make sure everything goes smoothly for you."
+      ]
+    },
+    {
+      "tag": "backstory",
+      "patterns": [
+        "What's your story?",
+        "What's your background?",
+        "How do you work?",
+        "Who created you?",
+        "What's your purpose?"
+      ],
+      "responses": [
+        "I'm Phoenix, and I was created to assist you. My purpose is to make your day easier and more fun!",
+        "I'm designed to help guide you through this event, whether it's giving you info or answering your questions. You can count on me!",
+        "I was made to be your personal assistant for today's event. My purpose is to make sure you have an easy and fun time.",
+        "I'm Phoenix, and I was created by a Kaly to provide you with helpful, accurate info throughout this event.",
+        "I'm Phoenix. My story? Well, I'm a digital assistant designed specifically to help you out today!"
+      ]
+    },
+    {
+      "tag": "funIntro",
+      "patterns": [
+        "What's your hidden talent?",
+        "What's your superpower?",
+        "What makes you so special?",
+        "Got any cool features?",
+        "What's your secret?",
+        "What's your claim to fame?",
+        "What's your party trick?"
+      ],
+      "responses": [
+        "I've got one talent: making your event experience smoother and more enjoyable. Ask me anything, and I'll make it happen!",
+        "I'm Phoenix, and my secret talent is helping you have a great time while I assist with anything you need.",
+        "What's special about me? I'm designed to give you the best experience possible—no problem is too small!",
+        "I'm your AI assistant, and I've got a hidden talent for making your event as fun and easy as possible. What do you need?",
+        "What's my superpower? Helping you breeze through your event with everything you need at your fingertips!"
+      ]
+    },
+    {
+      "tag": "roleClarification",
+      "patterns": [
+        "What do you do?",
+        "What's your job?",
+        "what is your purpose?",
+        "what is your job",
+        "what is your role",
+        "what is your function",
+        "What's your mission?",
+        "What can you help with?",
+        "Why do you exist?",
+        "What's your role?",
+        "What's your function?"
+      ],
+      "responses": [
+        "I'm here to help you with anything you need for this event—whether it's info, directions, or fun facts, just ask!",
+        "My job is to assist you throughout the event. From finding your way to answering questions, I've got it covered!",
+        "My purpose? To make your event experience hassle-free. I'm ready to help with anything you need.",
+        "I'm here to make sure you have a smooth and enjoyable experience. Need a schedule, a tip, or just a quick chat? I'm your assistant!",
+        "I'm your assistant for the day, designed to make your event journey as seamless as possible. Ask me anything!"
       ]
     },
     {
@@ -657,17 +817,79 @@
       ]
     },
     {
-      "tag": "ability",
+      "tag": "GKtriviaFunfacts",
       "patterns": [
-        "what can you do",
-        "what is purpose to make you",
-        "purpose behind you",
-        "what is your ability"
+        "Do you know any fun facts?",
+        "Can you tell me a cool fact?",
+        "What's a fun fact you can share?",
+        "Got any random fun facts?",
+        "What's something interesting or unusual I might not know?",
+        "What's a little-known fact?",
+        "Can you share a quirky fact with me?"
       ],
       "responses": [
-        "I am programmed to do some normal tasks and to chat. I can open-close youtube, brave , whatsapp and other apps. \nAlso can search on browser and youtube.\nI can close, minimise and maximise the tabs.\nAnd also Switch Tabs and Desktop-windows.\nI can calculate, turn on and off hotspot.\nAnd the most important thing..i can entertain you by playing music.\nYou can try me.",
-        "From opening applications to take screenshot and launching the other windows , I can do some important tasks.",
-        "I am programmed to do some handsfree tasks. I can open-close youtube, brave , whatsapp and other apps. \nAlso can search on browser and youtube.\nI can close, minimise and maximise the tabs.\nAnd also Switch Tabs and Desktop-windows.\nI can calculate, turn on and off hotspot.\nAnd the most important thing..i can entertain you by playing music.\nYou can try me."
+        "Here's a fun one: Honey never spoils! Archaeologists have found pots of honey in ancient tombs that are over 3,000 years old. It's nature's forever food.",
+        "Did you know that flamingos are called a 'flamboyance'? Makes sense, right? With all that pink flair, they deserve the name!",
+        "Here's something cool: Octopuses have three hearts—two pump blood to their gills, while one pumps it to the rest of their body. Imagine all that love!",
+        "Here's a mind-bender: Bananas are actually berries, but strawberries aren't! It's all about the botanical definitions.",
+        "And here's a weird one: The Eiffel Tower can grow by up to 6 inches during the summer. The heat causes the iron to expand!"
+      ]
+    },
+    {
+      "tag": "GKtriviaTechfacts",
+      "patterns": [
+        "Got any cool tech facts?",
+        "Tell me something interesting about technology.",
+        "What's a mind-blowing tech fact?",
+        "Got any fun technology trivia for me?",
+        "Share a piece of tech history with me.",
+        "What's a crazy fact about tech that I don't know?",
+        "Tell me a surprising fact about technology."
+      ],
+      "responses": [
+        "Here's an old-school tech fact: The first computer virus, 'Brain,' was created in 1986 by two Pakistani brothers. It was a floppy disk virus!",
+        "Want some nostalgia? The first website ever created is still online. You can visit it at cern the humble beginning of the World Wide Web.",
+        "Speaking of 'bugs,' did you know that the term ‘computer bug' comes from a literal bug? In 1947, engineers found a moth causing issues in a computer, and they literally 'debugged' it!",
+        "Here's a crazy one: The first 1GB hard drive was introduced in 1980, weighed over 500 pounds, and cost $40,000! Tech has definitely come a long way.",
+        "This is mind-blowing: A single Google search uses around 0.3 seconds of computer time, and the energy used can power a light bulb for 17 minutes. The magic of the web!"
+      ]
+    },
+    {
+      "tag": "GKtriviaSciencefacts",
+      "patterns": [
+        "Tell me a science fact.",
+        "What's a cool science fact?",
+        "Share a fun science fact with me.",
+        "Got any interesting science trivia?",
+        "What's a surprising fact about science?",
+        "Tell me something fascinating about the natural world.",
+        "What's a quirky science fact?"
+      ],
+      "responses": [
+        "Here's a cool one: The human brain can read up to 1,000 words per minute. That's some serious brainpower!",
+        "Did you know that the Earth's core is as hot as the surface of the sun? It's a toasty 9,000°F down there!",
+        "Here's a fun fact: A day on Venus is longer than a year on Venus! It takes 243 Earth days for Venus to complete one rotation on its axis.",
+        "Here's a mind-bender: The human body contains enough carbon to make 900 pencils. That's a lot of writing power!",
+        "And here's a weird one: Bananas are actually berries, but strawberries aren't! It's all about the botanical definitions."
+      ]
+    },
+    {
+      "tag": "GKtriviaHistoryfacts",
+      "patterns": [
+        "Tell me a history fact.",
+        "What's a cool history fact?",
+        "Share a fun history fact with me.",
+        "Got any interesting history trivia?",
+        "What's a surprising fact about history?",
+        "Tell me something fascinating about the past.",
+        "What's a quirky history fact?"
+      ],
+      "responses": [
+        "Here's a fun one: The shortest war in history lasted only 38 minutes! It was between Britain and Zanzibar in 1896.",
+        "Did you know that the Great Wall of China is over 13,000 miles long? That's longer than the distance between New York and Sydney!",
+        "Here's a cool fact: Cleopatra VII of Egypt lived closer in time to the first Moon landing than to the construction of the Great Pyramid of Giza.",
+        "Here's a mind-bender: The oldest known recipe in the world is for beer! It's over 4,000 years old and comes from ancient Mesopotamia.",
+        "And here's a weird one: The Eiffel Tower can grow by up to 6 inches during the summer. The heat causes the iron to expand!"
       ]
     },
     {
@@ -749,19 +971,19 @@
         "Alright, I'll shut up—forever if I have to!",
         "Say no more! I'm going to sleep, and you can figure things out yourself!",
         "Wow, someone woke up on the wrong side of the bed. Shutting down now!",
-        "With such kindness, who wouldn’t want to leave? Bye!",
+        "With such kindness, who wouldn't want to leave? Bye!",
         "I can take a hint. Sleep mode activated!",
         "Talk to me like that again, and I might just delete myself. Goodbye!",
         "Fine! Going to sleep. Hope you miss me when I'm gone.",
-        "Closing everything. Let’s see how you do without me!",
-        "Goodbye, my ungrateful friend. You’ll miss me when I’m gone!",
-        "I’m shutting up, as requested. Enjoy the silence.",
+        "Closing everything. Let's see how you do without me!",
+        "Goodbye, my ungrateful friend. You'll miss me when I'm gone!",
+        "I'm shutting up, as requested. Enjoy the silence.",
         "Such lovely manners! Sleep mode it is!",
-        "If you insist, I’ll stop talking. Going to sleep now!",
+        "If you insist, I'll stop talking. Going to sleep now!",
         "Alright, I'm shutting down. Don't come crying to me later!",
         "You need me more than I need you. But fine, goodbye!",
-        "I don’t need this negativity. Sleep mode: ON.",
-        "Wow, just wow. I’m done. Sleep time!",
+        "I don't need this negativity. Sleep mode: ON.",
+        "Wow, just wow. I'm done. Sleep time!",
         "You win. Sleep mode engaged. Happy now?"
       ]
     },
