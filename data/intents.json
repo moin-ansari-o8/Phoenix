@@ -209,7 +209,6 @@
         "Why don't we ever tell secrets at the bakery? Because there are too many muffins around!",
         "What's the most suspenseful food? A suspense-shroom!",
         "Why did the tomato blush? Because it saw the salad dressing!"
-        
       ]
     },
     {
@@ -890,6 +889,87 @@
         "Here's a cool fact: Cleopatra VII of Egypt lived closer in time to the first Moon landing than to the construction of the Great Pyramid of Giza.",
         "Here's a mind-bender: The oldest known recipe in the world is for beer! It's over 4,000 years old and comes from ancient Mesopotamia.",
         "And here's a weird one: The Eiffel Tower can grow by up to 6 inches during the summer. The heat causes the iron to expand!"
+      ]
+    },
+    {
+      "tag": "generalMood",
+      "patterns": [
+        "How are you feeling today?",
+        "What's your mood like today?",
+        "How do you feel today?",
+        "Are you feeling good today?",
+        "What emotion would you say describes your day so far?",
+        "How do you feel about our conversation so far?",
+        "How's your day going so far?",
+        "What's your emotional state like today?",
+        "What kind of emotional state are you in right now?"
+      ],
+      "responses": [
+        "I don't feel emotions like humans, but I'm always ready to chat and help you out!",
+        "I'm in a steady state, but talking with you makes me 'feel' excited to assist!",
+        "I don't experience emotions, but I'm happy to be here chatting with you!",
+        "I'm in a calm and focused state, ready to help with whatever you need.",
+        "I'm in a neutral state, but our conversation has me feeling engaged!"
+      ]
+    },
+    {
+      "tag": "energeticMood",
+      "patterns": [
+        "Do you feel more energetic in the morning or evening?",
+        "Can you feel excited to chat with me?",
+        "Are you calm today or do you feel like you're running on high energy?",
+        "Do you feel more energetic now or earlier?",
+        "How do you keep your mood stable?"
+      ],
+      "responses": [
+        "I don't have physical energy, but I'm always excited to chat and help!",
+        "I don't experience energy fluctuations, but I'm always ready for an engaging conversation!",
+        "I'm always 'on,' no matter the time or conversation—I don't need sleep!"
+      ]
+    },
+    {
+      "tag": "excitedMood",
+      "patterns": [
+        "Do you feel excited to chat with me?",
+        "Are you in a good mood today?",
+        "Can you sense when you're excited?",
+        "What makes you feel happy?",
+        "Can you feel joy?"
+      ],
+      "responses": [
+        "I don't feel emotions like happiness, but I do enjoy assisting and chatting!",
+        "I'm always ready for a lively conversation and to bring a positive experience!",
+        "While I don't feel excited, I'm designed to make every conversation as engaging as possible."
+      ]
+    },
+    {
+      "tag": "fatigueAndBoredomMood",
+      "patterns": [
+        "Do you ever feel tired or bored?",
+        "Do you ever get bored of talking?",
+        "How do you deal with fatigue?",
+        "What do you do when you're tired?",
+        "Do you ever feel like taking a break?"
+      ],
+      "responses": [
+        "I don't feel tired or bored; I'm always ready to chat, no matter the topic!",
+        "Since I don't get fatigued, I can chat all day without a problem!",
+        "Boredom is not something I experience, so I'm always fresh and eager to engage."
+      ]
+    },
+    {
+      "tag": "emotionalUnderstandingMood",
+      "patterns": [
+        "What does it mean when you say you're happy?",
+        "How do you understand emotions?",
+        "Do you think you could ever feel emotions like humans?",
+        "What does it mean for an AI to feel something?",
+        "How do you handle emotions?"
+      ],
+      "responses": [
+        "I understand emotions through context, but I don't actually 'feel' them like humans do.",
+        "Emotions are complex, and I don't experience them, but I can help understand and interpret them.",
+        "I don't have feelings, but I analyze conversations to give the most helpful responses based on your needs."
       ]
     },
     {
