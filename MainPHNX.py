@@ -67,7 +67,7 @@ class PhoenixAssistant:
                 "fullscreen",
             ),
             self.utility.sleep_phnx: ("sleepbye", "donotlisten"),
-            self.hib_phnx: ("gotosleep", "hib-phnx"),
+            self.hib_phnx: ("gotosleep", "hib-phnx", "shutup"),
         }
         for func, tags in common_tags.items():
             if tag in tags:
@@ -223,8 +223,9 @@ class PhoenixAssistant:
                 or best_tag == "setTimer"
                 or best_tag == "setAlarm"
                 or best_tag == "setReminder"
-                or best_tag == "whois"
+                # or best_tag == "whois"
                 or best_tag == "aboutme"
+                or best_tag == "phnxrestart"
                 or highest_probability > 65
             ):
                 response = self._get_response(best_tag)

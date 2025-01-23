@@ -20,7 +20,6 @@ def startup_phnx():
     # time.sleep(15)
     utils.intrOmsC()
     utils.speak(utils.onL())
-    utils.speak(utils.phN())
     # utils.speak("Let me setup your desktops... until then... sit back and enjoy the music!")
     # utils.rockMsc(0.5)
     if hour < 12:
@@ -29,6 +28,8 @@ def startup_phnx():
         utils.speak(utils.greet("Afternoon"))
     else:
         utils.speak(utils.greet("Evening"))
+
+    utils.speak(utils.phN())
 
 
 def load_phnx():

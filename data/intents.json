@@ -578,6 +578,11 @@
       ]
     },
     {
+      "tag": "isItSo",
+      "patterns": ["is it so", "ahan is it so"],
+      "responses": ["Yes, it is.", "Absolutely.", "Indeed it is."]
+    },
+    {
       "tag": "greetask",
       "patterns": [
         "how are you",
@@ -656,7 +661,20 @@
         "i am perfect",
         "i m perfect",
         "i am good",
-        "i m good"
+        "i m good",
+        "everything is alright",
+        "I am doing fine",
+        "I am doing great",
+        "I am doing okay",
+        "I am doing good",
+        "I am doing perfect",
+        "I am doing wonderful",
+        "I am doing awesome",
+        "I am doing amazing",
+        "I am doing fantastic",
+        "everything is fine",
+        "everything is good",
+        "everything is great"
       ],
       "responses": [
         "Oh! , Alright sir . ",
@@ -764,9 +782,53 @@
       ]
     },
     {
+      "tag": "nicetalking",
+      "patterns": [
+        "nice talking with you",
+        "nice talking to you",
+        "it was nice talking with you",
+        "it was nice talking to you",
+        "good talking with you",
+        "good talking to you"
+      ],
+      "responses": [
+        "It was nice talking with you too!",
+        "I enjoyed our conversation!",
+        "Glad to chat with you!",
+        "I had a great time talking with you!",
+        "Looking forward to our next chat!"
+      ]
+    },
+    {
+      "tag": "whoiskaly",
+      "patterns": [
+        "who is kali",
+        "who is master kali",
+        "who is your master kali",
+        "tell me about kali",
+        "tell me about your kali",
+        "tell me about your master kali",
+        "tell me about your creator",
+        "tell me about your developer",
+        "who's kali",
+        "who is your creator kali"
+      ],
+      "responses": [
+        "Kaly is my creator and master.",
+        "Kaly is the one who created me.",
+        "My creator is Kaly.",
+        "Kaly is the mastermind behind my existence.",
+        "Kaly is a developer who created me to assist with various tasks and make life easier.",
+        "Kaly is a skilled developer and my creator.",
+        "Kaly, my creator, is a talented developer.",
+        "Kaly is the developer behind my existence."
+      ]
+    },
+    {
       "tag": "roleClarification",
       "patterns": [
         "What do you do?",
+        "What can you do?",
         "What's your job?",
         "what is your purpose?",
         "what is your job",
@@ -779,7 +841,7 @@
         "What's your function?"
       ],
       "responses": [
-        "I'm here to help you with anything you need for this event—whether it's info, directions, or fun facts, just ask!",
+        "I'm here to help you with anything you need for this event , whether it's info, directions, or fun facts, just ask!",
         "My job is to assist you throughout the event. From finding your way to answering questions, I've got it covered!",
         "My purpose? To make your event experience hassle-free. I'm ready to help with anything you need.",
         "I'm here to make sure you have a smooth and enjoyable experience. Need a schedule, a tip, or just a quick chat? I'm your assistant!",
@@ -790,6 +852,7 @@
       "tag": "aboutme",
       "patterns": [
         "who made you",
+        "who created you",
         "who is your creator",
         "who is your master",
         "who is your, sir  ",
