@@ -174,15 +174,13 @@
       "tag": "weather",
       "patterns": [
         "what's the weather",
+        "what is the weather today",
         "tell me the weather",
         "weather forecast",
-        "it's good"
+        "how is the weather",
+        "how is the weather today"
       ],
-      "responses": [
-        "The weather is sunny",
-        "It's raining",
-        "Expect cloudy skies"
-      ]
+      "responses": ["weather"]
     },
     {
       "tag": "pinwind",

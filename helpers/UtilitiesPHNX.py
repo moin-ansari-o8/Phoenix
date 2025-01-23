@@ -8,6 +8,7 @@ import re
 import json
 from datetime import datetime
 import random
+import requests
 import pyautogui as pg
 import keyboard
 import webbrowser
@@ -381,10 +382,12 @@ class Utility:
         "Take care! See you next time, sir !",
         "Time for me to power down. See ya, sir !",
     ]
+    DEFAULT_LAT = 22.555536875728677
+    DEFAULT_LON = 72.9296426402413
 
     def __init__(self, spk, reco, sleep_time=1):
         self.sleep_time = sleep_time
-
+        self.geocoding_api_key = "ed158392224641ac8cf1706904b67061"
         self.speech_engine = spk
         self.voice_recognition = reco
 
@@ -636,6 +639,168 @@ class Utility:
             print(f"Process '{script_name}' not found.")
         return False
 
+    def parse_weather_query_with_location(self, user_input):
+        """
+        Extracts the location mentioned in the user's query.
+
+        Args:
+            user_input (str): The user's voice command or text input.
+
+        Returns:
+            str: Extracted location from the query (None if no location found).
+        """
+        match = re.search(r"in (.+)", user_input, re.IGNORECASE)
+        return match.group(1).strip() if match else None
+
+    def get_coordinates(self, location):
+        """
+        Fetches latitude and longitude of the specified location using OpenCage Geocoder API.
+
+        Args:
+            location (str): Name of the location.
+
+        Returns:
+            dict: Latitude, longitude, and formatted address of the location.
+        """
+        base_url = "https://api.opencagedata.com/geocode/v1/json"
+        params = {"q": location, "key": self.geocoding_api_key}
+
+        try:
+            response = requests.get(base_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            if data["results"]:
+                best_match = data["results"][0]
+                coords = best_match["geometry"]
+                return {
+                    "latitude": coords["lat"],
+                    "longitude": coords["lng"],
+                    "address": best_match["formatted"],
+                }
+            else:
+                return {"error": "Location not found"}
+        except requests.exceptions.RequestException as e:
+            return {"error": str(e)}
+
+    def get_weather_open_meteo(self, latitude, longitude):
+        """
+        Fetches weather data for the specified coordinates using Open-Meteo API.
+
+        Args:
+            latitude (float): Latitude of the location.
+            longitude (float): Longitude of the location.
+
+        Returns:
+            dict: Current weather details.
+        """
+        base_url = "https://api.open-meteo.com/v1/forecast"
+        params = {
+            "latitude": latitude,
+            "longitude": longitude,
+            "current_weather": "true",
+        }
+
+        try:
+            response = requests.get(base_url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {"error": str(e)}
+
+    def generate_weather_response(self, weather_data, location):
+        """
+        Generates a user-friendly weather response with variations based on weather conditions.
+
+        Args:
+            weather_data (dict): Weather details fetched from the API.
+            location (str): Location name for the response.
+
+        Returns:
+            str: Weather update message.
+        """
+        current_weather = weather_data.get("current_weather", {})
+        temperature = current_weather.get("temperature", "unknown")
+        windspeed = current_weather.get("windspeed", "unknown")
+        weather_description = current_weather.get("weathercode", "unknown")
+
+        # Map weather description codes to actual weather conditions
+        weather_conditions = {
+            0: "clear sky",
+            1: "mainly clear",
+            2: "partly cloudy",
+            3: "overcast",
+            45: "fog",
+            48: "depositing rime fog",
+            51: "light drizzle",
+            53: "moderate drizzle",
+            55: "dense drizzle",
+            61: "light rain",
+            63: "moderate rain",
+            65: "heavy rain",
+            66: "light freezing rain",
+            67: "heavy freezing rain",
+            71: "light snow",
+            73: "moderate snow",
+            75: "heavy snow",
+            77: "snow grains",
+            80: "light rain showers",
+            81: "moderate rain showers",
+            82: "heavy rain showers",
+            85: "light snow showers",
+            86: "heavy snow showers",
+            95: "thunderstorm",
+            96: "thunderstorm with light hail",
+            99: "thunderstorm with heavy hail",
+        }
+
+        weather_condition = weather_conditions.get(
+            weather_description, "unknown condition"
+        )
+
+        if "clear sky" in weather_condition or temperature > 30:
+            return f"The weather in {location} is sunny and hot with a temperature of {temperature}°C."
+        elif "partly cloudy" in weather_condition:
+            return f"The weather in {location} is partly cloudy with a temperature of {temperature}°C."
+        elif "rain" in weather_condition:
+            return f"The weather in {location} is rainy with a temperature of {temperature}°C. Don't forget an umbrella!"
+        elif "snow" in weather_condition:
+            return f"The weather in {location} is snowy with a temperature of {temperature}°C. It's a winter wonderland!"
+        elif temperature <= 15:
+            return f"The weather in {location} is chilly with a temperature of {temperature}°C. It's a cool day!"
+        else:
+            return f"The weather in {location} is mild with a temperature of {temperature}°C."
+
+    def weather_check(self, query):
+        """
+        Handles the entire weather query process: extracts location, gets coordinates,
+        fetches weather data, and returns a user-friendly response.
+
+        Args:
+            user_input (str): The user's query or voice command.
+
+        Returns:
+            str: Weather update or error message.
+        """
+        print("here")
+        location = self.parse_weather_query_with_location(query)
+
+        if not location:
+            location = "Anand"
+            latitude, longitude = self.DEFAULT_LAT, self.DEFAULT_LON
+        else:
+            coords = self.get_coordinates(location)
+            if "error" in coords:
+                return f"Sorry, I couldn't find the location '{location}'. Error: {coords['error']}"
+
+            latitude, longitude = coords["latitude"], coords["longitude"]
+            location = coords["address"]
+
+        weather_data = self.get_weather_open_meteo(latitude, longitude)
+        if "error" in weather_data:
+            return f"Sorry, I couldn't fetch the weather data for '{location}'. Error: {weather_data['error']}"
+
+        self.speak(self.generate_weather_response(weather_data, location))
+
     def add_song(self):
         songs = self.load_songs()
         song_name = input("Enter the song name to add: ")
@@ -753,7 +918,11 @@ class Utility:
         return random.choice(rply)
 
     def pin_wind(self):
-        AppView.current().pin()
+        try:
+            AppView.current().pin()
+            self.speak("Window pinned successfully.")
+        except Exception as e:
+            self.speak(f"Failed to pin the window: {e}")
 
     @staticmethod
     def awaK():
@@ -1573,6 +1742,7 @@ class Utility:
 
     def play_random_song(self, query):
         match = re.search(r"play (.+?) (song|music)", query)
+        song = ""
         if match:
             song = match.group(1)
         songs = self.load_songs()
@@ -1584,6 +1754,11 @@ class Utility:
             else:
                 print("The song library is empty. Add some songs first.")
         else:
+            if song == "":
+                song = random.choice(list(songs.values()))
+                print(f"Playing a random song: {song}")
+                self.play_song(song)
+                return
             self.speak(f"Sir, do you want to play {song}?")
             while True:
                 print(">>> Listening for confirmation...")
@@ -1724,21 +1899,21 @@ class Utility:
         except Exception as e:
             print("Internet error occurred.")
 
-    def select_action(self, query, response_function):
-        selected_text = query.replace("select ", "")
-        self.speak(response_function())
-        keyboard.write(f"{selected_text[:2]}")
-        self.speak("Do you want to open it?")
-        while True:
-            confirmation = self.take_command().lower()
-            if any((x in confirmation for x in ["yes", "ha", "sure", "play it"])):
-                webbrowser.open(
-                    f"https://www.youtube.com/results?search_query={selected_text}"
-                )
-                break
-            elif any((x in confirmation for x in ["no", "don't", "do not", "na"])):
-                self.speak(response_function())
-                break
+    # def select_action(self, query, response_function):
+    #     selected_text = query.replace("select ", "")
+    #     self.speak(response_function())
+    #     keyboard.write(f"{selected_text[:2]}")
+    #     self.speak("Do you want to open it?")
+    #     while True:
+    #         confirmation = self.take_command().lower()
+    #         if any((x in confirmation for x in ["yes", "ha", "sure", "play it"])):
+    #             webbrowser.open(
+    #                 f"https://www.youtube.com/results?search_query={selected_text}"
+    #             )
+    #             break
+    #         elif any((x in confirmation for x in ["no", "don't", "do not", "na"])):
+    #             self.speak(response_function())
+    #             break
 
     def set_alarm(self):
         """

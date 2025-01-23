@@ -110,15 +110,16 @@ class PhoenixAssistant:
             "phnxrestart": self.utility.restart_phoenix,
             "playpause": lambda query: self.utility.play_pause_action(query),
             "playsong": lambda query: self.utility.play_random_song(query),
+            "weather": lambda query: self.utility.weather_check(query),
             "press": self.utility.press_key,
             "saytime": self.utility.tim,
             "screenshot": self.utility.screenshot,
             "searchbrowser": self.utility.search_browser,
             "searchinsta": self.utility.search_instagram,
             "searchyoutube": self.utility.search_youtube,
-            "select": lambda query, response: self.utility.select_action(
-                query, response
-            ),
+            # "select": lambda query, response: self.utility.select_action(
+            #     query, response
+            # ),
             "setTimer": lambda x: self.timer_handle.setTimer(x),
             "viewTimer": self.timer_handle.viewTimer,
             "setAlarm": lambda x: self.alarm_handle.setAlarm(x),
@@ -152,6 +153,7 @@ class PhoenixAssistant:
                 "setReminder",
                 "movewind",
                 "switchdesk",
+                "weather",
             ]:
                 action_map[tag](query)
             elif tag in ["maximize", "minimize"]:
@@ -368,6 +370,8 @@ class PhoenixAssistant:
     def input_voice(self):
         self.loop = False
         # self.cls_print = True
+        # os.system("cls" if os.name == "nt" else "clear")
+        # self.print_phoenix()
         while True:
             if self.cls_print == True:
                 print("Refreshing terminal...")
@@ -418,6 +422,7 @@ class PhoenixAssistant:
         no_response_tag = [
             "add",
             "pinwind",
+            "weather",
             "addSchedule",
             "addsong",
             "backspace",
