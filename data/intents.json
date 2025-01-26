@@ -1282,6 +1282,40 @@
       "responses": ["searchbrowser"]
     },
     {
+      "tag": "flipkart",
+      "patterns": [
+        "search on flipkart",
+        "search in flipkart",
+        "i want to search product on flipkart",
+        "want to search product on flipkart"
+      ],
+      "responses": ["flipkart"]
+    },
+    {
+      "tag": "amazon",
+      "patterns": [
+        "search on amazon",
+        "search in amazon",
+        "i want to search product on amazon",
+        "want to search product on amazon"
+      ],
+      "responses": ["amazon"]
+    },
+    {
+      "tag": "myntra",
+      "patterns": [
+        "search on myntra",
+        "search in myntra",
+        "i want to search product on myntra",
+        "want to search product on myntra",
+        "search on mintra",
+        "search in mintra",
+        "i want to search product on mintra",
+        "want to search product on mintra"
+      ],
+      "responses": ["myntra"]
+    },
+    {
       "tag": "searchyoutube",
       "patterns": ["search on youtube", "search in youtube"],
       "responses": ["searchyoutube"]
@@ -1293,12 +1327,24 @@
     },
     {
       "tag": "minimize",
-      "patterns": ["minimise", "minimize"],
+      "patterns": [
+        "minimise",
+        "minimize",
+        "minimize the window",
+        "minimize the tab",
+        "minimise the window",
+        "minimise the tab"
+      ],
       "responses": ["minimize"]
     },
     {
       "tag": "maximize",
-      "patterns": ["maximise", "maximize"],
+      "patterns": [
+        "maximise",
+        "maximize",
+        "maximize the window",
+        "maximize the tab"
+      ],
       "responses": ["maximize"]
     },
     {
@@ -1365,7 +1411,11 @@
       "tag": "dateday",
       "patterns": [
         "what is the date",
+        "what is the month",
+        "what is the day",
         "tell me the date",
+        "tell me the day",
+        "tell me the month",
         "what is today",
         "tell me about today",
         "what's the day today",
@@ -1534,7 +1584,13 @@
     },
     {
       "tag": "setAlarm",
-      "patterns": ["set alarm for", "set a alarm for", "set an alarm"],
+      "patterns": [
+        "set alarm for",
+        "set a alarm for",
+        "set an alarm",
+        "i want to set alarm",
+        "i want to set an alarm"
+      ],
       "responses": ["setAlarm"]
     },
     {

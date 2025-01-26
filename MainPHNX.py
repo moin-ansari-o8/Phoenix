@@ -134,6 +134,9 @@ class PhoenixAssistant:
             "unmuteSpeaker": self.utility.unmute_speaker,
             "viewsongs": self.utility.view_songs,
             "pinwind": self.utility.pin_wind,
+            "flipkart": self.utility.flipkart,
+            "amazon": self.utility.amazon,
+            # "myntra": self.utility.myntra,
             "movewind": lambda x: self.utility.process_move_window(x),
             "switchdesk": lambda x: self.utility.switch_desk(x),
             "play-game": lambda x: self.utility.switch_desk(x),
@@ -228,6 +231,10 @@ class PhoenixAssistant:
                 # or best_tag == "whois"
                 or best_tag == "aboutme"
                 or best_tag == "phnxrestart"
+                or best_tag == "searchbrowser"
+                # or best_tag == "myntra"
+                or best_tag == "amazon"
+                or best_tag == "flipkart"
                 or highest_probability > 65
             ):
                 response = self._get_response(best_tag)
@@ -344,6 +351,7 @@ class PhoenixAssistant:
 
     def input_chat(self):
         self.loop = False
+        self.utility.get_window("MainPHNX.py")
         while True:
             sent = input("Enter command: ").lower().strip()
             if "switch to voice" in sent or "wake up" in sent:
@@ -371,7 +379,7 @@ class PhoenixAssistant:
         self.loop = False
         # self.cls_print = True
         # os.system("cls" if os.name == "nt" else "clear")
-        # self.print_phoenix()
+        self.print_phoenix()
         while True:
             if self.cls_print == True:
                 print("Refreshing terminal...")
@@ -477,6 +485,9 @@ class PhoenixAssistant:
             "wikiabout",
             "switchdesk",
             "open",
+            "myntra",
+            "amazon",
+            "flipkart",
         ]
         query_main = self.remove_phoenix_except_folder(sent)
         query = self.remove_phoenix_except_folder(sent)
@@ -495,7 +506,7 @@ class PhoenixAssistant:
         if matched_intent:
             # print(f" : {query_main}")        ##will have to make a log file for it to print the user input and to store it in log file
             tag = matched_intent["tag"]
-            print(f"# : {self.mQuery}\n")
+            # print(f"# : {self.mQuery}\n")
             self.tag_response = matched_intent["response"]
             if tag not in no_response_tag:
                 self.speak(self.tag_response)

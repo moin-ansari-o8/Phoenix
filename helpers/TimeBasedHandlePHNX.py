@@ -407,7 +407,7 @@ class AlarmHandle:
                     print("Type 'exit' to go out of the loop.")
                     user_input = input("HH:MM (24H) format (e.g., 23:45) : ").strip()
                     if "exit" in user_input:
-                        return (None, None)
+                        return ("exit", "exit")
                     try:
                         hour, minute = map(int, user_input.split(":"))
                         if 0 <= hour < 24 and 0 <= minute < 60:
@@ -430,10 +430,18 @@ class AlarmHandle:
         Args:
             query (str): The input query for setting the alarm.
         """
+        self.utils.speak("just a second, sir.")
+        idx, dsk_nm = self.utils.get_cur_desk()
+        print(idx, dsk_nm)
+        self.utils.get_window("MainPHNX.py")
+        sleep(2)
+        self.utils.maximize_window()
         hour, minute = self.getTime(query)
         if hour is None or minute is None:
             print("Invalid time format. Exiting schedule addition process.")
-            return
+            if hour == "exit":
+                return
+            hour, minute = self.getTime(query)
         repeat_dict = self.getRepeat(query)
         repeat = list(repeat_dict.keys())[0]
         days = repeat_dict[repeat]
@@ -463,12 +471,19 @@ class AlarmHandle:
         try:
             with open(self.alarm_file, "r") as file:
                 alarms = json.load(file)
+                alarms["alarms"].append(alarm_data)
+            with open(self.alarm_file, "w") as file:
+                json.dump(alarms, file, indent=4)
+            self.utils.speak(
+                f"Alarm successfully set for {hour} hour {minute} minutes."
+            )
         except FileNotFoundError:
             alarms = {"alarms": []}
-        alarms["alarms"].append(alarm_data)
-        with open(self.alarm_file, "w") as file:
-            json.dump(alarms, file, indent=4)
-        self.utils.speak(f"Alarm successfully set for {hour} hour {minute} minutes.")
+        finally:
+            sleep(2)
+            self.utils.minimize_window()
+            self.utils.speak(f"Going back to {dsk_nm}")
+            self.utils.desKtoP(idx)
 
     def removeDeletedAlarms(self):
         """

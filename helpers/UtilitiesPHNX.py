@@ -3,6 +3,7 @@ import sys
 import time
 import threading
 import subprocess
+from urllib.parse import quote
 from time import sleep
 import re
 import json
@@ -137,24 +138,33 @@ class OpenAppHandler:
         }
 
     def open_app_if_running(self, app_name):
+        import pygetwindow as gw
+        import subprocess
 
-        # Check if any window with the app name is open
+        # Get windows with the app name in their title
         windows = gw.getWindowsWithTitle(app_name)
 
         if windows:
-            # If the app is running, bring it to focus
-            windows[0].activate()
-            print(f"{app_name} is open. Bringing it to focus.")
-            return True
+            try:
+                # Attempt to activate the first matching window
+                if windows[0].isVisible() and windows[0].isActive() is False:
+                    windows[0].activate()
+                    print(f"{app_name} is open. Bringing it to focus.")
+                    return True
+                else:
+                    print(f"{app_name} is already active.")
+                    return True
+            except Exception as e:
+                print(f"Failed to activate the window: {e}")
+                return False
         else:
-            # If the app is not running, open it
+            # If no matching window is found, attempt to open the app
             try:
                 subprocess.Popen(app_name)  # Assuming app_name is the executable name
                 print(f"{app_name} was not open. Launching it.")
             except Exception as e:
                 print(f"Failed to launch {app_name}: {e}")
-            finally:
-                return False
+            return False
 
     def process_query(self, query, mQuery):
         """
@@ -1722,7 +1732,7 @@ class Utility:
 
     def play_pause_action(self, query):
         ply = query.replace("play", "")
-        if ply == "":
+        if ply == "" or ply == "it" or ply == " it" or "pause" in query:
             pg.press("space")
         elif "random song" in ply:
             self.play_random_song()
@@ -1880,10 +1890,79 @@ class Utility:
         except Exception as e:
             self.speak("An error occurred while taking the screenshot.")
 
+    def flipkart(self):
+        self.speak("Sir, what product do you want to search?")
+        while True:
+            print(">>>Listening for Flipkart product")
+            prod = self.take_command().lower()
+            if prod:
+                # URL-encode the product name
+                encoded_prod = prod.replace(" ", "+")
+                webbrowser.open(
+                    f"https://www.flipkart.com/search?q={encoded_prod}&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"
+                )
+                break
+            else:
+                print("I didn't catch that. Please say the product name again.")
+                continue
+
+    def amazon(self):
+        self.speak("Sir, what product you want to search?")
+        while True:
+            print(">>>Listening for amazon product")
+            prod = self.take_command().lower()
+            if prod:
+                encoded_prod = prod.replace(" ", "+")
+                webbrowser.open(
+                    f"https://www.amazon.in/s?k={encoded_prod}&crid=3V10F5M3G9MRZ&ref=nb_sb_noss_2"
+                )
+                break
+            else:
+                continue
+
+    def myntra(self):
+        self.speak("Sir, what product you want to search?")
+        while True:
+            print(">>>Listening for myntra product")
+            prod = self.take_command().lower()
+            if prod:
+                encoded_prod = prod.replace(" ", "+")
+                webbrowser.open(f"https://www.amazon.in/{encoded_prod}")
+                break
+            else:
+                continue
+
     def search_browser(self):
         self.speak("Sir, what do I search on the browser?")
         cm = self.take_command().lower()
-        webbrowser.open(cm)
+        if "amazon" in cm:
+            self.speak("Sir, what product you want to search?")
+            while True:
+                print(">>>Listening for amazon product")
+                prod = self.take_command().lower()
+                if prod:
+                    encoded_prod = prod.replace(" ", "+")
+                    webbrowser.open(
+                        f"https://www.amazon.in/s?k={encoded_prod}&crid=3V10F5M3G9MRZ&ref=nb_sb_noss_2"
+                    )
+                    break
+                else:
+                    continue
+        if "flipkart" in cm:
+            self.speak("Sir, what product you want to search?")
+            while True:
+                print(">>>Listening for flipkart product")
+                prod = self.take_command().lower()
+                if prod:
+                    encoded_prod = prod.replace(" ", "+")
+                    webbrowser.open(
+                        f"https://www.flipkart.com/search?q={encoded_prod}&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"
+                    )
+                    break
+                else:
+                    continue
+        else:
+            webbrowser.open(cm)
 
     def search_instagram(self):
         self.speak("Sir, please enter the username correctly.")

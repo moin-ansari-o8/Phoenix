@@ -1,54 +1,101 @@
 {
-  "alarms": [
-    {
-      "id": "A_59c92c",
-      "ringAlarm": [22, 33],
-      "label": "koleg time",
-      "day": ["TODAY"],
-      "repeat": "daily",
-      "ringed": 1,
-      "delete": false
-    }
-  ],
-  "timers": [],
-  "reminders": [
-    {
-      "id": "R_151179",
-      "day": "sunday",
-      "date": "02-02-25",
-      "message": "getting up",
-      "time": "12:30",
-      "reminded": false
-    },
-    {
-      "id": "R_628813",
-      "day": "sunday",
-      "date": "02-02-25",
-      "message": "getting a",
-      "time": "02:00",
-      "reminded": false
-    }
-  ],
-  "schedule": [
-    {
-      "time": "06:30",
-      "message": "Time for workout."
-    },
-    {
-      "time": "21:39",
-      "message": "Time for a bath."
-    },
-    {
-      "time": "08:30",
-      "message": "have a breakfast"
-    },
-    {
-      "time": "22:18",
-      "message": "koleg time"
-    },
-    {
-      "time": "23:40",
-      "message": "go to sleep"
-    }
-  ]
+    "alarms": [
+        {
+            "id": "A_c26b26",
+            "ringAlarm": [
+                2,
+                0
+            ],
+            "label": "alarm",
+            "day": [
+                "TODAY"
+            ],
+            "repeat": "once",
+            "ringed": 1,
+            "delete": true
+        },
+        {
+            "id": "A_37695a",
+            "ringAlarm": [
+                12,
+                0
+            ],
+            "label": "go to home",
+            "day": [
+                "TODAY"
+            ],
+            "repeat": "once",
+            "ringed": 1,
+            "delete": true
+        },
+        {
+            "id": "A_ea296d",
+            "ringAlarm": [
+                12,
+                15
+            ],
+            "label": "alarm",
+            "day": [
+                "TODAY"
+            ],
+            "repeat": "once",
+            "ringed": 1,
+            "delete": true
+        },
+        {
+            "id": "A_0b3a57",
+            "ringAlarm": [
+                8,
+                0
+            ],
+            "label": "wake up",
+            "day": [
+                "TODAY"
+            ],
+            "repeat": "once",
+            "ringed": 0,
+            "delete": false
+        }
+    ],
+    "timers": [],
+    "reminders": [
+        {
+            "id": "R_151179",
+            "day": "sunday",
+            "date": "02-02-25",
+            "message": "getting up",
+            "time": "12:30",
+            "reminded": false
+        },
+        {
+            "id": "R_628813",
+            "day": "sunday",
+            "date": "02-02-25",
+            "message": "getting a",
+            "time": "02:00",
+            "reminded": false
+        }
+    ],
+    "schedule": [
+        {
+            "time": "06:30",
+            "message": "Time for workout."
+        },
+        {
+            "time": "21:39",
+            "message": "Time for a bath."
+        },
+        {
+            "time": "08:30",
+            "message": "have a breakfast"
+        },
+        {
+            "time": "22:18",
+            "message": "koleg time"
+        },
+        {
+            "time": "23:40",
+            "message": "go to sleep"
+        }
+    ]
 }
