@@ -36,6 +36,7 @@ class SpeechEngine:
             "boss",
             "captain",
             "commander",
+            "my lord",
             "your highness",
             "your majesty",
             "my liege",

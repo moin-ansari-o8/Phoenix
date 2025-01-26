@@ -384,7 +384,7 @@ class PhoenixAssistant:
             if self.cls_print == True:
                 print("Refreshing terminal...")
                 os.system("cls" if os.name == "nt" else "clear")
-                self.print_phoenix()
+                # self.print_phoenix()
                 threading.Thread(target=self.check_cls_phnx).start()
                 sleep(1)
             if self.voice == False:
