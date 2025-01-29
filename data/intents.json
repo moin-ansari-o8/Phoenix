@@ -458,7 +458,7 @@
       "patterns": ["love you", "love u", "love you darling", "love u darling"],
       "responses": [
         "Love you too.",
-        "But I hate you! \nJust kidding, sir  , Love youh.",
+        "But I hate you! <break time='500ms'/> Just kidding, sir, love you.",
         "Why sudden so much love, sir!"
       ]
     },
@@ -1051,7 +1051,7 @@
         "Nothing, sir  , Awaiting for your next command.",
         "Awaiting for your next command , sir!.",
         "I was thinking , human life is so boring.\nBut don't worry, sir  , I am here to entertain you.",
-        "I was thinking to destroy this world. \n hah hah hah \njust kidding, sir . ",
+        "I was thinking to destroy this world. \n hehehe \njust kidding, sir . ",
         "Just hanging out in the digital realm, waiting for your command!",
         "I'm doing my AI thing, which is essentially chatting with you!",
         "I'm here, ready to chat. What's on your mind?",

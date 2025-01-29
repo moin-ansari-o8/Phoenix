@@ -14,6 +14,11 @@ from helpers.TimeBasedHandlePHNX import (
     ReminderHandle,
     ScheduleHandle,
 )
+import asyncio
+import websockets
+import asyncio
+import websockets
+import json
 
 
 class PhoenixAssistant:
@@ -44,6 +49,7 @@ class PhoenixAssistant:
         self.opn = open_handler
         self.clse = close_handler
         self.cls_print = True
+        self.last_tag_response = ""
 
     def _calculate_similarity(self, str1, str2):
         """
@@ -426,6 +432,15 @@ class PhoenixAssistant:
     def hib_phnx(self):
         self.voice = False
 
+    async def send_to_websocket(self, ai_response):
+        """Send response to WebSocket."""
+        uri = "ws://127.0.0.1:8765"
+        try:
+            async with websockets.connect(uri) as websocket:
+                await websocket.send(ai_response)
+        except Exception as e:
+            print(f"WebSocket error: {e}")
+
     def main(self, sent):
         no_response_tag = [
             "add",
@@ -465,12 +480,10 @@ class PhoenixAssistant:
             "searchinsta",
             "searchyoutube",
             "select",
-            "select",
             "setAlarm",
             "setReminder",
             "setTimer",
             "sub",
-            "suggestsong",
             "suggestsong",
             "tmchk",
             "type",
@@ -489,6 +502,7 @@ class PhoenixAssistant:
             "amazon",
             "flipkart",
         ]
+
         query_main = self.remove_phoenix_except_folder(sent)
         query = self.remove_phoenix_except_folder(sent)
         keywords = ["open", "launch", "start"]
@@ -504,12 +518,16 @@ class PhoenixAssistant:
             query = re.sub(r"play .+? (song|music)", "play {this} song", query)
         matched_intent = self._get_best_matching_intenty(query)
         if matched_intent:
-            # print(f" : {query_main}")        ##will have to make a log file for it to print the user input and to store it in log file
             tag = matched_intent["tag"]
-            # print(f"# : {self.mQuery}\n")
             self.tag_response = matched_intent["response"]
             if tag not in no_response_tag:
                 self.speak(self.tag_response)
+                if not self.last_tag_response == self.tag_response:
+                    # # Use the existing event loop to send the WebSocket message
+                    # loop = asyncio.get_event_loop()
+                    # loop.run_until_complete(self.send_to_websocket(self.tag_response))
+                    return self.tag_response
+                self.last_tag_response = self.tag_response
             self._execute_action(tag, query_main)
             self.loop = True
         else:
@@ -545,6 +563,9 @@ class PhoenixAssistant:
     def takeCommand(self):
         return self.utility.take_command()
 
+    def process_input(self, query):
+        return self.main(query)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
@@ -567,4 +588,4 @@ if __name__ == "__main__":
         schedule_handle=scheduler_handle,
         reminder_handle=reminder_handle,
     )
-    phnx.main_phnx()
+    # phnx.main_phnx()

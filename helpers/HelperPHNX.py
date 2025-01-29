@@ -149,7 +149,8 @@ class VoiceRecognition:
         with sr.Microphone() as source:
             self.gui.show_listen_image()
             print(">>>", end="\r")
-            audio = self.recognizer.listen(source, 0, 6)
+            self.recognizer.adjust_for_ambient_noise(source)  # Reduce background noise
+            audio = self.recognizer.listen(source)
         try:
             self.recognizer.pause_threshold = 1
             self.gui.show_recognize_image()
@@ -179,8 +180,8 @@ if __name__ == "__main__":
     # utils = Utility(spk, recog)
     # utils.open_setting()
     # utils.get_window("Code.exe", "HelperPHNX.py")
-    spk.speak("oohoom..!")
-    # recog.take_command()
+    # spk.speak("oohoom..!")
+    recog.take_command()
     # music(recog)
     # print("oj")
     # opn = OpenAppHandler(recog)
