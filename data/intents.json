@@ -249,6 +249,7 @@
         "Why did the tomato blush? Because it saw the salad dressing!"
       ]
     },
+
     {
       "tag": "quote",
       "patterns": ["give me a quote", "inspire me", "quote of the day"],
@@ -256,6 +257,30 @@
         "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
         "The best way to predict the future is to invent it. - Alan Kay"
       ]
+    },
+
+    {
+      "tag": "knock-knock",
+      "patterns": ["knock knock"],
+      "responses": ["Who's there?"]
+    },
+    {
+      "tag": "knockknockreply",
+      "patterns": ["Boo", "Lettuce", "Cow says"],
+      "responses": [
+        "Boo who? Don't cry, it's just a joke!",
+        "Lettuce who? Lettuce in, it's cold out here!",
+        "Cow says who? No, cow says moooo!"
+      ]
+    },
+    {
+      "tag": "knockknockreply",
+      "patterns": [
+        "Boo who? Don't cry, it's just a joke!",
+        "Lettuce who? Lettuce in, it's cold out here!",
+        "Cow says who? No, cow says moooo!"
+      ],
+      "responses": ["<laugh> hahaha, funny one", "<laugh> hehehe nice one"]
     },
 
     {
@@ -458,7 +483,7 @@
       "patterns": ["love you", "love u", "love you darling", "love u darling"],
       "responses": [
         "Love you too.",
-        "But I hate you! \nJust kidding, sir  , Love youh.",
+        "But I hate you! <break time='500ms'/> Just kidding, sir, love you.",
         "Why sudden so much love, sir!"
       ]
     },
@@ -1051,7 +1076,7 @@
         "Nothing, sir  , Awaiting for your next command.",
         "Awaiting for your next command , sir!.",
         "I was thinking , human life is so boring.\nBut don't worry, sir  , I am here to entertain you.",
-        "I was thinking to destroy this world. \n hah hah hah \njust kidding, sir . ",
+        "I was thinking to destroy this world. \n hehehe \njust kidding, sir . ",
         "Just hanging out in the digital realm, waiting for your command!",
         "I'm doing my AI thing, which is essentially chatting with you!",
         "I'm here, ready to chat. What's on your mind?",
