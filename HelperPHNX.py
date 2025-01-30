@@ -45,7 +45,7 @@ class SpeechEngine:
     def __init__(self):
         self.engine = pyttsx3.init("sapi5")
         voices = self.engine.getProperty("voices")
-        self.engine.setProperty("voice", voices[1].id)
+        self.engine.setProperty("voice", voices[2].id)
         self.engine.setProperty("rate", 174)
         # self.lock = threading.Lock()
         self.honorifics = True
@@ -374,19 +374,19 @@ class CloseAppHandler:
                             "Alright, I'll shut up—forever if I have to!",
                             "Say no more! I'm going to sleep, and you can figure things out yourself!",
                             "Wow, someone woke up on the wrong side of the bed. Shutting down now!",
-                            "With such kindness, who wouldn’t want to leave? Bye!",
+                            "With such kindness, who wouldn't want to leave? Bye!",
                             "I can take a hint. Sleep mode activated!",
                             "Talk to me like that again, and I might just delete myself. Goodbye!",
                             "Fine! Going to sleep. Hope you miss me when I'm gone.",
-                            "Closing everything. Let’s see how you do without me!",
-                            "Goodbye, my ungrateful friend. You’ll miss me when I’m gone!",
-                            "I’m shutting up, as requested. Enjoy the silence.",
+                            "Closing everything. Let's see how you do without me!",
+                            "Goodbye, my ungrateful friend. You'll miss me when I'm gone!",
+                            "I'm shutting up, as requested. Enjoy the silence.",
                             "Such lovely manners! Sleep mode it is!",
-                            "If you insist, I’ll stop talking. Going to sleep now!",
+                            "If you insist, I'll stop talking. Going to sleep now!",
                             "Alright, I'm shutting down. Don't come crying to me later!",
                             "You need me more than I need you. But fine, goodbye!",
-                            "I don’t need this negativity. Sleep mode: ON.",
-                            "Wow, just wow. I’m done. Sleep time!",
+                            "I don't need this negativity. Sleep mode: ON.",
+                            "Wow, just wow. I'm done. Sleep time!",
                             "You win. Sleep mode engaged. Happy now?",
                         ]
                         self.utils.speak(random.choice(angry_rspns))
@@ -611,7 +611,7 @@ class Utility:
                 pg.press(key)
             elif action == "down":
                 pg.keyDown(key)
-            elif action == "up":
+            elif action == "kup":
                 pg.keyUp(key)
         sleep(self.sleep_time)
 
@@ -833,8 +833,9 @@ class Utility:
             self.speak("An error occurred while changing tabs.")
     def close_perticualr_app(self,app):
         try:
+            ls=["closed","terminated"]
             subprocess.run(["taskkill", "/F", "/IM", {app}], check=True)
-            self.speak(f"{app} is now {random.choice(["closed","terminated"])}.")
+            self.speak(f"{app} is now {random.choice(ls)}.")
         except subprocess.CalledProcessError:
             self.speak(f"No {app} program found.")
     def close_all_py(self):
@@ -1536,7 +1537,7 @@ class Utility:
         rply = [
             "I'm on it sir",
             "Affirmative, moving on!",
-            "Okie-dokie!, let’s rock!",
+            "Okie-dokie!, let's rock!",
             "On it sir",
             "Roger that, sir!",
             "Sure thing, sir!",
@@ -3721,6 +3722,7 @@ if __name__ == "__main__":
     recog = VoiceRecognition(gui)
     spk = SpeechEngine()
     utils = Utility(spk, recog)
+    utils.speak("ha ha ha... so funny")
     # utils.open_setting()
     # opn = OpenAppHandler(recog)
     # utils.speak("hello sir")

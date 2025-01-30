@@ -1815,6 +1815,22 @@
         "okay sir ",
         "on it sir "
       ]
+    },
+    {
+      "tag":"event_general_info",
+    "patterns":[
+      "What is Gyanotsav 2025",
+      "Tell me about Gyanotsav",
+      "What is this event about",
+      "Can you explain what Gyanotsav i?",
+      "Give me an overview of Gyanotsav 2025.",
+      "What’s happening at CVM University",
+      "What kind of event is Gyanotsav",
+      "Why is Gyanotsav 2025 special"
+    ],
+    "responses":[
+  
+    ]
     }
   ]
 }
