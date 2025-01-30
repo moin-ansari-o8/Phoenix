@@ -209,7 +209,6 @@
         "Why don't we ever tell secrets at the bakery? Because there are too many muffins around!",
         "What's the most suspenseful food? A suspense-shroom!",
         "Why did the tomato blush? Because it saw the salad dressing!"
-        
       ]
     },
     {
@@ -1817,20 +1816,263 @@
       ]
     },
     {
-      "tag":"event_general_info",
-    "patterns":[
-      "What is Gyanotsav 2025",
-      "Tell me about Gyanotsav",
-      "What is this event about",
-      "Can you explain what Gyanotsav i?",
-      "Give me an overview of Gyanotsav 2025.",
-      "What’s happening at CVM University",
-      "What kind of event is Gyanotsav",
-      "Why is Gyanotsav 2025 special"
-    ],
-    "responses":[
-  
-    ]
+      "tag": "event_general_info",
+      "patterns": [
+        "what is gyanotsav",
+        "what is a gyanotsav",
+        "what is this gyanotsav",
+        "what is this gyanotsav about?",
+        "What is Gyanotsav 2025",
+        "Tell me about Gyanotsav",
+        "tell em about this event",
+        "tell me about the gyanotsav event",
+        "tell me about this gyanotsav event",
+        "tell me about this gyanotsav",
+        "What is this event about",
+        "Can you explain what Gyanotsav i?",
+        "Give me an overview of Gyanotsav 2025.",
+        "What's happening at CVM University",
+        "What kind of event is Gyanotsav",
+        "Why is Gyanotsav 2025 special"
+      ],
+      "responses": [
+        "Gyanotsav 2025 is a grand celebration of innovation, creativity, and talent, organized by CVM University. It's an event where students showcase their projects, participate in product exhibitions, and engage in fun activities and workshops.",
+        "Gyanotsav 2025 is an exciting event by CVM University, featuring student innovations, interactive games, hands-on workshops, and inspiring exhibitions. It's a great place to experience creativity and knowledge in action!",
+        "This event is all about bringing students, innovators, and creators together to celebrate knowledge and technology. From exciting projects to hands-on activities, Gyanotsav 2025 has something for everyone!",
+        "Gyanotsav is an initiative by CVM University to promote learning, innovation, and creativity. The event showcases a wide range of student-driven projects, interactive sessions, and workshops aimed at encouraging new ideas.",
+        "Gyanotsav 2025 is a unique platform where students can present their work, learn from experts, and experience groundbreaking ideas. It's a must-visit for anyone passionate about education and innovation!"
+      ]
+    },
+    {
+      "tag": "event_organizers",
+      "patterns": [
+        "Who is organizing Gyanotsav 2025?",
+        "Who are the event organizers?",
+        "Which department is handling Gyanotsav?",
+        "Is CVM University managing the event?"
+      ],
+      "responses": [
+        "Gyanotsav 2025 is proudly organized by CVM University, bringing together faculty, students, and innovators to make this event a success.",
+        "CVM University is the main organizer of Gyanotsav 2025, with contributions from various departments, students, and industry experts.",
+        "The event is managed by a dedicated team from CVM University, ensuring a well-planned and engaging experience for all attendees.",
+        "CVM University leads the organization of Gyanotsav 2025, supported by students and faculty from multiple disciplines."
+      ]
+    },
+    {
+      "tag": "event_schedule",
+      "patterns": [
+        "When does Gyanotsav 2025 start?",
+        "What are the event dates?",
+        "When is Gyanotsav happening?",
+        "What time does the event open each day?",
+        "At what time does Gyanotsav start and end?",
+        "How long will Gyanotsav 2025 last?",
+        "What are the daily timings of the event?",
+        "Is there a specific schedule for each day?",
+        "Can you give me the exact event schedule?",
+        "What time should I arrive at Gyanotsav?",
+        "What's the duration of Gyanotsav each day?",
+        "When does the first session start at Gyanotsav?"
+      ],
+      "responses": [
+        "Gyanotsav 2025 will be held from January 30th to February 2nd, 2025, at Shashtri Maidan, Vallabh Vidyanagar. Be sure to mark your calendar!",
+        "The event will run for four exciting days, from January 30th to February 2nd, with multiple activities scheduled daily.",
+        "Gyanotsav will open its doors each day at 10:00 AM and continue until 7:00 PM, giving you plenty of time to explore the exhibitions, workshops, and fun activities!",
+        "Each day of Gyanotsav will begin at 10:00 AM and end at 7:00 PM. However, some workshops and competitions may have different time slots.",
+        "Make sure to arrive by 10:00 AM each day to experience everything Gyanotsav 2025 has to offer. The event will conclude at 7:00 PM daily.",
+        "The full event schedule includes exhibitions, guest lectures, workshops, and competitions spread across four days. Would you like to know the detailed daily schedule?",
+        "Gyanotsav 2025 will feature multiple sessions throughout the day, with keynote speakers, project showcases, and hands-on activities. Let me know if you need specific timings!"
+      ]
+    },
+    {
+      "tag": "event_venue",
+      "patterns": [
+        "Where is Gyanotsav 2025 happening?",
+        "What is the venue for Gyanotsav?",
+        "Where will Gyanotsav be held?",
+        "Where is Shashtri Maidan located?",
+        "How do I reach Shashtri Maidan?",
+        "Can you give me directions to the event venue?",
+        "Is there parking available at the venue?",
+        "Are there any landmarks near Shashtri Maidan?",
+        "How far is Shashtri Maidan from Vallabh Vidyanagar bus station?",
+        "Is public transport available to reach the venue?",
+        "What's the best way to reach Gyanotsav 2025?",
+        "Is there an entry gate for visitors?"
+      ],
+      "responses": [
+        "Gyanotsav 2025 will be held at Shashtri Maidan, Vallabh Vidyanagar. It is a well-known venue for large-scale events and exhibitions.",
+        "The event will take place at Shashtri Maidan, Vallabh Vidyanagar, which is centrally located and easily accessible.",
+        "Shashtri Maidan is the official venue for Gyanotsav 2025. It's situated in Vallabh Vidyanagar and is well-connected by local transport.",
+        "To reach the venue, you can use public transport such as buses and auto-rickshaws. If you're coming by car, parking is available near the venue.",
+        "The nearest bus station is Vallabh Vidyanagar Bus Depot, from where you can take an auto or cab to Shashtri Maidan.",
+        "If you're traveling by train, the closest railway station is Anand Junction, about 15 minutes away from the venue by road.",
+        "For those driving, ample parking spaces are available near the venue. It's best to arrive early to secure a good spot.",
+        "There will be clear signboards directing visitors to the entrance of Shashtri Maidan. Look for event banners to guide you!"
+      ]
+    },
+    {
+      "tag": "event_activities",
+      "patterns": [
+        "What can I expect at Gyanotsav 2025?",
+        "What kind of projects will be showcased?",
+        "Will there be any competitions or games?",
+        "What activities are planned for Gyanotsav 2025?",
+        "Are there any interactive exhibits at the event?",
+        "Will there be any live demonstrations?",
+        "Can I participate in any activities?",
+        "What kind of entertainment will be available?",
+        "Are there any special performances or shows?"
+      ],
+      "responses": [
+        "Gyanotsav 2025 will feature a wide range of activities, including student project showcases, hands-on workshops, interactive exhibits, and exciting competitions.",
+        "Expect to see innovative student projects, product exhibitions, and a variety of fun activities such as coding challenges, quizzes, and live demonstrations.",
+        "Yes! There will be several competitions, including quiz contests, and gaming events where participants can test their skills and win prizes.",
+        "Visitors will have the chance to engage in interactive sessions, participate in workshops, and experience cutting-edge technology firsthand.",
+        "Apart from educational activities, there will be entertainment, special performances, and engaging exhibits to make the event even more exciting!",
+        "Yes, attendees can participate in various activities, including tech challenges, creative showcases, and hands-on experiments.",
+        "Live demonstrations of innovative projects and products will be a key attraction at Gyanotsav 2025. Make sure to check out the schedule to catch them!"
+      ]
+    },
+    {
+      "tag": "what_is_phoenix",
+      "patterns": [
+        "Can you tell me what Phoenix is?",
+        "What exactly is Phoenix?",
+        "What is Phoenix all about?",
+        "I've heard about Phoenix, but what is it?",
+        "What kind of assistant is Phoenix?",
+        "How would you describe Phoenix?",
+        "So, what is Phoenix? Can you explain?",
+        "What makes Phoenix different from other assistants?",
+        "Tell me more about Phoenix.",
+        "Is Phoenix just another AI assistant?",
+        "What role does Phoenix play?",
+        "What does Phoenix do, really?",
+        "What are the main features of Phoenix?",
+        "Why should I use Phoenix?",
+        "What does Phoenix offer to its users?",
+        "Can you explain what Phoenix does for me?",
+        "How is Phoenix different from Siri or Alexa?",
+        "What is Phoenix supposed to help with?",
+        "What do you mean by Phoenix is an assistant?",
+        "What makes Phoenix stand out from other digital assistants?"
+      ],
+      "responses": [
+        "Phoenix is a personal desktop assistant powered by AI, designed to make your life easier. It listens to voice commands and automates tasks on your computer, helping you with everything from setting reminders to controlling applications. It's like a helpful companion that's always ready to assist you.",
+        "Phoenix is an AI assistant built specifically to help you manage tasks on your computer. Whether you need to set alarms, control apps, or get real-time weather updates, Phoenix has you covered. It listens to your commands and acts based on your needs.",
+        "Phoenix is a virtual assistant designed to improve your productivity and simplify everyday tasks. It works by recognizing your voice commands and automating processes on your computer, making your digital experience smoother and more efficient.",
+        "Phoenix is an advanced AI assistant that helps you control your desktop and manage your routine. With Phoenix, you can do everything hands-free—whether it's managing reminders, opening applications, or even controlling system settings.",
+        "Think of Phoenix as a smart assistant who's always ready to help you with tasks on your computer. It listens for your voice and then takes action. Whether you're setting reminders, adjusting system settings, or opening apps, Phoenix is there to help.",
+        "Phoenix is an AI-powered assistant that works with your desktop environment. It listens to voice commands and automates tasks, making your life simpler by handling things like reminders, application management, and system controls.",
+        "Phoenix is like your personal assistant for your computer. It uses voice commands to help you set alarms, reminders, open apps, adjust system settings, and even provide updates on things like weather or battery life.",
+        "Phoenix is an intelligent assistant that listens for your voice commands. Whether you need to organize your tasks, manage your device settings, or just chat, Phoenix is always there to assist, powered by Python for maximum efficiency.",
+        "Phoenix is a digital assistant designed to help you stay on top of your tasks and control your computer seamlessly. It's designed to handle everything from setting alarms to controlling apps with just your voice.",
+        "Phoenix is an AI assistant that helps you manage your computer tasks. It listens to your voice commands, allowing you to easily control applications, set reminders, and perform system actions like adjusting brightness or volume.",
+        "Phoenix is designed to make managing your desktop easier. It listens for your voice commands and then takes action, whether that's opening applications, setting alarms, or performing system tasks like shutting down or restarting your computer.",
+        "Phoenix is a virtual assistant that works with your computer's system, helping you automate routine tasks. It listens to voice commands and helps you with everything from reminders to controlling system settings.",
+        "Phoenix is a personal assistant powered by AI, which makes your computer usage more efficient. It listens to your voice, and through simple commands, it can open apps, set reminders, and even perform system tasks like restarting your device.",
+        "Phoenix is an AI assistant that simplifies your digital experience. By listening to voice commands, it helps automate actions on your computer—whether it's controlling applications, setting reminders, or giving you real-time updates like weather reports.",
+        "Phoenix is an intuitive assistant for your computer, built to automate tasks and make your life easier. You can use voice commands to open apps, set reminders, and perform various system operations, all hands-free.",
+        "Phoenix is your virtual assistant for managing tasks on your computer. It's capable of recognizing your voice commands and responding accordingly to control apps, set reminders, or even update you on system performance.",
+        "Phoenix is here to help you manage your desktop seamlessly. It listens to voice commands and allows you to automate everything from opening programs to adjusting settings, saving you time and effort.",
+        "Phoenix is an intelligent assistant that interacts with your computer using voice recognition. It helps you automate tasks like setting reminders, controlling apps, and managing system settings, all with voice commands.",
+        "Phoenix is your personal assistant for digital tasks, designed to help you stay organized and manage your system effortlessly. It listens to voice commands and executes actions like controlling apps, reminders, or system settings."
+      ]
+    },
+    {
+      "tag": "what_can_phoenix_do",
+      "patterns": [
+        "what can you do",
+        "what you can do",
+        "What can Phoenix do for me?",
+        "What are Phoenix's capabilities?",
+        "How can Phoenix help me?",
+        "What can Phoenix assist with?",
+        "Can you tell me what Phoenix is capable of?",
+        "What kinds of tasks can Phoenix perform?",
+        "What actions can I ask Phoenix to do?",
+        "How can I make the most of Phoenix?",
+        "What can I use Phoenix for?",
+        "Can Phoenix perform all types of tasks?",
+        "Is there anything Phoenix can't do?",
+        "Can Phoenix manage my reminders?",
+        "What tasks can Phoenix handle?",
+        "Can Phoenix control my system settings?",
+        "What is Phoenix good at doing?",
+        "How does Phoenix help with productivity?",
+        "Can Phoenix open apps for me?",
+        "Can I use Phoenix to control my device?",
+        "How does Phoenix help with organizing tasks?",
+        "Can Phoenix set alarms and reminders?"
+      ],
+      "responses": [
+        "Phoenix is designed to handle a wide variety of tasks. It can help you set alarms, manage reminders, control system settings, open and close applications, and even track your battery life. Simply put, Phoenix automates tasks to make your day easier.",
+        "Phoenix is capable of performing a range of tasks, from setting reminders and alarms to controlling applications. You can ask it to open apps, adjust volume, set up timers, track battery life, and much more.",
+        "With Phoenix, you can set reminders and alarms, open and manage applications, control your system's brightness and volume, and even monitor your battery status. It's all hands-free and easy to use.",
+        "Phoenix can automate daily tasks like setting reminders, controlling system settings, opening apps, and adjusting your computer's volume and brightness. It also helps with tracking your battery and sending notifications.",
+        "You can use Phoenix to set reminders, alarms, and timers. It can open applications, manage system settings, check the weather, and even perform actions like restarting or shutting down your system.",
+        "Phoenix is a great assistant for managing your day-to-day tasks. It can handle everything from scheduling reminders, controlling apps, adjusting settings, to even managing your system's power functions.",
+        "Phoenix is capable of a wide range of tasks. You can ask it to manage your reminders, alarms, and timers, as well as open and close apps, adjust your system's settings, and track battery performance.",
+        "From controlling applications to managing your system's settings, Phoenix can do it all. It can open programs, set alarms, control volume and brightness, and even give you weather updates—all by using voice commands.",
+        "Phoenix helps you stay on top of your tasks by managing reminders and alarms. It can also perform system actions like adjusting brightness, controlling the volume, and even shutting down or restarting your system.",
+        "Phoenix can handle all kinds of tasks—whether it's setting a reminder, opening an app, or adjusting system settings like brightness and volume. It's designed to make your digital life simpler and more efficient.",
+        "Phoenix can open and close applications, set alarms, and manage your system's settings such as brightness and volume. You can also ask Phoenix for weather updates or even to monitor your battery.",
+        "Phoenix's capabilities include setting up reminders and alarms, controlling apps, managing system settings, and even performing more complex tasks like tracking battery performance and adjusting device brightness.",
+        "Phoenix is versatile and can assist with a variety of tasks. You can ask it to open applications, adjust system settings, set reminders, and much more. All you need to do is ask.",
+        "With Phoenix, you can get help with everything from setting up alarms and reminders to managing applications and system settings. It's a powerful assistant that helps automate your routine.",
+        "Phoenix can automate a variety of tasks such as setting alarms, controlling apps, adjusting your device's settings, and tracking your battery life. It's designed to help you save time and reduce manual work.",
+        "You can ask Phoenix to perform a wide range of tasks, like setting reminders, controlling system applications, managing device settings like volume and brightness, and much more.",
+        "Phoenix can open applications, set up alarms, and perform various system controls such as adjusting the brightness and volume of your device. It's an all-in-one assistant for your digital needs.",
+        "Phoenix is perfect for controlling your desktop hands-free. It can open apps, set reminders, monitor your battery, and adjust system settings such as brightness and volume. It's your personal assistant in the digital world.",
+        "Whether you need to manage your reminders, adjust system settings, or open apps, Phoenix can handle it all. It listens to voice commands and executes tasks to help you be more productive."
+      ]
+    },
+    {
+      "tag": "whats_next_for_phoenix",
+      "patterns": [
+        "What's next for Phoenix?",
+        "What are the future plans for Phoenix?",
+        "How is Phoenix going to improve?",
+        "What's coming next for Phoenix?",
+        "What are the future updates for Phoenix?",
+        "Will Phoenix get any new features?",
+        "How will Phoenix evolve?",
+        "What are the next steps for Phoenix?",
+        "Is Phoenix going to get better?",
+        "What's in store for Phoenix?",
+        "What will Phoenix be able to do in the future?",
+        "What's next on the roadmap for Phoenix?",
+        "Are there any upcoming updates for Phoenix?",
+        "How will Phoenix be upgraded?",
+        "Is Phoenix going to get smarter?",
+        "What are the future capabilities of Phoenix?",
+        "Is there anything new planned for Phoenix?",
+        "What improvements are planned for Phoenix?",
+        "Can we expect more features for Phoenix?",
+        "What are the next goals for Phoenix?"
+      ],
+      "responses": [
+        "The future of Phoenix is bright! We're constantly working on adding more features and improving existing capabilities. In the near future, Phoenix will become even more intuitive, with more powerful integrations and greater control over your system.",
+        "Phoenix is always evolving! We're planning to add new features, enhance voice recognition, and integrate with more apps and devices. We're working on making Phoenix smarter, more efficient, and even more user-friendly.",
+        "We have big plans for Phoenix! In the future, you can expect to see improved voice recognition, the ability to control more applications, and seamless integration with other smart devices, making Phoenix even more powerful.",
+        "Phoenix is just getting started! Future updates will include better task automation, more system control features, and deeper integration with other services. We aim to make Phoenix your go-to assistant for everything.",
+        "There's a lot coming for Phoenix! In the next updates, you can expect improvements in voice recognition, the addition of more customizable features, and integration with more third-party apps and tools.",
+        "We're always working to make Phoenix better. Upcoming features include smarter task automation, new voice commands, and integration with more services to make your life even easier.",
+        "Phoenix will continue to evolve with regular updates. Future improvements will include new features, faster response times, and deeper customization to better serve your needs.",
+        "The next phase for Phoenix will include smarter task automation, new ways to interact with your devices, and increased personalization. We're also exploring new AI-driven features to take Phoenix to the next level.",
+        "Phoenix will become more powerful with every update! We are working on new features that will make voice commands even more intuitive and expand the number of apps Phoenix can control.",
+        "Phoenix is set for major upgrades! Expect faster responses, improved task management, and greater compatibility with other devices. We're also working on enhancing its intelligence to make it even more helpful.",
+        "Looking ahead, Phoenix will see a range of new features, from improved natural language processing to expanded integration with apps and devices. Stay tuned for a smarter assistant.",
+        "Phoenix is growing! In the next few updates, you'll see new features, improved voice recognition, and expanded functionality for even more tasks. Phoenix will keep getting better over time.",
+        "We're continuously improving Phoenix, and future updates will introduce better system control, enhanced automation, and integration with more devices. The goal is to make Phoenix the ultimate assistant for all your needs.",
+        "Phoenix will become even more capable with upcoming updates. Expect to see features like improved task automation, the ability to perform more complex actions, and expanded compatibility with other smart systems.",
+        "We're working on making Phoenix more adaptable, with future updates that include enhanced voice recognition, deeper customization, and more features to help you stay organized and productive.",
+        "Phoenix will be smarter, more intuitive, and better at automating tasks as we continue to update it. We're also planning to add new capabilities for managing additional applications and systems.",
+        "The future of Phoenix is all about making it more personalized and powerful. Updates will include the ability to control more types of devices, smarter task management, and improved response accuracy.",
+        "Phoenix will continue to grow with regular improvements that enhance its features, making it even more useful in daily tasks. Expect to see Phoenix become a more integrated assistant with each update.",
+        "In the future, Phoenix will have even more features, better control over various apps, and enhanced automation. We are making sure Phoenix evolves to stay ahead of user needs."
+      ]
     }
   ]
 }
