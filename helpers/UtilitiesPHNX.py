@@ -1730,6 +1730,26 @@ class Utility:
             ]
         )
 
+    def knock_knock(self):
+        lf = [
+            "Hahaha, that was a good one!",
+            "Hehehe, nice joke!",
+            "Hmm, was i supposed to laugh?",
+            "Hahaha, I see what you did there!",
+        ]
+        while True:
+            print("Listening...")
+            who = self.take_command().lower().strip()
+            if who:
+                self.speak(f"{who} who?")
+                while True:
+                    print("Listening2...")
+                    laugh = self.take_command().lower().strip()
+                    if laugh:
+                        self.speak(f"{random.choice(lf)}")
+                        break
+                break
+
     def play_pause_action(self, query):
         ply = query.replace("play", "")
         if ply == "" or ply == "it" or ply == " it" or "pause" in query:

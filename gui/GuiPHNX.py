@@ -7,13 +7,15 @@ from PyQt5.QtWidgets import (
     QWidget,
     QGraphicsDropShadowEffect,
     QHBoxLayout,
-    QTextEdit,
+    QListWidget,
+    QListWidgetItem,
     QLineEdit,
+    QPushButton,
 )
 import asyncio
 import websockets
 import json
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtGui import QFont, QPainter, QColor, QBrush, QLinearGradient
 from comp.Switch import ToggleSwitch
 import threading
@@ -72,10 +74,18 @@ class DesktopWindow(QMainWindow):
         self.switch.toggled.connect(self.toggle_chat_input)
 
         # Chat Display Area (hidden by default)
-        self.chat_display = QTextEdit(self)
-        self.chat_display.setReadOnly(True)
+        self.chat_display = QListWidget(self)
         self.chat_display.setStyleSheet(
-            "background-color: rgba(255, 255, 255, 0.7); border-radius: 10px; padding: 10px;"
+            """
+            QListWidget {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #333333, stop:1 #000000);
+                border-radius: 10px;
+                padding: 10px;
+                color: white;
+                font-family: "Segoe UI", sans-serif;
+                font-size: 14px;
+            }
+            """
         )
         self.chat_display.setVerticalScrollBarPolicy(
             Qt.ScrollBarAlwaysOff
@@ -83,17 +93,47 @@ class DesktopWindow(QMainWindow):
         self.chat_display.hide()  # Hide by default
 
         # Chat Input Area (hidden by default)
+        self.chat_input_layout = QHBoxLayout()
         self.chat_input = QLineEdit(self)
         self.chat_input.setPlaceholderText("Type your message here...")
         self.chat_input.setStyleSheet(
-            "background-color: rgba(255, 255, 255, 0.7); border-radius: 10px; padding: 10px;"
+            """
+            QLineEdit {
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 10px;
+                padding: 10px;
+                font-family: "Segoe UI", sans-serif;
+                font-size: 14px;
+            }
+            """
         )
         self.chat_input.returnPressed.connect(self.send_message)
-        self.chat_input.hide()  # Hide by default
+
+        # Clear Button
+        self.clear_button = QPushButton("Clear", self)
+        self.clear_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #FF4500;
+                color: white;
+                border-radius: 10px;
+                padding: 5px 10px;
+                font-family: "Segoe UI", sans-serif;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #FF6347;
+            }
+            """
+        )
+        self.clear_button.clicked.connect(self.clear_chat)
+
+        self.chat_input_layout.addWidget(self.chat_input)
+        self.chat_input_layout.addWidget(self.clear_button)
 
         # Add chat display and input to the layout (below the top bar)
         self.layout.addWidget(self.chat_display)
-        self.layout.addWidget(self.chat_input)
+        self.layout.addLayout(self.chat_input_layout)
 
         # Create a widget for the layout
         central_widget = QWidget(self)
@@ -145,14 +185,15 @@ class DesktopWindow(QMainWindow):
         if not checked:  # Show chat interface only when switch is off (checked = False)
             self.chat_display.show()
             self.chat_input.show()
+            self.clear_button.show()
         else:  # Hide chat interface when switch is on (checked = True)
             self.chat_display.hide()
             self.chat_input.hide()
+            self.clear_button.hide()
         print("Toggle switched:", checked)
 
         # Force the layout to update
         self.layout.update()
-        # self.adjustSize()  # Adjust the window size dynamically
 
     async def send_message_ws(self, user_prompt):
         """Send user prompt to WebSocket server and get AI response asynchronously."""
@@ -167,17 +208,57 @@ class DesktopWindow(QMainWindow):
         if not user_prompt:
             return
 
-        # Display user input in the chat window
-        self.chat_display.append(f"You: {user_prompt}")
+        # Display user input in the chat window (right-aligned with red background)
+        user_message = QLabel(f"You: {user_prompt}")
+        user_message.setStyleSheet(
+            """
+            QLabel {
+                background-color: #FF0000;
+                color: white;
+                padding: 8px;
+                border-radius: 15px;
+                font-family: "Segoe UI", sans-serif;
+                font-size: 14px;
+            }
+            """
+        )
+        user_message.setAlignment(Qt.AlignRight)
+        user_item = QListWidgetItem()
+        user_item.setSizeHint(user_message.sizeHint())
+        self.chat_display.addItem(user_item)
+        self.chat_display.setItemWidget(user_item, user_message)
+
         self.chat_input.clear()
 
         # Fetch AI response
         async def fetch_response():
             ai_prompt = await self.send_message_ws(user_prompt)
-            self.chat_display.append(f"Phoenix: {ai_prompt}")
+            # Display AI response in the chat window (left-aligned with green background)
+            ai_message = QLabel(f"Phoenix: {ai_prompt}")
+            ai_message.setStyleSheet(
+                """
+                QLabel {
+                    background-color: #00FF00;
+                    color: black;
+                    padding: 8px;
+                    border-radius: 15px;
+                    font-family: "Segoe UI", sans-serif;
+                    font-size: 14px;
+                }
+                """
+            )
+            ai_message.setAlignment(Qt.AlignLeft)
+            ai_item = QListWidgetItem()
+            ai_item.setSizeHint(ai_message.sizeHint())
+            self.chat_display.addItem(ai_item)
+            self.chat_display.setItemWidget(ai_item, ai_message)
 
         # Run async function in the background
         asyncio.run_coroutine_threadsafe(fetch_response(), self.loop)
+
+    def clear_chat(self):
+        """Clear the chat display."""
+        self.chat_display.clear()
 
 
 # Run the application

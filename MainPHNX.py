@@ -146,6 +146,7 @@ class PhoenixAssistant:
             "movewind": lambda x: self.utility.process_move_window(x),
             "switchdesk": lambda x: self.utility.switch_desk(x),
             "play-game": lambda x: self.utility.switch_desk(x),
+            "knock-knock": self.utility.knock_knock,
         }
         if tag in action_map:
             if tag in [
@@ -241,6 +242,7 @@ class PhoenixAssistant:
                 # or best_tag == "myntra"
                 or best_tag == "amazon"
                 or best_tag == "flipkart"
+                or best_tag == "knock-knock"
                 or highest_probability > 65
             ):
                 response = self._get_response(best_tag)
@@ -522,11 +524,11 @@ class PhoenixAssistant:
             self.tag_response = matched_intent["response"]
             if tag not in no_response_tag:
                 self.speak(self.tag_response)
-                if not self.last_tag_response == self.tag_response:
-                    # # Use the existing event loop to send the WebSocket message
-                    # loop = asyncio.get_event_loop()
-                    # loop.run_until_complete(self.send_to_websocket(self.tag_response))
-                    return self.tag_response
+                # if not self.last_tag_response == self.tag_response:
+                #     # # Use the existing event loop to send the WebSocket message
+                #     # loop = asyncio.get_event_loop()
+                #     # loop.run_until_complete(self.send_to_websocket(self.tag_response))
+                #     return self.tag_response
                 self.last_tag_response = self.tag_response
             self._execute_action(tag, query_main)
             self.loop = True
@@ -588,4 +590,4 @@ if __name__ == "__main__":
         schedule_handle=scheduler_handle,
         reminder_handle=reminder_handle,
     )
-    # phnx.main_phnx()
+    phnx.main_phnx()

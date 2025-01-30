@@ -249,6 +249,7 @@
         "Why did the tomato blush? Because it saw the salad dressing!"
       ]
     },
+
     {
       "tag": "quote",
       "patterns": ["give me a quote", "inspire me", "quote of the day"],
@@ -256,6 +257,30 @@
         "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
         "The best way to predict the future is to invent it. - Alan Kay"
       ]
+    },
+
+    {
+      "tag": "knock-knock",
+      "patterns": ["knock knock"],
+      "responses": ["Who's there?"]
+    },
+    {
+      "tag": "knockknockreply",
+      "patterns": ["Boo", "Lettuce", "Cow says"],
+      "responses": [
+        "Boo who? Don't cry, it's just a joke!",
+        "Lettuce who? Lettuce in, it's cold out here!",
+        "Cow says who? No, cow says moooo!"
+      ]
+    },
+    {
+      "tag": "knockknockreply",
+      "patterns": [
+        "Boo who? Don't cry, it's just a joke!",
+        "Lettuce who? Lettuce in, it's cold out here!",
+        "Cow says who? No, cow says moooo!"
+      ],
+      "responses": ["<laugh> hahaha, funny one", "<laugh> hehehe nice one"]
     },
 
     {
