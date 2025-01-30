@@ -42,9 +42,13 @@ def load_phnx():
     ct = 0
     for path in paths:
         if ct == 2:
+            idx, dsk_nm = utils.get_cur_desk()
             utils.desKtoP(4)
+            utils.speak(f"Going back to your working space")
+            sleep(5)
+            utils.desKtoP(idx)
         os.startfile(path)
-        sleep(10)
+        sleep(5)
         ct += 1
 
 
