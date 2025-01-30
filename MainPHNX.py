@@ -187,7 +187,7 @@ class PhoenixAssistant:
             max_probability = max(max_probability, probability)
         return max_probability
 
-    def _get_best_matching_intenty(self, sent):
+    def _get_best_matching_intent(self, sent):
         """
         This function compares the input sentence with predefined patterns associated with different tags
         to find the best matching intent. It calculates the overlap between words in the input sentence
@@ -518,7 +518,7 @@ class PhoenixAssistant:
         match = re.search(r"play (.+?) song", query)
         if match:
             query = re.sub(r"play .+? (song|music)", "play {this} song", query)
-        matched_intent = self._get_best_matching_intenty(query)
+        matched_intent = self._get_best_matching_intent(query)
         if matched_intent:
             tag = matched_intent["tag"]
             self.tag_response = matched_intent["response"]
