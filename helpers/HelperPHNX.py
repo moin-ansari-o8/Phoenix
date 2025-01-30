@@ -149,7 +149,7 @@ class VoiceRecognition:
         with sr.Microphone() as source:
             self.gui.show_listen_image()
             print(">>>", end="\r")
-            audio = self.recognizer.listen(source, 0, 6)
+            audio = self.recognizer.listen(source, 0, 4)
         try:
             self.recognizer.pause_threshold = 1
             self.gui.show_recognize_image()
