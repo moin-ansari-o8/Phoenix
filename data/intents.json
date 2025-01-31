@@ -431,7 +431,12 @@
         "suggest song",
         "suggest any song",
         "suggest me a song",
-        "suggest me some songs"
+        "suggest me some songs",
+        "i want to listen a song",
+        "want to listen a song",
+        "want to listen song",
+        "want to listen a music",
+        "want to listen  music"
       ],
       "responses": ["suggestsong"]
     },
@@ -690,10 +695,6 @@
         "It's great sir! How can i help you?",
         "It's great sir! How can i assist you today?",
         "It's great sir! How might i help you today?",
-        "waiting for your command sir!",
-        "waiting for your command sir! How can i assist you?",
-        "waiting for your command sir! How might i help you?",
-        "waiting for your command sir! How can i help you?",
         "glad to hear that sir! How can i assist you?",
         "glad to hear that sir! How might i help you?",
         "glad to hear that sir! How can i help you?",
@@ -1539,17 +1540,6 @@
       "responses": ["on it, sir ", "okay, sir "]
     },
     {
-      "tag": "suggestsong",
-      "patterns": [
-        "suggest song",
-        "suggest any song",
-        "suggest me song",
-        "suggest me a song",
-        "suggest a song"
-      ],
-      "responses": ["suggestsong"]
-    },
-    {
       "tag": "select",
       "patterns": ["select"],
       "responses": ["select"]
@@ -1727,6 +1717,22 @@
       "tag": "muteSpeaker",
       "patterns": ["mute speaker", "mute the speaker"],
       "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "greet-to",
+      "patterns": [
+        "say hello to",
+        "greet to",
+        "do greeting to",
+        "send greetings to",
+        "say hi to",
+        "give your regards to",
+        "extend your greetings to",
+        "say hey to",
+        "pass your greetings to",
+        "send your regards to"
+      ],
+      "responses": ["greet-to"]
     },
     {
       "tag": "unmuteSpeaker",

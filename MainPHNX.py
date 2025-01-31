@@ -117,6 +117,7 @@ class PhoenixAssistant:
             "playpause": lambda query: self.utility.play_pause_action(query),
             "playsong": lambda query: self.utility.play_random_song(query),
             "weather": lambda query: self.utility.weather_check(query),
+            "greet-to": lambda query: self.utility.greet_to(query),
             "press": self.utility.press_key,
             "saytime": self.utility.tim,
             "screenshot": self.utility.screenshot,
@@ -164,6 +165,7 @@ class PhoenixAssistant:
                 "movewind",
                 "switchdesk",
                 "weather",
+                "greet-to",
             ]:
                 action_map[tag](query)
             elif tag in ["maximize", "minimize"]:
@@ -228,7 +230,7 @@ class PhoenixAssistant:
                 key=lambda x: x[1],
                 default=(None, 0),
             )
-            print(best_tag)
+            # print(best_tag)
             if (
                 best_tag == "openelse"
                 or best_tag == "playsong"
@@ -243,6 +245,7 @@ class PhoenixAssistant:
                 or best_tag == "amazon"
                 or best_tag == "flipkart"
                 or best_tag == "knock-knock"
+                or best_tag == "greet-to"
                 or highest_probability > 65
             ):
                 response = self._get_response(best_tag)
@@ -446,6 +449,7 @@ class PhoenixAssistant:
     def main(self, sent):
         no_response_tag = [
             "add",
+            "greet-to",
             "pinwind",
             "weather",
             "addSchedule",

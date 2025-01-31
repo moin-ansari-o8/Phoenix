@@ -1023,7 +1023,7 @@ class Utility:
         except Exception as e:
             self.speak("An error occurred while changing tabs.")
 
-    def close_perticular_app(self, app):
+    def close_perticular_app(self, app, spk=True):
         try:
             # Ensure app is passed as a string
             subprocess.run(["taskkill", "/F", "/IM", app], check=True)
@@ -1031,7 +1031,8 @@ class Utility:
                 subprocess.Popen(["explorer.exe"], shell=False)
                 self.speak("Explorer restarted successfully.")
             else:
-                self.speak(f"{app} is now closed.")
+                if spk:
+                    self.speak(f"{app} is now closed.")
         except subprocess.CalledProcessError:
             self.speak(f"No {app} program found.")
         except Exception as e:
@@ -1159,7 +1160,7 @@ class Utility:
         else:
             suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
 
-        # Speak the formatted date
+        # self.speak the formatted date
         self.speak(f"It's {day}{suffix} of {month}, {weekday}.")
 
     def delete_song(self):
@@ -1836,7 +1837,7 @@ class Utility:
             "Roger that, sir!",
             "Sure thing, sir!",
             "You got it!",
-            "as you speak, sir",
+            "as you self.speak, sir",
             "you got it, sir!",
         ]
         return random.choice(rply)
@@ -1867,14 +1868,55 @@ class Utility:
         self.close_perticular_app("explorer.exe")
 
     def restart_phoenix(self):
-        self.close_perticular_app("pyw.exe")
-        self.desKtoP(4)
+        self.close_perticular_app("pyw.exe", spk=False)
         path = os.path.join(
             os.path.dirname(__file__), "..", "batch", "on_boot_startup.bat"
         )
         os.startfile(path)
         sleep(5)
         sys.exit()
+
+    def greet_to(self, query):
+        greetings = [
+            "Hello,",
+            "Hi there!",
+            "Hey, how's it going?",
+            "Hi, how are you?",
+            "Hello! How have you been?",
+            "Nice to see you!",
+            "Hey! What's up?",
+            "Greetings!",
+            "Hope you're doing well!",
+            "How's your day going?",
+            "It's great to see you!",
+            "Hey! How's life going?",
+        ]
+        pre = "Mr."
+        # Extract the name after "to"
+        match = re.search(
+            r"\bto\s+(?:mister|miss|mrs|mr|dr|doctor)?\s*(.+)", query, re.IGNORECASE
+        )
+
+        if match:
+            name = match.group(1).strip()
+            print(query)
+            # Determine the gender title
+            if re.search(r"\bmiss\b", query, re.IGNORECASE):
+                pre = "Ms."
+            elif re.search(r"\bmr\b", query, re.IGNORECASE):
+                pre = "Mr."
+            elif re.search(r"\bmister\b", query, re.IGNORECASE):
+                pre = "Mr."
+            elif re.search(r"\bmrs\b", query, re.IGNORECASE):
+                pre = "Mrs."
+            elif re.search(r"\bdoctor\b", query, re.IGNORECASE):
+                pre = "Doctor"
+            elif re.search(r"\bdr\b", query, re.IGNORECASE):
+                pre = "Doctor"
+
+            self.speak(f"{random.choice(greetings)} {pre} {name}!")
+        else:
+            self.speak("I didn't catch the name. Could you repeat?")
 
     @staticmethod
     def rockMsc(volume):
@@ -2296,8 +2338,71 @@ class Utility:
         songs = self.load_songs()
         if songs:
             song = random.choice(list(songs.values()))
-            print(f"How about listening to: {song}?")
-            self.play_song(song)
+            self.speak(f"How about listening to: {song}?")
+            while True:
+                conF = self.take_command().lower()
+                if (
+                    "yes" in conF
+                    or "ofcourse" in conF
+                    or "of course" in conF
+                    or "well yes" in conF
+                    or "hell yeah" in conF
+                ):
+                    # self.speak(self.rP())
+                    self.speak(f"Playing {song}.")
+                    self.play_song(song)
+                    sleep(6)
+                    pg.keyDown("win")
+                    pg.press("down")
+                    pg.keyUp("win")
+                    break
+                elif "another" in conF or "no another" in conF:
+                    self.speak("Oh, Let me give you 3 options.")
+                    song1 = random.choice(list(songs.values()))
+                    song2 = random.choice(list(songs.values()))
+                    song3 = random.choice(list(songs.values()))
+                    self.speak(f"0 {song1}")
+                    sleep(1)
+                    self.speak(f"1 {song2}")
+                    sleep(1)
+                    self.speak(f"2 {song3}")
+                    sleep(2)
+                    self.speak("Say index number:")
+                    ind = self.take_command().lower().strip()
+                    if "zero" in ind or "0" in ind:
+                        # self.speak(rP())
+                        self.speak(f"Playing {song1}.")
+                        self.play_song(song1)
+                        sleep(6)
+                        pg.keyDown("win")
+                        pg.press("down")
+                        pg.keyUp("win")
+                        break
+                    elif "one" in ind or "1" in ind:
+                        # self.speak(rP())
+                        self.speak(f"Playing {song2}.")
+                        self.play_song(song2)
+                        sleep(6)
+                        pg.keyDown("win")
+                        pg.press("down")
+                        pg.keyUp("win")
+                        break
+                    elif "two" in ind or "2" in ind or "tu" in ind:
+                        # self.speak(rP())
+                        self.speak(f"Playing {song3}.")
+                        self.play_song(song3)
+                        sleep(6)
+                        pg.keyDown("win")
+                        pg.press("down")
+                        pg.keyUp("win")
+                        break
+                    else:
+                        self.speak("Wrong Index.")
+                        break
+                elif "don't want to listen" in conF or "not interested" in conF or "no":
+                    print("here")
+                    self.speak(self.rP())
+                    break
         else:
             print("The song library is empty. Add some songs first.")
 
