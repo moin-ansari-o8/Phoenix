@@ -190,16 +190,16 @@ if __name__ == "__main__":
     # utils.open_brave()
     spk.speak("hello there!, It's Phoenix-The Desktop Assistant.")
     sleep(1)
+    # spk.speak(
+    #     "So, Normally Makbook provides Siri, Samsung Provides bixby, but windows doesn't provide any voice assistant like that.. "
+    # )
+    # sleep(1)
+    # spk.speak(
+    #     "there was one cortana before, but they discontinued that project, it didn't work."
+    # )
+    # sleep(1)
     spk.speak(
-        "So, Normally Macbook provides Siri and Samsung Provides bixby, but windows doesn't provide any voice assistant like that.. "
-    )
-    sleep(1)
-    spk.speak(
-        "there was one cortana before but they discontinued that project, it didn't work."
-    )
-    sleep(1)
-    spk.speak(
-        "So Moin Ansari started developing me 2 years ago, I am desktop assistant, i totally work on voice command. i do small tasks like open-close any applications,maximize,minimize tabs, switching apps and switching between desktops."
+        "i totally work on voice command. i do small tasks like open-close any applications,maximize-minimize tabs, switching apps and switching between desktops."
     )
     sleep(1)
     spk.speak(
@@ -207,9 +207,14 @@ if __name__ == "__main__":
     )
     sleep(1)
     spk.speak(
-        "just like google assistant i can also set alarms, reminders, timers etc. basically google assistant is not supported by the windows and moin was working on me so he added these functionality in me."
+        "just like google assistant i can also set alarms, reminders, timers etc."
     )
     sleep(1)
     spk.speak(
-        "there is a battery tracking program that i handle..like for some specific stages i keep remind you about the battery status and after one stage i will remind you to plug in the charger."
+        "basically google assistant is not supported by the windows, and moin was working on me so he added these functionality in me."
+    )
+
+    sleep(1)
+    spk.speak(
+        "i keep track of battery status..like for some specific stages i keep remind you about the battery status and after one stage i will remind you to plug in the charger."
     )

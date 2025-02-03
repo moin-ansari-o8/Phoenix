@@ -661,6 +661,11 @@
       ]
     },
     {
+      "tag": "greet-to",
+      "patterns": ["say hello to", "say hii to", "say hi to"],
+      "responses": ["greet-to"]
+    },
+    {
       "tag": "greetell",
       "patterns": [
         "i am fine",
