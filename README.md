@@ -1,10 +1,13 @@
 # Phoenix
 A Desktop Assistant
 
-## How to Install Dependencies
+## Install Dependencies
 
 Run the following command to install all the required dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
+## Future Enhancements
+- Implement a more intuitive and user-friendly GUI.
+- Add Reinforcement learning algorithm
