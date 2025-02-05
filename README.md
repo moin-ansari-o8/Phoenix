@@ -15,7 +15,6 @@ You may/may not find this program full of hard coded. If you are interested to k
 4. data/intents.json :: i have added some tags(intent tracker of user) in here, MainPHNX listens the query it comes here and replies to the user if the the query is conversation based else in the MainPHNX there is function _execute_action which handles other functionalities which needs the help of libraries which are defined in the helpers/UtilitiesPHNX.py (what is time/wheather/date? etc)
 
 try and explore rest of the code by urself.
-discord for more details : [discord](https://discord.gg/txYCt2FM)
 
 ## Install Dependencies
 
