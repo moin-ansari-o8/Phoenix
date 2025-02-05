@@ -23,6 +23,9 @@ Run the following command to install all the required dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+## Do this to run
+- for just listening and all run only MainPHNX.py
+- for running the whole phoenix with bg battery checking and time related all methods run load.py 
 
 ## Future Enhancements
 
