@@ -23,11 +23,29 @@ Run the following command to install all the required dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
 ## Do this to run
+
 - for just listening and all run only MainPHNX.py
-- for running the whole phoenix with bg battery checking and time related all methods run load.py 
+- for running the whole phoenix with bg battery checking and time related all methods run load.py .
 
 ## Future Enhancements
 
 - Implement a more intuitive and user-friendly GUI.
 - Add Reinforcement learning algorithm.
+
+## Contribute
+
+We welcome contributions from the community. Here are some ways you can help:
+
+1. **Report Bugs**: If you find a bug, please report it by creating an issue on GitHub.
+
+2. **Suggest Features**: If you have an idea for a new feature, please open an issue to discuss it.
+
+3. **Submit Pull Requests**: If you have a fix or a new feature, please submit a pull request. Make sure to follow the contribution guidelines.
+
+4. **Improve Documentation**: Help us improve our documentation by making it clearer and more comprehensive.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details .
