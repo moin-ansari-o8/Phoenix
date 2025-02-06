@@ -27,6 +27,7 @@ class HandleBgProcess:
 
     def main(self):
         previous_hour = datetime.datetime.now().hour
+        self.tm.clear_time_data()
         while True:
             self.tm.main_time()
             previous_hour = self.tm.spk_time(previous_hour)

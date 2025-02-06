@@ -27,44 +27,6 @@ class HandleTimeBasedFunctions:
         self.scheduleClass = schedule_manager
         self.utils = utility
 
-    def check_alarms(self):
-        now = datetime.now()
-        current_time = now.strftime("%H:%M")
-        updated_alarms = []
-        for alarm in self.data["alarms"]:
-            alarm_time = f"{alarm['ringAlarm'][0]:02}:{alarm['ringAlarm'][1]:02}"
-            if alarm_time == current_time:
-                self.utils.speak(f"Ringing Alarm: {alarm['label']}")
-                if alarm["repeat"] == "once":
-                    continue
-            self.today_alarms[alarm["label"]] = alarm_time
-            updated_alarms.append(alarm)
-        self.data["alarms"] = updated_alarms
-
-    def check_reminders(self):
-        now = datetime.now()
-        today_date = now.strftime("%d-%m-%y")
-        updated_reminders = []
-        for reminder in self.data["reminders"]:
-            if reminder["date"] == today_date:
-                reminder_time = datetime.strptime(reminder["time"], "%H:%M").time()
-                if now.time() >= reminder_time:
-                    self.utils.speak(f"Reminder: {reminder['message'][0]}")
-                else:
-                    self.speech_engine.utils.speak(
-                        f"You have missed reminder: {', '.join(reminder['message'])}"
-                    )
-            elif reminder["date"] > today_date:
-                updated_reminders.append(reminder)
-        self.data["reminders"] = updated_reminders
-
-    def check_schedule(self):
-        now = datetime.now().time()
-        for event in self.data["schedule"]:
-            event_time = datetime.strptime(event["time"], "%H:%M").time()
-            if now < event_time:
-                self.today_schedule_events[event["message"]] = event["time"]
-
     def spk_time(self, previous_hour):
         """
         Announce the time and weather report when the hour changes.
@@ -85,6 +47,11 @@ class HandleTimeBasedFunctions:
     def load_data(self):
         with open(self.time_data_file, "r") as f:
             return json.load(f)
+
+    def clear_time_data(self):
+        self.timerClass.remove_expired_timers()
+        self.alarmClass.removeDeletedAlarms()
+        self.reminderClass.filter_reminders()
 
     def main_time(self):
         # self.today_timers = {}
@@ -400,7 +367,7 @@ class AlarmManager:
 
             # Track changes to the alarm data
             data_changed = False
-            print(today_abbr)
+            # print(today_abbr)
             for alarm in alarms:
                 try:
                     # Extract alarm details
@@ -409,7 +376,7 @@ class AlarmManager:
                         continue  # Skip invalid alarm times
                     alarm_hour, alarm_minute = alarm_time  #
                     alarm_day = alarm.get("day", [])
-                    print(alarm_day)
+                    # print(alarm_day)
                     repeat = alarm.get("repeat", "once").lower()
                     delete = alarm.get("delete", False)
                     ringed = alarm.get("ringed", 0)
@@ -449,3 +416,32 @@ class AlarmManager:
 
     def speak(self, query):
         self.se.speak(query)
+
+    def removeDeletedAlarms(self):
+        """
+        Removes alarms marked for deletion (delete=true) from the JSON file
+        and prints the label of each deleted alarm.
+        """
+        try:
+            with open(self.alarm_file, "r") as file:
+                alarms = json.load(file)
+        except FileNotFoundError:
+            print("Alarm file not found. Nothing to remove.")
+            return
+        except json.JSONDecodeError:
+            print("Error reading the alarm file. Please check the file structure.")
+            return
+        updated_alarms = []
+        for alarm in alarms.get("alarms", []):
+            if alarm.get("delete", False):
+                continue
+            elif alarm.get("repeat", "") == "once" and alarm.get("ringed", 0) > 0:
+                continue
+            else:
+                updated_alarms.append(alarm)
+        alarms["alarms"] = updated_alarms
+        try:
+            with open(self.alarm_file, "w") as file:
+                json.dump(alarms, file, indent=4)
+        except IOError:
+            print("Error writing to the alarm file. Please check file permissions.")

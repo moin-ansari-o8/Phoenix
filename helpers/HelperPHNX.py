@@ -17,7 +17,7 @@ class SpeechEngine:
         self.engine = pyttsx3.init("sapi5")
         voices = self.engine.getProperty("voices")
         self.engine.setProperty("voice", voices[1].id)
-        self.engine.setProperty("rate", 160)
+        self.engine.setProperty("rate", 174)
         # self.engine.setProperty("volume", 1.0)
         # self.lock = threading.Lock()
         self.honorifics = True
@@ -181,40 +181,40 @@ if __name__ == "__main__":
     # utils.get_window("Code.exe", "HelperPHNX.py")
     # spk.speak("oohoom..!")
     # spk.speak("What's up!")
-    # recog.take_command()
+    recog.take_command()
     # music(recog)
     # print("oj")
     # opn = OpenAppHandler(recog)
     # utils.speak("hello, sir")
     # utils.desKtoP(2)
     # utils.open_brave()
-    spk.speak("hello there!, It's Phoenix-The Desktop Assistant.")
-    sleep(1)
+    # spk.speak("hello there!, It's Phoenix-The Desktop Assistant.")
+    # sleep(1)
+    # # spk.speak(
+    # #     "So, Normally Makbook provides Siri, Samsung Provides bixby, but windows doesn't provide any voice assistant like that.. "
+    # # )
+    # # sleep(1)
+    # # spk.speak(
+    # #     "there was one cortana before, but they discontinued that project, it didn't work."
+    # # )
+    # # sleep(1)
     # spk.speak(
-    #     "So, Normally Makbook provides Siri, Samsung Provides bixby, but windows doesn't provide any voice assistant like that.. "
+    #     "i totally work on voice command. i do small tasks like open-close any applications,maximize-minimize tabs, switching apps and switching between desktops."
     # )
     # sleep(1)
     # spk.speak(
-    #     "there was one cortana before, but they discontinued that project, it didn't work."
+    #     "Also i can adjust device brightness and volume. and ofcourse as a desktop assistant i have to play desired songs for you, if you want to listen song and don't know the song name? no worries i can suggest you song just ask me."
     # )
     # sleep(1)
-    spk.speak(
-        "i totally work on voice command. i do small tasks like open-close any applications,maximize-minimize tabs, switching apps and switching between desktops."
-    )
-    sleep(1)
-    spk.speak(
-        "Also i can adjust device brightness and volume. and ofcourse as a desktop assistant i have to play desired songs for you, if you want to listen song and don't know the song name? no worries i can suggest you song just ask me."
-    )
-    sleep(1)
-    spk.speak(
-        "just like google assistant i can also set alarms, reminders, timers etc."
-    )
-    sleep(1)
-    spk.speak(
-        "basically google assistant is not supported by the windows, and moin was working on me so he added these functionality in me."
-    )
+    # spk.speak(
+    #     "just like google assistant i can also set alarms, reminders, timers etc."
+    # )
+    # sleep(1)
+    # spk.speak(
+    #     "basically google assistant is not supported by the windows, and moin was working on me so he added these functionality in me."
+    # )
 
-    sleep(1)
-    spk.speak(
-        "i keep track of battery status..like for some specific stages i keep remind you about the battery status and after one stage i will remind you to plug in the charger."
-    )
+    # sleep(1)
+    # spk.speak(
+    #     "i keep track of battery status..like for some specific stages i keep remind you about the battery status and after one stage i will remind you to plug in the charger."
+    # )

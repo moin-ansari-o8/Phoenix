@@ -1560,7 +1560,7 @@ class Utility:
         pg.press("space")
 
     def open_code(self):
-        self._open_with_win("win", "4", 1)
+        self._open_with_win("win", "4", 2)
 
     def open_arc(self):
         self._open_with_win("win", "1", 1)
@@ -1830,14 +1830,13 @@ class Utility:
 
     def rP(self):
         rply = [
-            "I'm on it, sir",
+            "on it, sir",
             "Affirmative, moving on!",
-            "Okie-dokie!, let’s rock!",
             "On it, sir",
             "Roger that, sir!",
             "Sure thing, sir!",
             "You got it!",
-            "as you self.speak, sir",
+            "as you speak, sir",
             "you got it, sir!",
         ]
         return random.choice(rply)
@@ -2010,7 +2009,7 @@ class Utility:
                     break
                 else:
                     continue
-        if "flipkart" in cm:
+        elif "flipkart" in cm:
             self.speak("Sir, what product you want to search?")
             while True:
                 print(">>>Listening for flipkart product")
@@ -2023,6 +2022,9 @@ class Utility:
                     break
                 else:
                     continue
+        elif "nothing" in cm or " no " in cm:
+            self.speak(self.rP())
+            return
         else:
             webbrowser.open(cm)
 
