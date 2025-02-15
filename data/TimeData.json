@@ -1,37 +1,56 @@
 {
-  "alarms": [
-    {
-      "id": "A_0b3a57",
-      "ringAlarm": [8, 0],
-      "label": "wake up",
-      "day": ["TODAY"],
-      "repeat": "once",
-      "ringed": 0,
-      "delete": false
-    }
-  ],
-  "timers": [],
-  "reminders": [],
-  "schedule": [
-    {
-      "time": "06:30",
-      "message": "Time for workout."
-    },
-    {
-      "time": "21:39",
-      "message": "Time for a bath."
-    },
-    {
-      "time": "08:30",
-      "message": "have a breakfast"
-    },
-    {
-      "time": "22:18",
-      "message": "koleg time"
-    },
-    {
-      "time": "23:40",
-      "message": "go to sleep"
-    }
-  ]
+    "alarms": [
+        {
+            "id": "A_90a123",
+            "ringAlarm": [
+                8,
+                45
+            ],
+            "label": "exam time",
+            "day": [
+                "TODAY"
+            ],
+            "repeat": "once",
+            "ringed": 1,
+            "delete": true
+        },
+        {
+            "id": "A_b38209",
+            "ringAlarm": [
+                9,
+                30
+            ],
+            "label": "get ready for college",
+            "day": [
+                "TODAY"
+            ],
+            "repeat": "once",
+            "ringed": 0,
+            "delete": false
+        }
+    ],
+    "timers": [],
+    "reminders": [],
+    "schedule": [
+        {
+            "time": "06:30",
+            "message": "Time for workout."
+        },
+        {
+            "time": "21:39",
+            "message": "Time for a bath."
+        },
+        {
+            "time": "08:30",
+            "message": "have a breakfast"
+        },
+        {
+            "time": "22:18",
+            "message": "koleg time"
+        },
+        {
+            "time": "23:40",
+            "message": "go to sleep"
+        }
+    ]
 }

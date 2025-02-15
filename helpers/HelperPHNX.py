@@ -27,10 +27,11 @@ class SpeechEngine:
         sleep(30)
         self.honorifics = True
 
-    def speak(self, audio):
+    def speak(self, audio, speed=174):
         """
         Thread-safe method to handle text-to-speech.
         """
+        self.engine.setProperty("rate", speed)
         # with self.lock:
         replacements = [
             "boss",
@@ -181,7 +182,8 @@ if __name__ == "__main__":
     # utils.get_window("Code.exe", "HelperPHNX.py")
     # spk.speak("oohoom..!")
     # spk.speak("What's up!")
-    recog.take_command()
+    # recog.take_command()
+    spk.speak("Yoi, I'm back , you can continue your business now.", 169)
     # music(recog)
     # print("oj")
     # opn = OpenAppHandler(recog)

@@ -106,7 +106,13 @@ class OpenAppHandler:
             self.utils.open_widget: ("widget"),
             self.utils.open_music: ("music"),
             self.utils.open_code: ("code", "vs code", "v s code"),
-            self.utils.open_arc: ("browser", "arc browser"),
+            self.utils.open_arc: (
+                "browser",
+                "arc browser",
+                "arc",
+                "ark",
+                "ark browser",
+            ),
             self.utils.open_movies: ("movies", "movies folder"),
             self.utils.open_Edrive: ("e drive"),
             self.utils.open_Cdrive: ("c drive"),
@@ -147,13 +153,14 @@ class OpenAppHandler:
         if windows:
             try:
                 # Attempt to activate the first matching window
-                if windows[0].isVisible() and windows[0].isActive() is False:
-                    windows[0].activate()
-                    print(f"{app_name} is open. Bringing it to focus.")
-                    return True
-                else:
-                    print(f"{app_name} is already active.")
-                    return True
+                print(windows)
+                # if windows[0].isActive() is False:
+                windows[0].activate()
+                print(f"{app_name} is open. Bringing it to focus.")
+                return True
+                # else:
+                #     print(f"{app_name} is already active.")
+                #     return True
             except Exception as e:
                 print(f"Failed to activate the window: {e}")
                 return False
@@ -1311,8 +1318,15 @@ class Utility:
         self.speak(hibi)
         os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
         sleep(35)
-        self.speak(self.onL())
+        # self.speak(self.onL())
         self.restart_explorer()
+        self.speak("let me restart myself, sir!, i'll just have a moment.")
+        idx, dsk_nm = self.utils.get_cur_desk()
+        self.desKtoP(4)
+        self.start_mainphoenix()
+        self.desKtoP(idx)
+        self.speak("I'm back, yoi!, you can continue your business now.")
+        sys.exit()
 
     def hide_window(self):
         pg.keyDown("win")
@@ -1875,6 +1889,11 @@ class Utility:
         sleep(5)
         sys.exit()
 
+    def start_mainphoenix(self):
+        path = os.path.join(os.path.dirname(__file__), "..", "batch", "main.bat")
+        os.startfile(path)
+        sleep(5)
+
     def greet_to(self, query):
         greetings = [
             "Hello,",
@@ -2042,127 +2061,10 @@ class Utility:
         except Exception as e:
             print("Internet error occurred.")
 
-    # def select_action(self, query, response_function):
-    #     selected_text = query.replace("select ", "")
-    #     self.speak(response_function())
-    #     keyboard.write(f"{selected_text[:2]}")
-    #     self.speak("Do you want to open it?")
-    #     while True:
-    #         confirmation = self.take_command().lower()
-    #         if any((x in confirmation for x in ["yes", "ha", "sure", "play it"])):
-    #             webbrowser.open(
-    #                 f"https://www.youtube.com/results?search_query={selected_text}"
-    #             )
-    #             break
-    #         elif any((x in confirmation for x in ["no", "don't", "do not", "na"])):
-    #             self.speak(response_function())
-    #             break
-
-    def set_alarm(self):
-        """
-        Sets up an alarm at the specified time.
-        """
-        self.speak("Please enter the alarm time.")
-        print(time.localtime())
-        alarm_time = input("Enter the alarm time in HH:MM format: ")
-        try:
-            alarm_hour, alarm_minute = map(int, alarm_time.split(":"))
-            self.speak(f"Alarm set for {alarm_hour}:{alarm_minute}.")
-        except ValueError:
-            self.speak("Invalid time format. Please enter time as HH:MM.")
-            return
-        self.speak("The alarm is now active.")
-        while True:
-            current_time = time.localtime()
-            current_hour = current_time.tm_hour
-            current_minute = current_time.tm_min
-            if current_hour == alarm_hour and current_minute == alarm_minute:
-                self.speak("Alarm ringing! Wake up, boss!")
-                print("Alarm! Wake up!")
-                break
-            time.sleep(10)
-
     def set_focus(self):
         for _ in range(2):
             pg.leftClick(500, 500)
             sleep(3)
-
-    def set_reminder(self):
-        """Set a reminder based on user input."""
-        self.speak("What reminder should I set, sir?")
-        reminder_message = self.take_command().lower()
-        self.speak("At what time should I set the reminder? (Provide in HH:MM format)")
-        reminder_time = self.take_command().lower()
-        hour, minute = self._parse_time(reminder_time)
-        if hour is None or minute is None:
-            self.speak("Invalid time format. Please try again using HH:MM format.")
-            return
-        self.speak("On which day, sir?")
-        date_str = self.take_command().lower()
-        month, day = self._parse_date(date_str)
-        if month is None or day is None:
-            self.speak("Invalid date format. Please try again.")
-            return
-        now = datetime.now()
-        reminder_datetime = datetime(now.year, month, day, hour, minute)
-        time_until_reminder = reminder_datetime - now
-        if time_until_reminder.total_seconds() <= 0:
-            self.speak("Invalid time. The reminder should be in the future.")
-            return
-        self.speak(f"Reminder set for {reminder_datetime.strftime('%Y-%m-%d %H:%M')}.")
-        time_until_reminder_seconds = time_until_reminder.total_seconds()
-        time.sleep(time_until_reminder_seconds)
-        notification.notify(
-            title="Reminder",
-            message=reminder_message,
-            app_name="Phoenix",
-            timeout=10,
-        )
-        self.speak("Reminder notification delivered, sir!")
-        import tkinter as tk
-
-    def set_timer(self):
-        """
-        Sets a timer based on user input.
-        Notifies the user when the timer ends.
-        """
-        try:
-            self.speak("For how long should I set the timer?")
-            print("e.g :: 1 hour, 5 minutes, or 1 hour and 30 minutes)")
-            time_input = self.take_command().lower()
-            hours, minutes, seconds = self._parse_time_duration(time_input)
-            if hours is None and minutes is None and (seconds is None):
-                self.speak(
-                    "Sorry, I couldn't understand the duration. Please try again."
-                )
-                return
-            total_seconds = hours * 3600 + minutes * 60 + seconds
-            self.speak(
-                f"Setting a timer for {hours} hour(s), {minutes} minute(s), and {seconds} second(s)."
-            )
-            print(
-                f"Timer set for {hours} hour(s), {minutes} minute(s), and {seconds} second(s)."
-            )
-            timer_thread = threading.Thread(
-                target=self._countdown_timer, args=(total_seconds,), daemon=True
-            )
-            timer_thread.start()
-        except Exception as e:
-            self.speak(f"An error occurred while setting the timer: {str(e)}")
-
-    @staticmethod
-    def shoWalLwiN():
-        """Simulates opening Windows Start Menu and performing actions."""
-        pg.keyDown("win")
-        sleep(1)
-        pg.press("tab")
-        sleep(1)
-        pg.keyUp("win")
-        sleep(1)
-        pg.rightClick(900, 400)
-        sleep(1)
-        pg.press("down", presses=3)
-        pg.press("enter", presses=2)
 
     def shutD(self):
         self.lastChargeCheck()
@@ -2182,7 +2084,7 @@ class Utility:
             "Alrighty, I'm out! See you later, sir!",
             "I'm off now. See ya soon, sir!",
             "Peace out! I'm logging off.",
-            "Adios Señor! Until we meet again!",
+            "Adios Señor! I'm logging off!",
             "Shutting down now. Take care, sir!",
             "Take care! See you next time, sir!",
             "Time for me to power down. See ya, sir!",
@@ -2191,20 +2093,11 @@ class Utility:
         shti2 = random.choice(sht2)
         self.speak(shti1)
         os.system("shutdown /s")
-        try:
-            os.system("taskkill /F /IM Arc.exe")
-        except Exception:
-            print("Brave already closed.")
+        self.close_perticular_app("Arc.exe", spk=False)
         sleep(2)
-        try:
-            os.system("taskkill /F /IM code.exe")
-        except Exception:
-            print("Code already closed.")
+        self.close_perticular_app("Code.exe", spk=False)
         sleep(2)
-        try:
-            os.system("taskkill /F /IM pyw.exe")
-        except Exception:
-            print("BG Python already closed.")
+        self.close_perticular_app("pyw.exe", spk=False)
         sleep(18)
         self.speak(shti2)
         sys.exit()
@@ -2250,9 +2143,11 @@ class Utility:
                 continue
 
     def play_game(self):
-        print("System has these games:")
+        print("System has two games:")
         print("\n1.SpaceJunkies")
         print("2.Valorant")
+        self.speak("1. Space Junkies")
+        self.speak("2. Valorant")
         self.speak("say which game you want to play..")
         print("speak game name or index:")
         while True:
@@ -2270,56 +2165,6 @@ class Utility:
                 break
             else:
                 continue
-
-    def snG(self):
-        """Searches and plays a random song directly on YouTube."""
-        song_list = [
-            "Lord Imran Khan's playlist",
-            "Agar Tum Sath Ho",
-            "Best of AP Dhillon",
-            "Bhula diya by Darshan Raval",
-            "Chale Jana Phir",
-            "Channa ve",
-            "Dekhte Dekhte by Atif Aslam",
-            "Dillagi by Rahat fateh ali khan",
-            "Falak Tak reverb",
-            "Hale Dil Tujhko Sunata",
-            "Hale Dil",
-            "Khairiyat",
-            "Kya Mujhe Pyaar Hai",
-            "Labon Ko",
-            "Lo safar",
-            "Mareez E Ishq",
-            "Mat Aazma Re",
-            "Pee loon song",
-            "Pehla Nasha by Udit Narayan",
-            "Pehli Nazar Mein",
-            "Raataaan Lambiyan",
-            "Tera Pyar",
-            "Tera ban jaunga",
-            "Tere Liye",
-            "Tere Nainon Mein",
-            "Tere Vaaste",
-            "Teri Ore",
-            "Thodi der from Half girlfriend",
-            "Toota jo kabhi Tara",
-            "Tu Hai ki Nahi",
-            "Tu Jaane na",
-            "Tujhe Bhula diya",
-            "Tujhe kitna Chahne lage by Jubin",
-            "Tum hi Aana",
-            "Tum se hi",
-            "Tune jo Na Kaha",
-            "Vaaste",
-            "Wajah Tum Ho",
-            "Ye Tune Kya Kiya",
-            "Zara Sa",
-            "Zara Zara by Jalraj",
-            "Zindagi Se",
-        ]
-        song_name = random.choice(song_list)
-        print(f"Playing a random song: {song_name}")
-        self.play_song(song_name)
 
     def speak(self, message):
         self.speech_engine.speak(message)
@@ -2453,6 +2298,7 @@ class Utility:
         return random.choice(
             [
                 "Hello, sir! I am listening.",
+                "Hello, sir! I am online.",
                 "Hello! I am here for you.",
                 "Hey love! Phoenix is here.",
                 "Hello, sir! Phoenix is always here for you.",
@@ -2489,4 +2335,6 @@ if __name__ == "__main__":
     speach = SpeechEngine()
     utils = Utility(spk=speach, reco=recog)
     # utils.desKtoP(1)
-    utils.play_game()
+    # utils.play_game()
+    openapp = OpenAppHandler(utils=utils)
+    # openapp.open_app_if_running("visual studio code")
