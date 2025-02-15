@@ -1325,7 +1325,7 @@ class Utility:
         self.desKtoP(4)
         self.start_mainphoenix()
         self.desKtoP(idx)
-        self.speak("I'm back, yoi!, you can continue your business now.")
+        self.speak("Yoi, I'm back, you can continue your business now.", 169)
         sys.exit()
 
     def hide_window(self):

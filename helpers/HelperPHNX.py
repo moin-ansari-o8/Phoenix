@@ -144,13 +144,16 @@ class VoiceRecognition:
 
     def __init__(self, gui):
         self.recognizer = sr.Recognizer()
+        self.recognizer.pause_threshold = 1
         self.gui = gui
 
     def take_command(self):
         with sr.Microphone() as source:
             self.gui.show_listen_image()
             print(">>>", end="\r")
-            audio = self.recognizer.listen(source, 0, 4)
+            # Adjust for ambient noise and listen indefinitely
+            self.recognizer.adjust_for_ambient_noise(source)
+            audio = self.recognizer.listen(source, 10)  # No time limit
         try:
             self.recognizer.pause_threshold = 1
             self.gui.show_recognize_image()

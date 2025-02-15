@@ -227,10 +227,10 @@
         "What do you call fake spaghetti? An impasta!",
         "Why did the computer break up with the internet? There was no connection!",
         "Working from home is like playing hide and seek. You know you're going to get caught, but you still try to avoid it!",
-        "Why don't online meetings ever have a good ending? Because someone always says, ‘Can you hear me?'",
+        "Why don't online meetings ever have a good ending? Because someone always says, 'Can you hear me?'",
         "I heard that this year the biggest trend is 'digital detox'... But apparently, everyone forgot to log off!",
         "Why did the social media influencer go to therapy? Because they had too many followers and not enough support!",
-        "Why did the avocado fail the interview? Because it couldn't make it to the ‘guac' part!",
+        "Why did the avocado fail the interview? Because it couldn't make it to the 'guac' part!",
         "I asked my AI assistant for a joke, and it said, '404: Humor not found.'",
         "Why was the broom late? It swept in!",
         "Why don't oysters donate to charity? Because they're shellfish!",
@@ -482,6 +482,21 @@
         "delete a song from the playlist"
       ],
       "responses": ["dltsong"]
+    },
+    {
+      "tag": "welcomeBack",
+      "patterns": [
+        "welcome back",
+        "welcome back phoenix",
+        "welcome back friend"
+      ],
+      "responses": [
+        "Welcome back, legend! What's on your mind today?",
+        "Ah, there you are! Ready to conquer the day? ",
+        "Back in action! What's the mission this time? ",
+        "Hey, hey, welcome back! Let's make today epic! ",
+        "You're back! Let's get things rolling. What's next?"
+      ]
     },
     {
       "tag": "loveu",
@@ -947,7 +962,7 @@
       "responses": [
         "Here's an old-school tech fact: The first computer virus, 'Brain,' was created in 1986 by two Pakistani brothers. It was a floppy disk virus!",
         "Want some nostalgia? The first website ever created is still online. You can visit it at cern the humble beginning of the World Wide Web.",
-        "Speaking of 'bugs,' did you know that the term ‘computer bug' comes from a literal bug? In 1947, engineers found a moth causing issues in a computer, and they literally 'debugged' it!",
+        "Speaking of 'bugs,' did you know that the term 'computer bug' comes from a literal bug? In 1947, engineers found a moth causing issues in a computer, and they literally 'debugged' it!",
         "Here's a crazy one: The first 1GB hard drive was introduced in 1980, weighed over 500 pounds, and cost $40,000! Tech has definitely come a long way.",
         "This is mind-blowing: A single Google search uses around 0.3 seconds of computer time, and the energy used can power a light bulb for 17 minutes. The magic of the web!"
       ]
@@ -956,6 +971,7 @@
       "tag": "GKtriviaSciencefacts",
       "patterns": [
         "Tell me a science fact.",
+        "Tell me a fact",
         "What's a cool science fact?",
         "Share a fun science fact with me.",
         "Got any interesting science trivia?",
@@ -964,8 +980,8 @@
         "What's a quirky science fact?"
       ],
       "responses": [
-        "Here's a cool one: The human brain can read up to 1,000 words per minute. That's some serious brainpower!",
-        "Did you know that the Earth's core is as hot as the surface of the sun? It's a toasty 9,000°F down there!",
+        "Here's a cool one: The human brain can read up to 1000 words per minute. That's some serious brainpower!",
+        "Did you know that the Earth's core is as hot as the surface of the sun? It's a toasty 9000°F down there!",
         "Here's a fun fact: A day on Venus is longer than a year on Venus! It takes 243 Earth days for Venus to complete one rotation on its axis.",
         "Here's a mind-bender: The human body contains enough carbon to make 900 pencils. That's a lot of writing power!",
         "And here's a weird one: Bananas are actually berries, but strawberries aren't! It's all about the botanical definitions."
@@ -1131,7 +1147,7 @@
         "non sense"
       ],
       "responses": [
-        "Oh! I aplologize, sir . ",
+        "Oh! I apologize, sir . ",
         "Well I am smart.",
         "I think I am a program, Don't you think so!"
       ]

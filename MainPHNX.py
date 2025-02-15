@@ -258,7 +258,7 @@ class PhoenixAssistant:
             if intent["tag"] == tag:
                 return random.choice(intent["responses"])
 
-    def print_phoenix(self):
+    def print_phoenixAll(self):
         from colorama import Fore, init, Style
         import os
 
@@ -336,16 +336,30 @@ class PhoenixAssistant:
         print(" ", "=" * (terminal_width - 2))
         return True
 
+    def print_phoenix(self):
+        terminal_width = os.get_terminal_size().columns
+        print("   +-+-+-+-+-+-+-+ ".center(terminal_width))
+        print("   |P|H|O|E|N|I|X| ".center(terminal_width))
+        print("   +-+-+-+-+-+-+-+ ".center(terminal_width))
+        print(" ", "=" * (terminal_width - 2))
+        return True
+
     def check_cls_phnx(self):
         self.cls_print = False
         sleep(65)
         self.cls_print = True
 
-    def cls_phnx(self):
+    def reload_phnx(self):
+        self.reload = False
+        sleep(90)
+        self.reload = True
+
+    def cls_and_print_phnx(self):
         """
         Clears the terminal every 5 minutes.
         """
         os.system("cls" if os.name == "nt" else "clear")
+        self.print_phoenix()
         # return True
         # if self.print_phoenix():
         #     sleep(1)
@@ -365,20 +379,14 @@ class PhoenixAssistant:
         self.utility.get_window("MainPHNX.py")
         while True:
             sent = input("Enter command: ").lower().strip()
-            if "switch to voice" in sent or "wake up" in sent:
+            if "switch to voice" in sent or "wake up" in sent or "stv" in sent:
                 self.voice = True
                 break
-            if (
-                "phoenix" in sent
-                or "finish" in sent
-                or "feelings" in sent
-                or "feeling" in sent
-            ) and self.loop == False:
-                self.mQuery = sent
-                sent = self.remove_phoenix_except_folder(sent)
-                print(sent)
-                if sent:
-                    self.handle_command(sent)
+            self.mQuery = sent
+            sent = self.remove_phoenix_except_folder(sent)
+            print(sent)
+            if sent:
+                self.handle_command(sent)
             elif self.loop == True:
                 self.handle_command(sent)
             elif not sent:
@@ -388,16 +396,7 @@ class PhoenixAssistant:
 
     def input_voice(self):
         self.loop = False
-        # self.cls_print = True
-        # os.system("cls" if os.name == "nt" else "clear")
-        self.print_phoenix()
         while True:
-            if self.cls_print == True:
-                print("Refreshing terminal...")
-                os.system("cls" if os.name == "nt" else "clear")
-                # self.print_phoenix()
-                threading.Thread(target=self.check_cls_phnx).start()
-                sleep(1)
             if self.voice == False:
                 break
             sent = self.takeCommand().lower().strip()
@@ -409,6 +408,10 @@ class PhoenixAssistant:
                 or "finish" in sent
                 or "feelings" in sent
                 or "feeling" in sent
+                or "friend" in sent
+                or "buddy" in sent
+                or "love" in sent
+                or "baby" in sent
             ) and self.loop == False:
                 self.mQuery = sent
                 sent = self.remove_phoenix_except_folder(sent)
@@ -422,9 +425,18 @@ class PhoenixAssistant:
             else:
                 self.loop = False
 
+            if self.reload == True and not sent:
+                print("Re-starting chat...")
+                break
+
     def main_phnx(self):
         self.voice = True
+        self.cls_and_print_phnx()
+        threading.Thread(target=self.reload_phnx).start()
         while True:
+            if self.reload == True:
+                self.cls_and_print_phnx()
+                threading.Thread(target=self.reload_phnx).start()
             if self.voice:
                 self.input_voice()
             else:
