@@ -124,6 +124,7 @@ class PhoenixAssistant:
             "searchbrowser": self.utility.search_browser,
             "searchinsta": self.utility.search_instagram,
             "searchyoutube": self.utility.search_youtube,
+            "reload-mainphoenix": self.utility.start_mainphoenix,
             # "select": lambda query, response: self.utility.select_action(
             #     query, response
             # ),
@@ -575,8 +576,8 @@ class PhoenixAssistant:
         ).strip()
         return sent
 
-    def speak(self, text):
-        self.utility.speak(text)
+    def speak(self, text, speed=174):
+        self.utility.speak(text, speed)
 
     def takeCommand(self):
         return self.utility.take_command()

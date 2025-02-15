@@ -1135,6 +1135,18 @@
       ]
     },
     {
+      "tag": "reload-mainphoenix",
+      "patterns": [
+        "reload main phoenix",
+        "reload main file",
+        "reload main",
+        "re load main phoenix",
+        "re load main file",
+        "re load"
+      ],
+      "responses": ["Reloading main phoenix."]
+    },
+    {
       "tag": "rude",
       "patterns": [
         "don't be so smart",

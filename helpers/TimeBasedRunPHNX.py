@@ -67,8 +67,8 @@ class HandleTimeBasedFunctions:
         with open(self.time_data_file, "w") as f:
             json.dump(self.data, f, indent=4)
 
-    def speak(self, message):
-        self.speech_engine.speak(message)
+    def speak(self, message, speed=174):
+        self.speech_engine.speak(message, speed)
 
 
 class ReminderManager:
@@ -258,8 +258,8 @@ class TimerManager:
         except Exception as e:
             print(f"Error removing expired timers: {e}")
 
-    def speak(self, query):
-        self.se.speak(query)
+    def speak(self, query, sp=174):
+        self.se.speak(query, sp)
 
 
 class ScheduleManager:
@@ -303,8 +303,8 @@ class ScheduleManager:
         except Exception as e:
             print(f"An error occurred while checking the schedule: {e}")
 
-    def speak(self, query):
-        self.se.speak(query)
+    def speak(self, query, sp=174):
+        self.se.speak(query, sp)
 
 
 class AlarmManager:
@@ -414,8 +414,8 @@ class AlarmManager:
         except Exception as e:
             print(f"An error occurred while checking alarms: {e}")
 
-    def speak(self, query):
-        self.se.speak(query)
+    def speak(self, query, sp=174):
+        self.se.speak(query, sp)
 
     def removeDeletedAlarms(self):
         """

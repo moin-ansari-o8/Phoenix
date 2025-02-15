@@ -1321,11 +1321,7 @@ class Utility:
         # self.speak(self.onL())
         self.restart_explorer()
         self.speak("let me restart myself, sir!, i'll just have a moment.")
-        idx, dsk_nm = self.utils.get_cur_desk()
-        self.desKtoP(4)
         self.start_mainphoenix()
-        self.desKtoP(idx)
-        self.speak("Yoi, I'm back, you can continue your business now.", 169)
         sys.exit()
 
     def hide_window(self):
@@ -1890,9 +1886,14 @@ class Utility:
         sys.exit()
 
     def start_mainphoenix(self):
+        idx, dsk_nm = self.get_cur_desk()
+        self.desKtoP(4)
         path = os.path.join(os.path.dirname(__file__), "..", "batch", "main.bat")
         os.startfile(path)
         sleep(5)
+        self.desKtoP(idx)
+        self.speak("Yoi, I'm back, you can continue your business now.", 169)
+        sleep(1)
 
     def greet_to(self, query):
         greetings = [
@@ -2166,8 +2167,8 @@ class Utility:
             else:
                 continue
 
-    def speak(self, message):
-        self.speech_engine.speak(message)
+    def speak(self, message, speed=174):
+        self.speech_engine.speak(message, speed)
 
     def start_thread(self, function_name, *args, **kwargs):
         """
