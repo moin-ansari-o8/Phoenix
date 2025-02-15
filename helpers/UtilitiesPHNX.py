@@ -1322,7 +1322,6 @@ class Utility:
         self.restart_explorer()
         self.speak("let me restart myself, sir!, i'll just have a moment.")
         self.start_mainphoenix()
-        sys.exit()
 
     def hide_window(self):
         pg.keyDown("win")
@@ -1885,15 +1884,33 @@ class Utility:
         sleep(5)
         sys.exit()
 
+    def focus_phnx(self):
+        self.get_window("MainPHNX.py")
+        responses = [
+            "Here I am, like a genie out of a bottle!",
+            "Present and accounted for!",
+            "At your service, as always!",
+            "Ready to rock and roll!",
+            "Here to save the day!",
+            "Your wish is my command!",
+            "Reporting for duty!,sir!",
+            "Always here, always ready!",
+            "didn't you notice me!, i am always on your desktop!",
+        ]
+        self.speak(random.choice(responses))
+
     def start_mainphoenix(self):
         idx, dsk_nm = self.get_cur_desk()
         self.desKtoP(4)
+        self._click_at_position(500, 500)
         path = os.path.join(os.path.dirname(__file__), "..", "batch", "main.bat")
         os.startfile(path)
         sleep(5)
         self.desKtoP(idx)
-        self.speak("Yoi, I'm back, you can continue your business now.", 169)
+        self._click_at_position(500, 500)
+        self.speak("Yoi! I'm back, you can continue your business now.", 169)
         sleep(1)
+        sys.exit()
 
     def greet_to(self, query):
         greetings = [

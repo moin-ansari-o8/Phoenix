@@ -1098,14 +1098,16 @@
         "what r u up to"
       ],
       "responses": [
-        "Nothing, sir  , Waiting for your command.",
-        "Nothing, sir  , Awaiting for your next command.",
-        "Awaiting for your next command , sir!.",
+        "Not much, just hanging out in the digital realm!",
+        "Just bits and bytes, you know, the usual.",
+        "Oh, you know, just plotting to take over the world. Just kidding!",
+        "Same old, same old. Ready to assist you!",
+        "Just waiting for you to give me something fun to do!",
+        "Not much, just here to make your day awesome!",
+        "Just chilling and processing data. You?",
         "I was thinking , human life is so boring.\nBut don't worry, sir  , I am here to entertain you.",
         "I was thinking to destroy this world. \n hehehe \njust kidding, sir . ",
         "Just hanging out in the digital realm, waiting for your command!",
-        "I'm doing my AI thing, which is essentially chatting with you!",
-        "I'm here, ready to chat. What's on your mind?",
         "I could tell you, but then I'd have to write a novel about it.",
         "I'm doing secret AI stuff. Can't reveal all my digital secrets, you know!",
         "I'm pondering the mysteries of the binary universe.",
@@ -1135,14 +1137,18 @@
       ]
     },
     {
+      "tag": "focus-phnx",
+      "patterns": ["where are you", "where r u"],
+      "responses": ["focus-phnx"]
+    },
+    {
       "tag": "reload-mainphoenix",
       "patterns": [
         "reload main phoenix",
         "reload main file",
         "reload main",
         "re load main phoenix",
-        "re load main file",
-        "re load"
+        "re load main file"
       ],
       "responses": ["Reloading main phoenix."]
     },

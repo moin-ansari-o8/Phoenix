@@ -149,6 +149,7 @@ class PhoenixAssistant:
             "switchdesk": lambda x: self.utility.switch_desk(x),
             "play-game": lambda x: self.utility.switch_desk(x),
             "knock-knock": self.utility.knock_knock,
+            "focus-phnx": self.utility.focus_phnx,
         }
         if tag in action_map:
             if tag in [
@@ -462,6 +463,7 @@ class PhoenixAssistant:
     def main(self, sent):
         no_response_tag = [
             "add",
+            "focus-phnx",
             "greet-to",
             "pinwind",
             "weather",
