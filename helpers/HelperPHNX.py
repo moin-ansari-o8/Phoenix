@@ -153,7 +153,7 @@ class VoiceRecognition:
             print(">>>", end="\r")
             # Adjust for ambient noise and listen indefinitely
             self.recognizer.adjust_for_ambient_noise(source)
-            audio = self.recognizer.listen(source, 10)  # No time limit
+            audio = self.recognizer.listen(source, 0, 8)  # No time limit
         try:
             self.recognizer.pause_threshold = 1
             self.gui.show_recognize_image()

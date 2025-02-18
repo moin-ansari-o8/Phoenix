@@ -410,8 +410,22 @@ class Utility:
 
     def _click_at_position(self, x, y):
         """Helper function to click at specific screen coordinates."""
-        pg.leftClick(x, y)
-        sleep(self.sleep_time)
+        # Try clicking
+        try:
+            pg.leftClick(x, y)
+            print(f"Clicked at ({x}, {y})")
+        except pg.FailSafeException:
+            print("Failsafe triggered! Moving mouse to a safe position.")
+            pg.moveTo(100, 100)
+            pg.leftClick(x, y)
+        except OSError as e:
+            print(f"OS Error: {e} - Retrying in 5 seconds...")
+            time.sleep(5)
+            self._click_at_position(x, y)  # Retry clicking
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
+        time.sleep(self.sleep_time)  # Maintain original delay
 
     def _countdown_timer(self, total_seconds):
         """
@@ -582,6 +596,9 @@ class Utility:
         print(f"There are {number_of_active_desktops} active desktops")
 
     def get_cur_desk(self):
+        self._click_at_position(500, 500)
+        sleep(1)
+        self._click_at_position(500, 500)
         current_desktop = VirtualDesktop.current()
         desk = current_desktop.number  # for the utility open desktop
         name = current_desktop.name
