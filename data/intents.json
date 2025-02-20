@@ -1148,7 +1148,12 @@
         "reload main file",
         "reload main",
         "re load main phoenix",
-        "re load main file"
+        "re load main file",
+        "restart main phoenix",
+        "restart main file",
+        "restart main",
+        "re start main phoenix",
+        "re start main file"
       ],
       "responses": ["Reloading main phoenix."]
     },
@@ -1169,6 +1174,11 @@
         "Well I am smart.",
         "I think I am a program, Don't you think so!"
       ]
+    },
+    {
+      "tag": "good-bye",
+      "patterns": ["goodbye", "good bye", "see you later"],
+      "responses": ["good-bye"]
     },
     {
       "tag": "shutup",

@@ -144,7 +144,6 @@ class PhoenixAssistant:
             "pinwind": self.utility.pin_wind,
             "flipkart": self.utility.flipkart,
             "amazon": self.utility.amazon,
-            # "myntra": self.utility.myntra,
             "movewind": lambda x: self.utility.process_move_window(x),
             "switchdesk": lambda x: self.utility.switch_desk(x),
             "play-game": lambda x: self.utility.switch_desk(x),
@@ -205,7 +204,7 @@ class PhoenixAssistant:
         Returns:
             dict: A dictionary with the best matching tag and a response, or None if no match is found.
         """
-        # Step 1: Check explicitly for "aboutme" and "whois"
+
         if any(
             keyword in sent.lower()
             for keyword in [
@@ -223,7 +222,6 @@ class PhoenixAssistant:
             response = self._get_response("whois")
             return {"tag": "whois", "response": response}
         else:
-            # Step 2: Probability-based matching for all other intents
             best_tag, highest_probability = max(
                 (
                     (tag, self._getSentProbability(sent, patterns))
@@ -609,4 +607,8 @@ if __name__ == "__main__":
         schedule_handle=scheduler_handle,
         reminder_handle=reminder_handle,
     )
+    asutils.get_window("MainPHNX.py")
+    sleep(0.5)
+    asutils.move_window(4)
+    asutils.speak("i am on the last desktop, in case you want to find me!", 169)
     phnx.main_phnx()

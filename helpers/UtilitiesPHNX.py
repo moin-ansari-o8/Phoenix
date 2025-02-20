@@ -1917,17 +1917,11 @@ class Utility:
         self.speak(random.choice(responses))
 
     def start_mainphoenix(self):
-        idx, dsk_nm = self.get_cur_desk()
-        self.desKtoP(4)
-        self._click_at_position(500, 500)
         path = os.path.join(os.path.dirname(__file__), "..", "batch", "main.bat")
         os.startfile(path)
         sleep(5)
-        self.desKtoP(idx)
-        self._click_at_position(500, 500)
-        self.speak("Yoi! I'm back, you can continue your business now.", 169)
-        sleep(1)
-        sys.exit()
+        self.speak("Yoi! I'm back!!", 169)
+        os._exit(0)
 
     def greet_to(self, query):
         greetings = [
