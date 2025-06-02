@@ -1980,14 +1980,14 @@ class Utility:
             self.speak("I didn't catch the name. Could you repeat?")
 
     @staticmethod
-    def rockMsc(volume=0.5,duration = 25):
+    def rockMsc(volume=0.5, duration=25):
         """Plays a random rock music track for a fixed duration."""
-        intr = ["rock1.mp3", "rock2.mp3", "rock3.mp3", "kabali.mp3"]
+        intr = ["rock1.mp3", "rock2.mp3", "rock3.mp3"]
         x = random.choice(intr)
         file_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "assets", "sound", x
         )
-        
+
         pygame.mixer.init()
         try:
             pygame.mixer.music.load(file_path)
