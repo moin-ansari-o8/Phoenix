@@ -1,0 +1,29 @@
+trials/
+node_modules/
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+# Ignore log files
+*.log
+
+# Ignore temp files
+*.tmp
+
+package-lock.json
+# Ignore environment files
+# Ignore a specific file
+secret_config.json
+SortPythonProgram.py
+
+# .gitignore for Phoenix Desktop Assistant
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.bak
+*.swp
+.DS_Store
+.env
+*.zip
+data/*.json.bak
+trials/*.zip

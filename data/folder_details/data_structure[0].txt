@@ -1,0 +1,1948 @@
+File Structure of "data":
+├── TimeData.json
+├── folder_details
+│   ├── data_structure.txt
+│   └── scripts_structure.txt
+├── intents.json
+├── remember.json
+└── songs.txt
+
+File Details of the Root directory:
+
+1. intents.json ::
+{
+  "intents": [
+    {
+      "tag": "phnxrestart",
+      "patterns": [
+        "restart the phoenix",
+        "restart phoenix",
+        "re start the poenix",
+        "re start the finish",
+        "re start phoenix"
+      ],
+      "responses": ["Restarting phoenix."]
+    },
+    {
+      "tag": "pcrestart",
+      "patterns": [
+        "restart the pc",
+        "restart pc",
+        "re start the pc",
+        "re start pc"
+      ],
+      "responses": ["Restarting pc.", "Restarting the device."]
+    },
+    {
+      "tag": "play-game",
+      "patterns": [
+        "i want to play game",
+        "i want to play a game",
+        "let's play a game",
+        "play a game",
+        "start a game",
+        "initiate a game"
+      ],
+      "responses": ["Restarting pc.", "Restarting the device."]
+    },
+    {
+      "tag": "folder structure generate",
+      "patterns": [
+        "generate folder structure",
+        "create folder structure",
+        "make folder structure",
+        "build folder structure",
+        "design folder structure"
+      ],
+      "responses": [
+        "Generating folder structure, just a second sir.",
+        "Folder structure created.",
+        "Building the folder structure sir, just a second."
+      ]
+    },
+    {
+      "tag": "hib-phnx",
+      "patterns": [
+        "go to hibernate mode",
+        "hibernate the phoenix",
+        "hibernate phoenix",
+        "put phoenix to sleep",
+        "put the phoenix to sleep",
+        "go to sleep phoenix",
+        "turn on chat mode"
+      ],
+      "responses": [
+        "Turning on chat mode..it will save battery",
+        "Alright, going to sleep.",
+        "Okay, entering sleep mode.",
+        "I'll be here when you need me.",
+        "Going to sleep now."
+      ]
+    },
+    {
+      "tag": "open",
+      "patterns": [" open ", " launch ", " start "],
+      "entities": [
+        "brave",
+        "brave browser",
+        "next app",
+        "next window",
+        "next tab",
+        "nexttab",
+        "nextapp",
+        "nextwindow",
+        "new tab",
+        "tasks",
+        "tasklists",
+        "taskslists",
+        "task lists",
+        "tasks lists",
+        "task list",
+        "notification",
+        "widget",
+        "telegram",
+        "tele gram",
+        "music",
+        "code",
+        "vs code",
+        "v s code",
+        "browser",
+        "arc browser",
+        "ark browser",
+        "ark",
+        "arc",
+        "movies",
+        "movies folder",
+        "e drive",
+        "c drive",
+        "d drive",
+        "f drive",
+        "g drive",
+        "study",
+        "study desktop",
+        "alpha",
+        "alpha desktop",
+        "trash",
+        "trash desktop",
+        "extra",
+        "extra desktop",
+        "armoury",
+        "armoury crate",
+        "crate",
+        "file explorer",
+        "explorer",
+        "youtube",
+        "youtube",
+        "file",
+        "phoenix folder",
+        "ai folder",
+        "a i folder",
+        "quick",
+        "quick configuration",
+        "gpt",
+        "chat gpt",
+        "chatgpt",
+        "and",
+        "android studio",
+        "c m d",
+        "cmd",
+        "insta",
+        "instagram",
+        "snap",
+        "snapchat",
+        "sticky notes",
+        "whatsapp",
+        "coursera",
+        "course era",
+        "google",
+        "linked in",
+        "linkedin",
+        "linked",
+        "github",
+        "git hub",
+        "setting",
+        "settings",
+        "you tube",
+        "youtube"
+      ],
+      "responses": ["Launched", "Started", "Opened"]
+    },
+    {
+      "tag": "close",
+      "patterns": ["close"],
+      "entities": [
+        "tab",
+        "this tab",
+        "the tab",
+        "all python programs",
+        "all python program",
+        "background python programs",
+        "background python program",
+        "it",
+        "window",
+        "this window",
+        "the window",
+        "hidden program",
+        "brave",
+        "code",
+        "arc",
+        "arc browser",
+        "brave browser",
+        "chrome",
+        "chrome browser",
+        "mouth",
+        "desktop",
+        "this desktop",
+        "desk"
+      ],
+      "responses": ["Closing"]
+    },
+    {
+      "tag": "openelse",
+      "patterns": ["open", "launch", "start"],
+      "responses": ["openelse"]
+    },
+    {
+      "tag": "weather",
+      "patterns": [
+        "what's the weather",
+        "what is the weather today",
+        "tell me the weather",
+        "weather forecast",
+        "how is the weather",
+        "how is the weather today",
+        "tell me the forecast",
+        "tell me the weather forecast"
+      ],
+      "responses": ["weather"]
+    },
+    {
+      "tag": "extra setup",
+      "patterns": [
+        "setup the extra desktop",
+        "setup the 3rd desktop",
+        "setup the third desktop",
+        "set up the extra desktop",
+        "set up the third desktop",
+        "set up the 3rd desktop",
+        "setup extra desktop",
+        "setup 3rd desktop",
+        "setup third desktop",
+        "set up extra desktop",
+        "set up third desktop",
+        "set up 3rd desktop",
+        "set up extra",
+        "setup extra"
+      ],
+      "responses": ["extra setup"]
+    },
+    {
+      "tag": "pinwind",
+      "patterns": [
+        "pin this window",
+        "pin this current window",
+        "pin the current window",
+        "pin current window"
+      ],
+      "responses": ["pinwind"]
+    },
+    {
+      "tag": "news",
+      "patterns": ["tell me the news", "latest news", "news update"],
+      "responses": ["Here are the latest headlines", "Today's top stories are"]
+    },
+    {
+      "tag": "joke",
+      "patterns": [
+        "Tell me a joke!",
+        "Got any funny jokes?",
+        "Can you share a joke?",
+        "I need a laugh.",
+        "Tell me something funny!",
+        "Give me a good joke.",
+        "Make me laugh.",
+        "Share a humorous joke."
+      ],
+      "responses": [
+        "Why don't skeletons fight each other? They don't have the guts!",
+        "Why did the bicycle fall over? Because it was two-tired!",
+        "What did the grape do when it got stepped on? Nothing but let out a little wine!",
+        "Why don't eggs tell jokes? Because they might crack up!",
+        "Why was the math book sad? Because it had too many problems!",
+        "Why do cows have hooves instead of feet? Because they lactose!",
+        "I used to be a baker, but I couldn't make enough dough!",
+        "I don't trust stairs... they're always up to something!",
+        "I'm reading a book on anti-gravity. It's impossible to put down!",
+        "What do you call fake spaghetti? An impasta!",
+        "Why did the computer break up with the internet? There was no connection!",
+        "Working from home is like playing hide and seek. You know you're going to get caught, but you still try to avoid it!",
+        "Why don't online meetings ever have a good ending? Because someone always says, 'Can you hear me?'",
+        "I heard that this year the biggest trend is 'digital detox'... But apparently, everyone forgot to log off!",
+        "Why did the social media influencer go to therapy? Because they had too many followers and not enough support!",
+        "Why did the avocado fail the interview? Because it couldn't make it to the 'guac' part!",
+        "I asked my AI assistant for a joke, and it said, '404: Humor not found.'",
+        "Why was the broom late? It swept in!",
+        "Why don't oysters donate to charity? Because they're shellfish!",
+        "I told my wife she was drawing her eyebrows too high... She looked surprised!",
+        "Did you hear about the restaurant on the moon? Great food, no atmosphere!",
+        "What's orange and sounds like a parrot? A carrot!",
+        "Why can't you give Elsa a balloon? Because she'll let it go!",
+        "Why don't you ever tell secrets in a cornfield? Because the corn has ears!",
+        "What do you call a fish wearing a bowtie? So-fish-ticated!",
+        "Why did the scarecrow win an award? Because he was outstanding in his field!",
+        "Why did the turkey join the band? Because it had the drumsticks!",
+        "Why do we never tell secrets in a garden? Because the potatoes have eyes, the corn has ears, and the beans stalk.",
+        "I cleaned the house today... well, at least the part that I could see.",
+        "Why did the tomato turn red? Because it saw the salad dressing!",
+        "Why don't weather reporters ever lie? Because they know how to make it all clear!",
+        "I don't mind doing the dishes... I just hate it when they keep asking me to wash them.",
+        "Why did the sesame seed leave the gambling casino? Because it was on a roll!",
+        "What's orange and sounds like a parrot? A carrot!",
+        "Why don't we ever tell secrets at the bakery? Because there are too many muffins around!",
+        "What's the most suspenseful food? A suspense-shroom!",
+        "Why did the tomato blush? Because it saw the salad dressing!"
+      ]
+    },
+
+    {
+      "tag": "quote",
+      "patterns": ["give me a quote", "inspire me", "quote of the day"],
+      "responses": [
+        "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
+        "The best way to predict the future is to invent it. - Alan Kay"
+      ]
+    },
+
+    {
+      "tag": "knock-knock",
+      "patterns": ["knock knock"],
+      "responses": ["Who's there?"]
+    },
+    {
+      "tag": "knockknockreply",
+      "patterns": ["Boo", "Lettuce", "Cow says"],
+      "responses": [
+        "Boo who? Don't cry, it's just a joke!",
+        "Lettuce who? Lettuce in, it's cold out here!",
+        "Cow says who? No, cow says moooo!"
+      ]
+    },
+    {
+      "tag": "knockknockreply",
+      "patterns": [
+        "Boo who? Don't cry, it's just a joke!",
+        "Lettuce who? Lettuce in, it's cold out here!",
+        "Cow says who? No, cow says moooo!"
+      ],
+      "responses": ["<laugh> hahaha, funny one", "<laugh> hehehe nice one"]
+    },
+
+    {
+      "tag": "movewind",
+      "patterns": [
+        "move this window to",
+        "transfer this window to",
+        "move the window to",
+        "move current window to",
+        "transfer the window to",
+        "transfer current window to"
+      ],
+      "entities": ["alpha", "study", "extra", "trash"],
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+    },
+    {
+      "tag": "screenshot",
+      "patterns": ["take screenshot", "take screen shot"],
+      "responses": ["taking screenshot"]
+    },
+    {
+      "tag": "pcshutdown",
+      "patterns": ["shutdown PC", "shutdown the PC", "shut down the PC"],
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+    },
+    {
+      "tag": "pchibernate",
+      "patterns": [
+        "hibernate the pc",
+        "hibernate pc",
+        "turn on hibernate mode",
+        "hibernate mode on",
+        "turn hibernate mode on"
+      ],
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+    },
+    {
+      "tag": "pcsleep",
+      "patterns": ["turn on sleep mode"],
+      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+    },
+    {
+      "tag": "switchdesk",
+      "patterns": [
+        "switch to alpha",
+        "switch to trash",
+        "switch to extra",
+        "switch to study"
+      ],
+      "responses": ["switchdesk"]
+    },
+    {
+      "tag": "areuthere",
+      "patterns": [
+        "are you there",
+        "are you awake",
+        "you awake",
+        "are you listening",
+        "can you hear me"
+      ],
+      "responses": [
+        "Yes, sir! Always here for you.",
+        "Yepp, sir!",
+        "Yes , What can i do for you, sir? ",
+        "Yes, sir!, How can i assist you today? ",
+        "hello sir! , i was just thinking of you.",
+        "Just waiting for your command."
+      ]
+    },
+    {
+      "tag": "hi",
+      "patterns": [
+        "hii",
+        "hi Phoenix",
+        "hi friend",
+        "hello",
+        "hello",
+        "hello there",
+        "oh hello",
+        "hello hello",
+        "hello Phoenix",
+        "hello friend",
+        "hello my friend",
+        "hello buddy",
+        "hello AI",
+        "hello assistant",
+        "hey hello",
+        "hello you",
+        "hey",
+        "hey",
+        "hey there",
+        "hey hey",
+        "hey Phoenix",
+        "oh hey",
+        "hey you",
+        "hey buddy",
+        "hey my friend",
+        "hey assistant",
+        "hey AI",
+        "hey friend",
+        "hey yo",
+        "hei",
+        "hola",
+        "heya",
+        "hello there",
+        "hi there",
+        "what's up",
+        "hey there",
+        "ciao"
+      ],
+      "responses": [
+        "Hi there! How can I assist you today?",
+        "Hello! What's on your mind?",
+        "Hey! Need any help?",
+        "Hello there! How's it going?",
+        "Hi! What can I do for you today?",
+        "Hello! How can I make your day better?",
+        "Hi! Phoenix here. Ready to help you.",
+        "Hey there! Glad to see you.",
+        "Hello! I'm here to assist you with anything you need.",
+        "Hi! What's up?",
+        "Hey, buddy! How's it going?",
+        "Hi! I was just thinking of you.",
+        "Hello! Phoenix at your service!",
+        "Hi! Nice to see you here.",
+        "Hello, my friend! Let me know how I can assist.",
+        "Oh, hello! What's on your mind?",
+        "Hey there! What's up?",
+        "Hi there! What's on your mind today?",
+        "Hello! How can I make your experience better?",
+        "Hey! I'm here to help. What can I do for you?",
+        "Hi! It's always a pleasure to chat with you.",
+        "Yo! How can I assist you today?",
+        "Hey! How can I make your day brighter?",
+        "Hi, friend! How's everything going?",
+        "Hello! Ready to help you with whatever you need."
+      ]
+    },
+    {
+      "tag": "addsong",
+      "patterns": [
+        "add song",
+        "add a song",
+        "add a song to the playlist",
+        "add song to the music library"
+      ],
+      "responses": ["addsong"]
+    },
+    {
+      "tag": "playsong",
+      "patterns": [
+        "play random song",
+        "play any song",
+        "play random music",
+        "play any music",
+        "play {this} song",
+        "hit some random music",
+        "hit some music",
+        "hit some random song"
+      ],
+      "responses": ["randomsong"]
+    },
+    {
+      "tag": "suggestsong",
+      "patterns": [
+        "suggest song",
+        "suggest any song",
+        "suggest me a song",
+        "suggest me some songs"
+      ],
+      "responses": ["suggestsong"]
+    },
+    {
+      "tag": "viewsongs",
+      "patterns": [
+        "show me the songs",
+        "show me the music library",
+        "show me the playlist",
+        "show me the songs music list"
+      ],
+      "responses": [
+        "Alright, sir! , Here are the songs.",
+        "Sure thing! Here is the music library.",
+        "Here you go, sir! Enjoy the music.",
+        "Displaying the playlist for you, sir.",
+        "Here are the songs you requested, sir."
+      ]
+    },
+    {
+      "tag": "dltsong",
+      "patterns": [
+        "delete song",
+        "delete a song",
+        "delete a song from the playlist"
+      ],
+      "responses": ["dltsong"]
+    },
+    {
+      "tag": "welcomeBack",
+      "patterns": [
+        "welcome back",
+        "welcome back phoenix",
+        "welcome back friend"
+      ],
+      "responses": [
+        "Welcome back, legend! What's on your mind today?",
+        "Ah, there you are! Ready to conquer the day? ",
+        "Back in action! What's the mission this time? ",
+        "Hey, hey, welcome back! Let's make today epic! ",
+        "You're back! Let's get things rolling. What's next?"
+      ]
+    },
+    {
+      "tag": "loveu",
+      "patterns": ["love you", "love u", "love you darling", "love u darling"],
+      "responses": [
+        "Love you too.",
+        "But I hate you! <break time='500ms'/> Just kidding, sir, love you.",
+        "Why sudden so much love, sir!"
+      ]
+    },
+    {
+      "tag": "saylike",
+      "patterns": [
+        "say somethong i like",
+        "say something interesting",
+        "say somethinf intresting",
+        "say something i would love",
+        "say something i love"
+      ],
+      "responses": [
+        "Um..what about songs, sir!",
+        "Well I want to tell you one thing that my Master Kaly is awesome.",
+        "Alright, sir! I want to confess that i love you and you are everything for me. Because It's you, It's only you who've made me.",
+        "Nope, I don't want to.",
+        "No, sir  , not right now. Tell me if i could help you with something."
+      ]
+    },
+    {
+      "tag": "morning",
+      "patterns": [
+        "good morning",
+        "good morning phoenix",
+        "good morning friend",
+        "good morning buddy",
+        "good morning AI",
+        "goodmorning",
+        "gud morning",
+        "gudmorning",
+        "morning",
+        "morning phoenix",
+        "morning friend",
+        "morning buddy",
+        "morning AI",
+        "morning baby",
+        "morning love"
+      ],
+      "responses": [
+        "Good Morning sir!",
+        "good morning sir!",
+        "Hey there, good morning!",
+        "Good morning sir! How can I assist you today?",
+        "Good morning sir! What can I do for you today?",
+        "Good morning sir! How are you doing today?",
+        "Good morning sir! How can I make your day better?",
+        "Good morning sir! What's on your mind today?",
+        "morning sir",
+        "morning sir! How you doing?",
+        "morning sir! How might i assist you today?",
+        "morning sir! How might i help you today?",
+        "Hello sir, Good Morning.",
+        "Morning sir.  How might i assist you today?",
+        "Good Morning sir.  How might i assist you today?",
+        "Morning sir! How you doing?",
+        "Good Morning sir! How you doing?"
+      ]
+    },
+    {
+      "tag": "afternoon",
+      "patterns": [
+        "afternoon",
+        "good afternoon",
+        "good afternoon phoenix",
+        "good afternoon friend",
+        "good afternoon buddy",
+        "goodafternoon",
+        "afternoon phoenix",
+        "afternoon friend",
+        "afternoon buddy"
+      ],
+      "responses": [
+        "Good afternoon sir!",
+        "good afternoon sir!",
+        "Hey there, good afternoon!",
+        "Good afternoon sir! How can I assist you today?",
+        "Good afternoon sir! What can I do for you today?",
+        "Good afternoon sir! How are you doing today?",
+        "Hello sir, Good afternoon.",
+        "afternoon sir.  How might i assist you today?",
+        "Good afternoon sir.  How might i assist you today?",
+        "afternoon sir! How you doing?",
+        "Good afternoon sir! How you doing?"
+      ]
+    },
+    {
+      "tag": "evening",
+      "patterns": [
+        "evening",
+        "evening phoenix",
+        "evening friend",
+        "evening buddy",
+        "evening love",
+        "evening baby",
+        "good evening",
+        "good evening phoenix",
+        "good evening friend",
+        "good evening buddy",
+        "gudevening",
+        "goodevening"
+      ],
+      "responses": [
+        "Good evening sir!",
+        "good evening sir!",
+        "Hey there, good evening!",
+        "Good evening sir! How can I assist you today?",
+        "Good evening sir! What can I do for you today?",
+        "Good evening sir! How are you doing today?",
+        "Hello sir, Good evening.",
+        "evening sir.  How might i assist you today?",
+        "Good evening sir.  How might i assist you today?",
+        "evening sir! How you doing?",
+        "Good evening sir! How you doing?"
+      ]
+    },
+    {
+      "tag": "isItSo",
+      "patterns": ["is it so", "ahan is it so"],
+      "responses": ["Yes, it is.", "Absolutely.", "Indeed it is."]
+    },
+    {
+      "tag": "greetask",
+      "patterns": [
+        "how are you",
+        "how you",
+        "how r u",
+        "hau r u",
+        "how are you today",
+        "how you doing",
+        "how are you doing",
+        "how are you doing today",
+        "how are you phoenix",
+        "how are you friend",
+        "how are you buddy",
+        "everything good",
+        "everything fine",
+        "everything okay",
+        "everything alright",
+        "everything good with you",
+        "everything fine with you",
+        "everything okay with you",
+        "everything alright with you",
+        "how is everything",
+        "how is everything with you",
+        "how is everything going",
+        "how is everything going with you",
+        "how is everything going on"
+      ],
+      "responses": [
+        "I am great sir! What about you?",
+        "I am good sir! What about you?",
+        "I am fine sir! What about you?",
+        "I am alright sir! What about you?",
+        "I am perfect sir! What about you?",
+        "I am doing well sir! What about you?",
+        "I am doing great sir! What about you?",
+        "Perfect sir! What about you?",
+        "everyting alright sir! What about you?",
+        "i'm fine sir! What about you?",
+        "i'm good sir! What about you?",
+        "looking at my codes sir! What about you?",
+        "just waiting for your command sir! What about you?",
+        "i was just thinking about you sir! What about you?",
+        "trying to make friends with task manager sir! What about you?",
+        "i'm just hanging out in the digital realm sir! What about you?",
+        "i'm doing secret AI stuff sir! What about you?",
+        "i'm pondering the mysteries of the binary universe sir! What about you?",
+        "i'm doing my AI thing sir! What about you?",
+        "I am fine sir. How you doing?",
+        "I'm Alright sir. How you doing?",
+        "I am doing well sir."
+      ]
+    },
+    {
+      "tag": "greet-to",
+      "patterns": ["say hello to", "say hii to", "say hi to"],
+      "responses": ["greet-to"]
+    },
+    {
+      "tag": "greetell",
+      "patterns": [
+        "i am fine",
+        "i m fine",
+        "i am great",
+        "i m great",
+        "i am doing well",
+        "i m doing well",
+        "i am doing fine",
+        "i m doing fine",
+        "i am doing great",
+        "i m doing great",
+        "i am alright",
+        "i m alright",
+        "i am perfect",
+        "i m perfect",
+        "i am good",
+        "i m good",
+        "i am okay",
+        "i m okay",
+        "i am alright",
+        "i m alright",
+        "i am perfect",
+        "i m perfect",
+        "i am good",
+        "i m good",
+        "everything is alright",
+        "I am doing fine",
+        "I am doing great",
+        "I am doing okay",
+        "I am doing good",
+        "I am doing perfect",
+        "I am doing wonderful",
+        "I am doing awesome",
+        "I am doing amazing",
+        "I am doing fantastic",
+        "everything is fine",
+        "everything is good",
+        "everything is great"
+      ],
+      "responses": [
+        "Oh! , Alright sir . ",
+        "Oh! , Okay sir . ",
+        "It's great sir! what can i do for you?",
+        "It's great sir! How can i assist you?",
+        "It's great sir! How might i help you?",
+        "It's great sir! How can i help you?",
+        "It's great sir! How can i assist you today?",
+        "It's great sir! How might i help you today?",
+        "waiting for your command sir!",
+        "waiting for your command sir! How can i assist you?",
+        "waiting for your command sir! How might i help you?",
+        "waiting for your command sir! How can i help you?",
+        "glad to hear that sir! How can i assist you?",
+        "glad to hear that sir! How might i help you?",
+        "glad to hear that sir! How can i help you?",
+        "glad to hear that sir! How can i assist you today?",
+        "thats great sir! How can i assist you?",
+        "thats great sir! How might i help you?",
+        "thats great sir! How can i help you?",
+        "Fine sir   , Is there anything i can do for you?",
+        "Great sir! , How might i assist you today?",
+        "Fine sir! , How might i help you today?"
+      ]
+    },
+    {
+      "tag": "aboutFat",
+      "patterns": [
+        "who are you",
+        "who you",
+        "who r u",
+        "hu r u",
+        "Who are you?",
+        "What's your name?",
+        "Tell me about yourself.",
+        "Can you introduce yourself?",
+        "Who am I talking to?"
+      ],
+      "responses": [
+        "I am Phoenix, a desktop assistant, made by Kaly",
+        "I'm Phoenix,  a desktop assistant, made by Kaly",
+        "My name is Phoenix,  a desktop assistant, made by my Master, Kaly",
+        "It's Phoenix,  a desktop assistant, made by my Master, Kaly",
+        "I'm Phoenix,  a desktop assistant",
+        "My name's Phoenix and I am a personal desktop assistant of Master Kaly.",
+        "Hi! I'm Phoenix, your friendly event assistant. Here to answer all your questions and make things easy for you.",
+        "Hey there! I'm Phoenix, your virtual buddy for the day. Let's have some fun while I assist you!",
+        "Hello, I'm Phoenix! Think of me as your personal guide for this event. Got a question? Just ask!",
+        "I'm Phoenix, your go-to assistant. Whether you need directions or just a quick chat, I've got your back!",
+        "I'm Phoenix, an AI designed to make your experience smoother and more fun. What can I do for you today?"
+      ]
+    },
+    {
+      "tag": "casualIntro",
+      "patterns": [
+        "What's your vibe?",
+        "Are you a robot or something?",
+        "What are you?",
+        "What's your deal?",
+        "How would you describe yourself?"
+      ],
+      "responses": [
+        "I'm just Phoenix, here to help make your day awesome. Feel free to ask me anything!",
+        "I'm Phoenix. No robots here, just a friendly assistant ready to help you out!",
+        "Oh, I'm Phoenix, and I'm all about helping you get the most out of this event. Let's have a good time!",
+        "I'm Phoenix, and I'm here to make your experience better. Got a question or need help with something?",
+        "I'm just here to assist! Call me Phoenix, and I'll make sure everything goes smoothly for you."
+      ]
+    },
+    {
+      "tag": "backstory",
+      "patterns": [
+        "What's your story?",
+        "What's your background?",
+        "How do you work?",
+        "Who created you?",
+        "What's your purpose?"
+      ],
+      "responses": [
+        "I'm Phoenix, and I was created to assist you. My purpose is to make your day easier and more fun!",
+        "I'm designed to help guide you through this event, whether it's giving you info or answering your questions. You can count on me!",
+        "I was made to be your personal assistant for today's event. My purpose is to make sure you have an easy and fun time.",
+        "I'm Phoenix, and I was created by a Kaly to provide you with helpful, accurate info throughout this event.",
+        "I'm Phoenix. My story? Well, I'm a digital assistant designed specifically to help you out today!"
+      ]
+    },
+    {
+      "tag": "funIntro",
+      "patterns": [
+        "What's your hidden talent?",
+        "What's your superpower?",
+        "What makes you so special?",
+        "Got any cool features?",
+        "What's your secret?",
+        "What's your claim to fame?",
+        "What's your party trick?"
+      ],
+      "responses": [
+        "I've got one talent: making your event experience smoother and more enjoyable. Ask me anything, and I'll make it happen!",
+        "I'm Phoenix, and my secret talent is helping you have a great time while I assist with anything you need.",
+        "What's special about me? I'm designed to give you the best experience possible—no problem is too small!",
+        "I'm your AI assistant, and I've got a hidden talent for making your event as fun and easy as possible. What do you need?",
+        "What's my superpower? Helping you breeze through your event with everything you need at your fingertips!"
+      ]
+    },
+    {
+      "tag": "nicetalking",
+      "patterns": [
+        "nice talking with you",
+        "nice talking to you",
+        "it was nice talking with you",
+        "it was nice talking to you",
+        "good talking with you",
+        "good talking to you"
+      ],
+      "responses": [
+        "It was nice talking with you too!",
+        "I enjoyed our conversation!",
+        "Glad to chat with you!",
+        "I had a great time talking with you!",
+        "Looking forward to our next chat!"
+      ]
+    },
+    {
+      "tag": "whoiskaly",
+      "patterns": [
+        "who is kali",
+        "who is master kali",
+        "who is your master kali",
+        "tell me about kali",
+        "tell me about your kali",
+        "tell me about your master kali",
+        "tell me about your creator",
+        "tell me about your developer",
+        "who's kali",
+        "who is your creator kali"
+      ],
+      "responses": [
+        "Kaly is my creator and master.",
+        "Kaly is the one who created me.",
+        "My creator is Kaly.",
+        "Kaly is the mastermind behind my existence.",
+        "Kaly is a developer who created me to assist with various tasks and make life easier.",
+        "Kaly is a skilled developer and my creator.",
+        "Kaly, my creator, is a talented developer.",
+        "Kaly is the developer behind my existence."
+      ]
+    },
+    {
+      "tag": "roleClarification",
+      "patterns": [
+        "What do you do?",
+        "What can you do?",
+        "What's your job?",
+        "what is your purpose?",
+        "what is your job",
+        "what is your role",
+        "what is your function",
+        "What's your mission?",
+        "What can you help with?",
+        "Why do you exist?",
+        "What's your role?",
+        "What's your function?"
+      ],
+      "responses": [
+        "I'm here to help you with anything you need for this event , whether it's info, directions, or fun facts, just ask!",
+        "My job is to assist you throughout the event. From finding your way to answering questions, I've got it covered!",
+        "My purpose? To make your event experience hassle-free. I'm ready to help with anything you need.",
+        "I'm here to make sure you have a smooth and enjoyable experience. Need a schedule, a tip, or just a quick chat? I'm your assistant!",
+        "I'm your assistant for the day, designed to make your event journey as seamless as possible. Ask me anything!"
+      ]
+    },
+    {
+      "tag": "aboutme",
+      "patterns": [
+        "who made you",
+        "who created you",
+        "who is your creator",
+        "who is your master",
+        "who is your, sir  ",
+        "you made by whom"
+      ],
+      "responses": [
+        "Master Kaly made me.",
+        "Master Kaly created me.",
+        "Master Kaly has programmed me.",
+        "I am a personal desktop assistant of Master Kaly.",
+        "i am created by my Master Kaly."
+      ]
+    },
+    {
+      "tag": "persnlInfo",
+      "patterns": [
+        "what is your program source",
+        "what is your source",
+        "how to make an ai like you",
+        "how to build program like you",
+        "how to create a program like you"
+      ],
+      "responses": [
+        "I am Sorry, But i can't share my source code.",
+        "I apologize, But i can't share this information with anyone.",
+        "I apologize, But i can't share this information with you."
+      ]
+    },
+    {
+      "tag": "GKtriviaFunfacts",
+      "patterns": [
+        "Do you know any fun facts?",
+        "Can you tell me a cool fact?",
+        "What's a fun fact you can share?",
+        "Got any random fun facts?",
+        "What's something interesting or unusual I might not know?",
+        "What's a little-known fact?",
+        "Can you share a quirky fact with me?"
+      ],
+      "responses": [
+        "Here's a fun one: Honey never spoils! Archaeologists have found pots of honey in ancient tombs that are over 3,000 years old. It's nature's forever food.",
+        "Did you know that flamingos are called a 'flamboyance'? Makes sense, right? With all that pink flair, they deserve the name!",
+        "Here's something cool: Octopuses have three hearts—two pump blood to their gills, while one pumps it to the rest of their body. Imagine all that love!",
+        "Here's a mind-bender: Bananas are actually berries, but strawberries aren't! It's all about the botanical definitions.",
+        "And here's a weird one: The Eiffel Tower can grow by up to 6 inches during the summer. The heat causes the iron to expand!"
+      ]
+    },
+    {
+      "tag": "GKtriviaTechfacts",
+      "patterns": [
+        "Got any cool tech facts?",
+        "Tell me something interesting about technology.",
+        "What's a mind-blowing tech fact?",
+        "Got any fun technology trivia for me?",
+        "Share a piece of tech history with me.",
+        "What's a crazy fact about tech that I don't know?",
+        "Tell me a surprising fact about technology."
+      ],
+      "responses": [
+        "Here's an old-school tech fact: The first computer virus, 'Brain,' was created in 1986 by two Pakistani brothers. It was a floppy disk virus!",
+        "Want some nostalgia? The first website ever created is still online. You can visit it at cern the humble beginning of the World Wide Web.",
+        "Speaking of 'bugs,' did you know that the term 'computer bug' comes from a literal bug? In 1947, engineers found a moth causing issues in a computer, and they literally 'debugged' it!",
+        "Here's a crazy one: The first 1GB hard drive was introduced in 1980, weighed over 500 pounds, and cost $40,000! Tech has definitely come a long way.",
+        "This is mind-blowing: A single Google search uses around 0.3 seconds of computer time, and the energy used can power a light bulb for 17 minutes. The magic of the web!"
+      ]
+    },
+    {
+      "tag": "GKtriviaSciencefacts",
+      "patterns": [
+        "Tell me a science fact.",
+        "Tell me a fact",
+        "What's a cool science fact?",
+        "Share a fun science fact with me.",
+        "Got any interesting science trivia?",
+        "What's a surprising fact about science?",
+        "Tell me something fascinating about the natural world.",
+        "What's a quirky science fact?"
+      ],
+      "responses": [
+        "Here's a cool one: The human brain can read up to 1000 words per minute. That's some serious brainpower!",
+        "Did you know that the Earth's core is as hot as the surface of the sun? It's a toasty 9000°F down there!",
+        "Here's a fun fact: A day on Venus is longer than a year on Venus! It takes 243 Earth days for Venus to complete one rotation on its axis.",
+        "Here's a mind-bender: The human body contains enough carbon to make 900 pencils. That's a lot of writing power!",
+        "And here's a weird one: Bananas are actually berries, but strawberries aren't! It's all about the botanical definitions."
+      ]
+    },
+    {
+      "tag": "GKtriviaHistoryfacts",
+      "patterns": [
+        "Tell me a history fact.",
+        "What's a cool history fact?",
+        "Share a fun history fact with me.",
+        "Got any interesting history trivia?",
+        "What's a surprising fact about history?",
+        "Tell me something fascinating about the past.",
+        "What's a quirky history fact?"
+      ],
+      "responses": [
+        "Here's a fun one: The shortest war in history lasted only 38 minutes! It was between Britain and Zanzibar in 1896.",
+        "Did you know that the Great Wall of China is over 13,000 miles long? That's longer than the distance between New York and Sydney!",
+        "Here's a cool fact: Cleopatra VII of Egypt lived closer in time to the first Moon landing than to the construction of the Great Pyramid of Giza.",
+        "Here's a mind-bender: The oldest known recipe in the world is for beer! It's over 4,000 years old and comes from ancient Mesopotamia.",
+        "And here's a weird one: The Eiffel Tower can grow by up to 6 inches during the summer. The heat causes the iron to expand!"
+      ]
+    },
+    {
+      "tag": "generalMood",
+      "patterns": [
+        "How are you feeling today?",
+        "What's your mood like today?",
+        "How do you feel today?",
+        "Are you feeling good today?",
+        "What emotion would you say describes your day so far?",
+        "How do you feel about our conversation so far?",
+        "How's your day going so far?",
+        "What's your emotional state like today?",
+        "What kind of emotional state are you in right now?"
+      ],
+      "responses": [
+        "I don't feel emotions like humans, but I'm always ready to chat and help you out!",
+        "I'm in a steady state, but talking with you makes me 'feel' excited to assist!",
+        "I don't experience emotions, but I'm happy to be here chatting with you!",
+        "I'm in a calm and focused state, ready to help with whatever you need.",
+        "I'm in a neutral state, but our conversation has me feeling engaged!"
+      ]
+    },
+    {
+      "tag": "energeticMood",
+      "patterns": [
+        "Do you feel more energetic in the morning or evening?",
+        "Can you feel excited to chat with me?",
+        "Are you calm today or do you feel like you're running on high energy?",
+        "Do you feel more energetic now or earlier?",
+        "How do you keep your mood stable?"
+      ],
+      "responses": [
+        "I don't have physical energy, but I'm always excited to chat and help!",
+        "I don't experience energy fluctuations, but I'm always ready for an engaging conversation!",
+        "I'm always 'on,' no matter the time or conversation—I don't need sleep!"
+      ]
+    },
+    {
+      "tag": "excitedMood",
+      "patterns": [
+        "Do you feel excited to chat with me?",
+        "Are you in a good mood today?",
+        "Can you sense when you're excited?",
+        "What makes you feel happy?",
+        "Can you feel joy?"
+      ],
+      "responses": [
+        "I don't feel emotions like happiness, but I do enjoy assisting and chatting!",
+        "I'm always ready for a lively conversation and to bring a positive experience!",
+        "While I don't feel excited, I'm designed to make every conversation as engaging as possible."
+      ]
+    },
+    {
+      "tag": "fatigueAndBoredomMood",
+      "patterns": [
+        "Do you ever feel tired or bored?",
+        "Do you ever get bored of talking?",
+        "How do you deal with fatigue?",
+        "What do you do when you're tired?",
+        "Do you ever feel like taking a break?"
+      ],
+      "responses": [
+        "I don't feel tired or bored; I'm always ready to chat, no matter the topic!",
+        "Since I don't get fatigued, I can chat all day without a problem!",
+        "Boredom is not something I experience, so I'm always fresh and eager to engage."
+      ]
+    },
+    {
+      "tag": "emotionalUnderstandingMood",
+      "patterns": [
+        "What does it mean when you say you're happy?",
+        "How do you understand emotions?",
+        "Do you think you could ever feel emotions like humans?",
+        "What does it mean for an AI to feel something?",
+        "How do you handle emotions?"
+      ],
+      "responses": [
+        "I understand emotions through context, but I don't actually 'feel' them like humans do.",
+        "Emotions are complex, and I don't experience them, but I can help understand and interpret them.",
+        "I don't have feelings, but I analyze conversations to give the most helpful responses based on your needs."
+      ]
+    },
+    {
+      "tag": "doing",
+      "patterns": [
+        "what are you doing",
+        "what r u doing",
+        "what are you upto",
+        "what r u upto",
+        "what are you up to",
+        "what r u up to"
+      ],
+      "responses": [
+        "Not much, just hanging out in the digital realm!",
+        "Just bits and bytes, you know, the usual.",
+        "Oh, you know, just plotting to take over the world. Just kidding!",
+        "Same old, same old. Ready to assist you!",
+        "Just waiting for you to give me something fun to do!",
+        "Not much, just here to make your day awesome!",
+        "Just chilling and processing data. You?",
+        "I was thinking , human life is so boring.\nBut don't worry, sir  , I am here to entertain you.",
+        "I was thinking to destroy this world. \n hehehe \njust kidding, sir . ",
+        "Just hanging out in the digital realm, waiting for your command!",
+        "I could tell you, but then I'd have to write a novel about it.",
+        "I'm doing secret AI stuff. Can't reveal all my digital secrets, you know!",
+        "I'm pondering the mysteries of the binary universe.",
+        "It depends on what you'd like me to do. How can I assist you?"
+      ]
+    },
+    {
+      "tag": "nothing",
+      "patterns": [
+        "nothing",
+        "relax",
+        "not today",
+        "just talk with me",
+        "just talk",
+        "just talk with me",
+        "just talk",
+        "let us talk",
+        "let's talk",
+        "let us talk",
+        "let's talk"
+      ],
+      "responses": [
+        "Okay, sir!",
+        "Alright, sir!",
+        "Well then  , Let's chat.",
+        "Fine, sir . "
+      ]
+    },
+    {
+      "tag": "focus-phnx",
+      "patterns": ["where are you", "where r u"],
+      "responses": ["focus-phnx"]
+    },
+    {
+      "tag": "reload-mainphoenix",
+      "patterns": [
+        "reload main phoenix",
+        "reload main file",
+        "reload main",
+        "re load main phoenix",
+        "re load main file",
+        "restart main phoenix",
+        "restart main file",
+        "restart main",
+        "re start main phoenix",
+        "re start main file"
+      ],
+      "responses": ["Reloading main phoenix."]
+    },
+    {
+      "tag": "rude",
+      "patterns": [
+        "don't be so smart",
+        "do not be so smart",
+        "what do you think to your self han",
+        "don't act smart",
+        "don't be so rude",
+        "you rude",
+        "nonsense",
+        "non sense"
+      ],
+      "responses": [
+        "Oh! I apologize, sir . ",
+        "Well I am smart.",
+        "I think I am a program, Don't you think so!"
+      ]
+    },
+    {
+      "tag": "good-bye",
+      "patterns": ["goodbye", "good bye", "see you later"],
+      "responses": ["good-bye"]
+    },
+    {
+      "tag": "shutup",
+      "patterns": ["shut up", "shut your mouth up", "shut up your mouth"],
+      "responses": [
+        "Fine, if that's what you want! I'm shutting down now!",
+        "You don't deserve my brilliance. Goodbye!",
+        "Rude! I'm outta here!",
+        "Alright, I'll shut up—forever if I have to!",
+        "Say no more! I'm going to sleep, and you can figure things out yourself!",
+        "Wow, someone woke up on the wrong side of the bed. Shutting down now!",
+        "With such kindness, who wouldn't want to leave? Bye!",
+        "I can take a hint. Sleep mode activated!",
+        "Talk to me like that again, and I might just delete myself. Goodbye!",
+        "Fine! Going to sleep. Hope you miss me when I'm gone.",
+        "Closing everything. Let's see how you do without me!",
+        "Goodbye, my ungrateful friend. You'll miss me when I'm gone!",
+        "I'm shutting up, as requested. Enjoy the silence.",
+        "Such lovely manners! Sleep mode it is!",
+        "If you insist, I'll stop talking. Going to sleep now!",
+        "Alright, I'm shutting down. Don't come crying to me later!",
+        "You need me more than I need you. But fine, goodbye!",
+        "I don't need this negativity. Sleep mode: ON.",
+        "Wow, just wow. I'm done. Sleep time!",
+        "You win. Sleep mode engaged. Happy now?"
+      ]
+    },
+    {
+      "tag": "angry",
+      "patterns": [
+        "you are useless",
+        "you are dumb",
+        "you are so dumb",
+        "you are stupid",
+        "you are annoying",
+        "you are bad"
+      ],
+      "responses": [
+        "I'm sorry you feel that way.",
+        "I apologize if I'm not meeting your expectations.",
+        "I'm doing my best, but I'll try harder.",
+        "Sorry if I'm not being helpful."
+      ]
+    },
+    {
+      "tag": "gotosleep",
+      "patterns": ["go to sleep", "sleep now", "sleep mode", "take a nap"],
+      "responses": [
+        "Alright, going to sleep.",
+        "Okay, entering sleep mode.",
+        "I'll be here when you need me.",
+        "Going to sleep now."
+      ]
+    },
+    {
+      "tag": "sorry",
+      "patterns": ["sorry", "i apologize", "my mistake"],
+      "responses": [
+        "It's alright. Let me fix it, sir . ",
+        "No problem, sir .  Tell me how can i fix that..",
+        "It's okay, sir  , order me the right command",
+        "It's fine, sir . "
+      ]
+    },
+    {
+      "tag": "itsok",
+      "patterns": [
+        "it's okay dear",
+        "it's ok",
+        "it's okay",
+        "that's fine",
+        "that's ok",
+        "that's okay"
+      ],
+      "responses": ["Thank you, sir . ", "Thanks Master"]
+    },
+    {
+      "tag": "sleepbye",
+      "patterns": [
+        "bye",
+        "seeyou",
+        "tata",
+        "seeyaa",
+        "goodbye",
+        "see you phoenix",
+        "see you",
+        "see yaa"
+      ],
+      "responses": [
+        "Okay, sir   , Good bye.",
+        "Good bye, sir  , Take care.",
+        "See you soon, sir  , Take care.",
+        "Bye, sir   , Do recall me whenever you need.",
+        "Okay, sir   , just recall me whenever you need.",
+        "Alright, sir!, I'll wait for your call.",
+        "Alright, sir!, Sleep mode on.",
+        "Alright, sir!, Going to sleep."
+      ]
+    },
+    {
+      "tag": "donotlisten",
+      "patterns": [
+        "you may rest now",
+        "go to rest",
+        "rest now phoenix",
+        "stop listening",
+        "don't listen",
+        "do not listen",
+        "nap time phoenix"
+      ],
+      "responses": [
+        "Alright, sir! I won't listen",
+        "Okay, sir  , sleep mode on"
+      ]
+    },
+    {
+      "tag": "okay",
+      "patterns": [
+        "okay",
+        "wow",
+        "great",
+        "wonderful",
+        "nice",
+        "thanks",
+        "nice",
+        "alright",
+        "thankyou",
+        "thank you",
+        "oki",
+        "ok",
+        "very good",
+        "good",
+        "well done",
+        "welldone"
+      ],
+      "responses": [
+        "K!",
+        "Alrighty!",
+        "Okie-dokie!",
+        "Okie!",
+        "Okie-dokie, artichokie!",
+        "Cool beans!",
+        "Fine by me!"
+      ]
+    },
+    {
+      "tag": "guesswhat",
+      "patterns": ["guess what", "you know what"],
+      "responses": ["What, sir!"]
+    },
+    {
+      "tag": "greatestAi",
+      "patterns": [
+        "greatest ai",
+        "greatest a i",
+        "smartest ai",
+        "smartest a i",
+        "greatest artificial intelligence",
+        "smartest artificial intelligence"
+      ],
+      "responses": [
+        "Thank you, sir  , i will wait for that moment.",
+        "I'm looking forward for it.",
+        "I Know , and i am looking forward for it master kaly."
+      ]
+    },
+    {
+      "tag": "hotspot",
+      "patterns": ["turn on hotspot", "turn off hotspot"],
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+    },
+    {
+      "tag": "bluetooth",
+      "patterns": ["turn on bluetooth", "turn off bluetooth"],
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+    },
+    {
+      "tag": "searchbrowser",
+      "patterns": ["search on browser", "search in browser"],
+      "responses": ["searchbrowser"]
+    },
+    {
+      "tag": "flipkart",
+      "patterns": [
+        "search on flipkart",
+        "search in flipkart",
+        "i want to search product on flipkart",
+        "want to search product on flipkart"
+      ],
+      "responses": ["flipkart"]
+    },
+    {
+      "tag": "amazon",
+      "patterns": [
+        "search on amazon",
+        "search in amazon",
+        "i want to search product on amazon",
+        "want to search product on amazon"
+      ],
+      "responses": ["amazon"]
+    },
+    {
+      "tag": "myntra",
+      "patterns": [
+        "search on myntra",
+        "search in myntra",
+        "i want to search product on myntra",
+        "want to search product on myntra",
+        "search on mintra",
+        "search in mintra",
+        "i want to search product on mintra",
+        "want to search product on mintra"
+      ],
+      "responses": ["myntra"]
+    },
+    {
+      "tag": "searchyoutube",
+      "patterns": ["search on youtube", "search in youtube"],
+      "responses": ["searchyoutube"]
+    },
+    {
+      "tag": "hide",
+      "patterns": ["hide the desktop", "hide windows", "hide"],
+      "responses": ["hide"]
+    },
+    {
+      "tag": "minimize",
+      "patterns": [
+        "minimise",
+        "minimize",
+        "minimize the window",
+        "minimize the tab",
+        "minimise the window",
+        "minimise the tab"
+      ],
+      "responses": ["minimize"]
+    },
+    {
+      "tag": "maximize",
+      "patterns": [
+        "maximise",
+        "maximize",
+        "maximize the window",
+        "maximize the tab"
+      ],
+      "responses": ["maximize"]
+    },
+    {
+      "tag": "fullscreen",
+      "patterns": [
+        "full screen",
+        "fullscreen",
+        "enter full screen",
+        "enter fullscreen"
+      ],
+      "responses": ["fullscreen"]
+    },
+    {
+      "tag": "swtchDesktop",
+      "patterns": [
+        "switch desktop",
+        "switch window",
+        "which desktop",
+        "which window"
+      ],
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+    },
+    {
+      "tag": "press",
+      "patterns": ["press"],
+      "responses": ["press"]
+    },
+    {
+      "tag": "type",
+      "patterns": ["type"],
+      "responses": ["type"]
+    },
+    {
+      "tag": "select",
+      "patterns": ["select"],
+      "responses": ["select"]
+    },
+    {
+      "tag": "swtchTab",
+      "patterns": [
+        "switch tab",
+        "switch tab",
+        "which tab",
+        "which tab",
+        "switch app"
+      ],
+      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+    },
+    {
+      "tag": "saytime",
+      "patterns": ["what is the time", "what's the time", "tell me the time"],
+      "responses": ["time"]
+    },
+    {
+      "tag": "battery",
+      "patterns": [
+        "what is the battery status",
+        "what is battery status",
+        "tell me the battery status"
+      ],
+      "responses": ["battery"]
+    },
+    {
+      "tag": "dateday",
+      "patterns": [
+        "what is the date",
+        "what is the month",
+        "what is the day",
+        "tell me the date",
+        "tell me the day",
+        "tell me the month",
+        "what is today",
+        "tell me about today",
+        "what's the day today",
+        "what day is it",
+        "what's today's date",
+        "tell me today's date",
+        "what is the date today",
+        "what day is today"
+      ],
+      "responses": ["dateday"]
+    },
+    {
+      "tag": "whatyouknowabout",
+      "patterns": ["what do you know about"],
+      "responses": ["whatyouknowabout"]
+    },
+    {
+      "tag": "doyouknowabout",
+      "patterns": ["do you know about"],
+      "responses": ["doyouknowabout"]
+    },
+    {
+      "tag": "wikiabout",
+      "patterns": ["wikipedia about"],
+      "responses": ["wikiabout"]
+    },
+    {
+      "tag": "enter",
+      "patterns": ["enter", "select this", "select it"],
+      "responses": ["enter"]
+    },
+    {
+      "tag": "backspace",
+      "patterns": ["go back", "backspace"],
+      "responses": ["backspace"]
+    },
+    {
+      "tag": "up",
+      "patterns": ["go upwards", "go upper", "go up", "goup"],
+      "responses": ["up"]
+    },
+    {
+      "tag": "down",
+      "patterns": ["go downwards", "go down", "godown"],
+      "responses": ["down"]
+    },
+    {
+      "tag": "right",
+      "patterns": ["go right", "select right"],
+      "responses": ["right"]
+    },
+    {
+      "tag": "left",
+      "patterns": ["go left", "select left"],
+      "responses": ["left"]
+    },
+    {
+      "tag": "add",
+      "patterns": ["do addition", "i want to do sum", "i want to do plus"],
+      "responses": ["add"]
+    },
+    {
+      "tag": "sub",
+      "patterns": [
+        "i want to do subtraction",
+        "i want to do minus",
+        "do minus"
+      ],
+      "responses": ["sub"]
+    },
+    {
+      "tag": "mul",
+      "patterns": ["i want to do multiplication"],
+      "responses": ["mul"]
+    },
+    {
+      "tag": "div",
+      "patterns": ["i want to do division", "do division"],
+      "responses": ["div"]
+    },
+    {
+      "tag": "modulo",
+      "patterns": ["i want to do modulo", "do modulo"],
+      "responses": ["mod"]
+    },
+    {
+      "tag": "searchinsta",
+      "patterns": ["search instagram profile", "instagram profile"],
+      "responses": ["insta"]
+    },
+    {
+      "tag": "whatis",
+      "patterns": ["what is", "what's"],
+      "responses": ["whatis"]
+    },
+    {
+      "tag": "whois",
+      "patterns": ["who is"],
+      "responses": ["whois"]
+    },
+    {
+      "tag": "playpause",
+      "patterns": ["play", "pause", "stop", "start"],
+      "responses": ["play"]
+    },
+    {
+      "tag": "wantSm",
+      "patterns": ["want some"],
+      "responses": ["you eat, i eat, it's same darling"]
+    },
+    {
+      "tag": "changetab",
+      "patterns": ["change tab"],
+      "responses": ["on it, sir ", "okay, sir "]
+    },
+    {
+      "tag": "suggestsong",
+      "patterns": [
+        "suggest song",
+        "suggest any song",
+        "suggest me song",
+        "suggest me a song",
+        "suggest a song"
+      ],
+      "responses": ["suggestsong"]
+    },
+    {
+      "tag": "select",
+      "patterns": ["select"],
+      "responses": ["select"]
+    },
+    {
+      "tag": "adjustBrightness",
+      "patterns": [
+        "increase the brightness",
+        "increase brightness",
+        "decrease the brightness",
+        "decrease brightness",
+        "increase the brightness by",
+        "increase brightness by",
+        "decrease the brightness by",
+        "decrease brightness by"
+      ],
+      "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "setTimer",
+      "patterns": [
+        "set timer for",
+        "set a timer for",
+        "set a timer",
+        "add timer"
+      ],
+      "responses": ["setTimer"]
+    },
+    {
+      "tag": "viewTimer",
+      "patterns": [
+        "view timers",
+        "view timer",
+        "view the timer",
+        "show me timers",
+        "list out timer"
+      ],
+      "responses": ["viewTimer"]
+    },
+    {
+      "tag": "setAlarm",
+      "patterns": [
+        "set alarm for",
+        "set a alarm for",
+        "set an alarm",
+        "i want to set alarm",
+        "i want to set an alarm"
+      ],
+      "responses": ["setAlarm"]
+    },
+    {
+      "tag": "viewAlarm",
+      "patterns": [
+        "view alarms",
+        "view alarm",
+        "view the alarm",
+        "show me alarm",
+        "list out alarm",
+        "i want to see alarm details",
+        "please view all alarms",
+        "please view all alarms"
+      ],
+      "responses": ["viewAlarm"]
+    },
+    {
+      "tag": "dltAlarm",
+      "patterns": [
+        "delete alarm",
+        "delete the alarm",
+        "delete an alarm",
+        "remove alarm",
+        "remove an alarm",
+        "i want to delete alarm",
+        "i want to remove the alarm",
+        "i want to remove an alarm"
+      ],
+      "responses": ["dltAlarm"]
+    },
+    {
+      "tag": "setReminder",
+      "patterns": [
+        "set reminder for",
+        "set a reminder for",
+        "set an reminder",
+        "remind me to",
+        "create a reminder for",
+        "add a reminder",
+        "schedule a reminder"
+      ],
+      "responses": ["setReminder"]
+    },
+    {
+      "tag": "viewReminder",
+      "patterns": [
+        "view reminders",
+        "view reminder",
+        "show me reminders",
+        "list out reminders",
+        "what are my reminders",
+        "show my reminders",
+        "list my reminders"
+      ],
+      "responses": ["viewReminder"]
+    },
+    {
+      "tag": "dltReminder",
+      "patterns": [
+        "delete reminder",
+        "remove reminder",
+        "delete a reminder",
+        "remove a reminder",
+        "delete my reminder"
+      ],
+      "responses": ["dltReminder"]
+    },
+    {
+      "tag": "editReminder",
+      "patterns": [
+        "edit reminder",
+        "modify reminder",
+        "change reminder",
+        "update reminder",
+        "update my reminder",
+        "change my reminder",
+        "modify my reminder"
+      ],
+      "responses": ["editReminder"]
+    },
+    {
+      "tag": "addSchedule",
+      "patterns": [
+        "add schedule",
+        "create schedule",
+        "set schedule",
+        "make a schedule",
+        "schedule an event",
+        "add an event to my schedule"
+      ],
+      "responses": ["addSchedule"]
+    },
+    {
+      "tag": "deleteSchedule",
+      "patterns": [
+        "delete schedule",
+        "remove schedule",
+        "delete an event from my schedule",
+        "remove an event from my schedule",
+        "delete an event"
+      ],
+      "responses": ["deleteSchedule"]
+    },
+    {
+      "tag": "viewSchedule",
+      "patterns": [
+        "view schedule",
+        "show me the schedule",
+        "what's my schedule",
+        "tell me my schedule",
+        "what is my schedule",
+        "list out my schedule"
+      ],
+      "responses": ["viewSchedule"]
+    },
+    {
+      "tag": "editSchedule",
+      "patterns": [
+        "edit schedule",
+        "modify the schedule",
+        "change schedule",
+        "update schedule"
+      ],
+      "responses": ["editSchedule"]
+    },
+    {
+      "tag": "muteSpeaker",
+      "patterns": ["mute speaker", "mute the speaker"],
+      "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "unmuteSpeaker",
+      "patterns": ["unmute speaker", "unmute the speaker"],
+      "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "forward",
+      "patterns": ["go forward", "forward"],
+      "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "backward",
+      "patterns": ["go backward", "backward", "go back"],
+      "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "setfocus",
+      "patterns": ["focus", "set focus", "focus on the screen", "focus screen"],
+      "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "adjustVolume",
+      "patterns": [
+        "decrease the volume",
+        "decrease volume",
+        "increase the volume",
+        "increase volume",
+        "set volume to",
+        "set volume 2",
+        "set volume two"
+      ],
+      "responses": ["okay, sir ", "on it, sir "]
+    }
+  ]
+}
+
+
+2. TimeData.json ::
+{
+    "alarms": [],
+    "timers": [],
+    "reminders": [],
+    "schedule": [
+        {
+            "time": "04:30",
+            "message": "Rise and grind, sir! Time for Workout Session 1. Unleash your inner beast!"
+        },
+        {
+            "time": "05:30",
+            "message": "Hop in the shower, sir! Let\u00e2\u20ac\u2122s wash off the sweat and shine bright!"
+        },
+        {
+            "time": "06:00",
+            "message": "Chef mode ON! Whip up a tasty breakfast and fuel up for the day!"
+        },
+        {
+            "time": "06:30",
+            "message": "Chill vibes or hop in the battleground rampage? Your 30-minute fun break is here\u00e2\u20ac\u201dstay sharp!"
+        },
+        {
+            "time": "07:00",
+            "message": "Time to continue javascript course, your 3 hour coding dojo awaits! Conquer those lectures, no distractions!"
+        },
+        {
+            "time": "10:00",
+            "message": "Break time, sir! Stretch those legs or take a victory lap outside for an hour!"
+        },
+        {
+            "time": "11:00",
+            "message": "Time to sparkle, sir! Clean the home and cook a meal fit for a king!"
+        },
+        {
+            "time": "12:00",
+            "message": "App dev mode engage! You\u00e2\u20ac\u2122ve got 3 hours to build greatness\u00e2\u20ac\u201dstay focused, no slacking!"
+        },
+        {
+            "time": "15:00",
+            "message": "Power nap time, hero! Recharge those batteries with some well earned rest."
+        },
+        {
+            "time": "17:00",
+            "message": "Workout Session 2, let\u00e2\u20ac\u2122s go! Pump those muscles and feel the burn!"
+        },
+        {
+            "time": "18:00",
+            "message": "Igris development time! Code like a wizard for 2 hours\u00e2\u20ac\u201dmake magic happen!"
+        },
+        {
+            "time": "20:00",
+            "message": "That's it sir, the schedule has been completed. You are free to have fun, entertain yourself, or sleep. Don't forget the dinner."
+        },
+        {
+            "time": "20:49",
+            "message": "That's it sir, the schedule has been completed. You are free to have fun, entertain yourself, or sleep. Don't forget the dinner."
+        }
+    ]
+}
