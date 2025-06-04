@@ -633,9 +633,9 @@ if __name__ == "__main__":
     asutils.speak("yo boss! shall i setup all the desktops?")
     res = asutils.take_command().lower()
     resList = res.split()
-    threading.Thread(target=asutils.rockMsc, args=(0.5, 40)).start()
-    asutils.speak("Alrighty! Freshen up your mind for a while!")
+    # asutils.speak("Alrighty! Freshen up your mind for a while!")
     if "yes" in res or "yes please" in res or "please" in res:
+        threading.Thread(target=asutils.rockMsc, args=(0.5, 40)).start()
         asutils.speak("let me setup all the desktops for you sir!")
         asutils.setup_trash()
         asutils.setup_study()
