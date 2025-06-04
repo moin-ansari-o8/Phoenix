@@ -3035,12 +3035,12 @@ class Utility:
                     self.drag_app(hwnd, target_x, target_y)  # Drag to position
                     time.sleep(0.5)  # Wait before next app
 
-                    if app == "sticky1" or app == "sticky2":
-                        try:
-                            self.pin_wind()
-                            print(f"Set {app} to show on all desktops.")
-                        except Exception as e:
-                            print(f"Failed to set {app} to show on all desktops: {e}")
+                    # if app == "sticky1" or app == "sticky2":
+                    #     try:
+                    #         self.pin_wind()
+                    #         print(f"Set {app} to show on all desktops.")
+                    #     except Exception as e:
+                    #         print(f"Failed to set {app} to show on all desktops: {e}")
         self.speak("Trash setup has been completed!")
 
     def setup_study(self):
