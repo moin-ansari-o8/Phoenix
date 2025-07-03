@@ -1055,6 +1055,30 @@ class Utility:
             if app.lower() == "explorer.exe":
                 subprocess.Popen(["explorer.exe"], shell=False)
                 self.speak("explorer has been restarted, sir!")
+            if app.lower() == "background python":
+                try:
+                    subprocess.run(
+                        ["taskkill", "/F", "/IM", "pythonw3.11.exe"], check=True
+                    )
+                    print("<=>")
+                except subprocess.CalledProcessError:
+                    print("<!>")
+                except Exception as e:
+                    print(f"<!>")
+                try:
+                    subprocess.run(["taskkill", "/F", "/IM", "pythonw.exe"], check=True)
+                    print("<=>")
+                except subprocess.CalledProcessError:
+                    print("<!>")
+                except Exception as e:
+                    print(f"<!>")
+                try:
+                    subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
+                    print("<=>")
+                except subprocess.CalledProcessError:
+                    print("<!>")
+                except Exception as e:
+                    print(f"<!>")
             else:
                 if spk:
                     self.speak(f"{app} is now closed.")
@@ -3243,10 +3267,13 @@ if __name__ == "__main__":
     #     )
     # utils.get_opened_windows()
     # utils.setup_trash()
-    utils.rockMsc(0.4)
+    # utils.rockMsc(0.4)
     # utils.setup_study()
     # utils.setup_alpha()
     # utils.folder_structure_generate()
+    openapp.open_app_if_running("cmd.exe")
+    utils.move_window(4)
+
     # utils.extra_desk_setup()
     # utils.desKtoP(4)
     # armourycrate_handle = utils.get_armoury_crate_handle()

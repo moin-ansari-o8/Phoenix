@@ -14,6 +14,7 @@ from helpers.TimeBasedHandlePHNX import (
     ReminderHandle,
     ScheduleHandle,
 )
+from NetMonitor.network_monitor import network_main
 import asyncio
 import websockets
 import asyncio
@@ -608,6 +609,9 @@ class PhoenixAssistant:
 
 
 if __name__ == "__main__":
+    threading.Thread(
+        target=network_main, daemon=True
+    ).start()  # Start the network monitor in the background
     root = tk.Tk()
     gui = VoiceAssistantGUI(root)
     recog = VoiceRecognition(gui)
@@ -630,9 +634,13 @@ if __name__ == "__main__":
     )
     # asutils.move_window(3)
     # asutils.desKtoP(3)
+    # asutils.move_window(4)
+    # asutils.desKtoP(4)
     asutils.speak("yo boss! shall i setup all the desktops?")
     res = asutils.take_command().lower()
     resList = res.split()
+    # opn.open_app_if_running("cmd.exe")
+    # asutils.move_window(4)
     # asutils.speak("Alrighty! Freshen up your mind for a while!")
     if "yes" in res or "yes please" in res or "please" in res:
         threading.Thread(target=asutils.rockMsc, args=(0.5, 40)).start()

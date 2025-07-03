@@ -33,18 +33,29 @@ def startup_phnx():
     utils.speak(utils.phN())
 
 
+import os
+import subprocess
+
+
 def launch_in_bg(file_path):
     if not os.path.isfile(file_path):
         print(f"⛔ File not found: {file_path}")
         return
 
-    if not file_path.endswith(".pyw"):
-        print(f"⚠️ Not a .pyw file: {file_path}")
-        return
+    ext = os.path.splitext(file_path)[1].lower()
 
     try:
-        subprocess.Popen(["pythonw", file_path], shell=True)
-        print(f"✅ Launched in bg: {os.path.basename(file_path)}")
+        if ext == ".pyw":
+            subprocess.Popen(["pythonw", file_path], shell=True)
+            print(f"✅ Launched .pyw in bg: {os.path.basename(file_path)}")
+        elif ext == ".py":
+            subprocess.Popen(["python", file_path], shell=True)
+            print(f"✅ Launched .py in bg: {os.path.basename(file_path)}")
+        elif ext == ".bat":
+            subprocess.Popen(["cmd.exe", "/c", file_path], shell=True)
+            print(f"✅ Launched .bat in bg: {os.path.basename(file_path)}")
+        else:
+            print(f"⚠️ Unsupported file type: {file_path}")
     except Exception as e:
         print(f"❌ Failed to launch {file_path}: {e}")
 
@@ -72,6 +83,19 @@ def load_phnx():
 def terminate_background_processes():
     try:
         subprocess.run(["taskkill", "/F", "/IM", "pythonw3.11.exe"], check=True)
+        print("<=>")
+    except subprocess.CalledProcessError:
+        print("<!>")
+    except Exception as e:
+        print(f"<!>")
+    try:
+        subprocess.run(["taskkill", "/F", "/IM", "pythonw.exe"], check=True)
+        print("<=>")
+    except subprocess.CalledProcessError:
+        print("<!>")
+    except Exception as e:
+        print(f"<!>")
+    try:
         subprocess.run(["taskkill", "/F", "/IM", "pyw.exe"], check=True)
         print("<=>")
     except subprocess.CalledProcessError:
