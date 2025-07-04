@@ -160,7 +160,9 @@ class UnifiedNetworkWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(
+            Qt.WA_TranslucentBackground
+        )  # Keep outer container transparent
         self.setAttribute(Qt.WA_AcceptTouchEvents)  # Enable touch events
 
         # Screen dimensions
@@ -223,6 +225,9 @@ class UnifiedNetworkWidget(QWidget):
         self.set_collapsed_state()
         self.load_position()  # Load saved position
 
+        # Ensure styling is properly applied after setup
+        self.update_inner_widget_style()
+
         # Update fonts after loading saved size
         self.update_title_font()
         self.update_label_fonts()
@@ -234,10 +239,23 @@ class UnifiedNetworkWidget(QWidget):
         self.show_launch_animation()
 
     def setup_ui(self):
-        """Setup the widget UI"""
+        """Setup the widget UI with container approach"""
+        # Main container layout (transparent)
+        container_layout = QVBoxLayout()
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
+
+        # Create inner widget (this will have the solid background)
+        self.inner_widget = QWidget()
+        self.inner_widget.setObjectName("inner_widget")
+        container_layout.addWidget(self.inner_widget)
+        self.setLayout(container_layout)
+
+        # Inner widget layout
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        self.inner_widget.setLayout(layout)
 
         # Create panel content (initially hidden)
         self.panel_content = QWidget()
@@ -332,24 +350,14 @@ class UnifiedNetworkWidget(QWidget):
         self.panel_content.hide()  # Initially hidden
 
         layout.addWidget(self.panel_content)
-        self.setLayout(layout)
 
         # Update fonts after all labels are created
         self.update_label_fonts()
 
     def setup_styling(self):
         """Setup widget styling with black/gray theme"""
-        self.setStyleSheet(
-            """
-            QLabel {
-                color: #E0E0E0;
-                background-color: transparent;
-            }
-            QFrame {
-                color: rgba(150, 150, 150, 100);
-            }
-        """
-        )
+        # Set initial styling for inner widget
+        self.update_inner_widget_style()
 
         # Style speed labels with colors
         self.upload_speed_label.setStyleSheet(
@@ -358,14 +366,10 @@ class UnifiedNetworkWidget(QWidget):
         self.download_speed_label.setStyleSheet(
             "color: #2196F3; background-color: transparent;"
         )
-        self.title_label.setStyleSheet("color: #FFFFFF; background-color: transparent;")
+        self.title_label.setStyleSheet("color: #B0B0B0; background-color: transparent;")
 
         # Set cursor
         self.setCursor(QCursor(Qt.PointingHandCursor))
-
-        # Disable automatic updates to prevent blinking
-        self.setAttribute(Qt.WA_OpaquePaintEvent, False)
-        self.setAttribute(Qt.WA_NoSystemBackground, True)
 
         # Position settings file
         self.position_file = os.path.join(
@@ -378,6 +382,9 @@ class UnifiedNetworkWidget(QWidget):
         self.setFixedSize(self.widget_width, self.widget_height)
         self.panel_content.hide()
 
+        # Update styling for collapsed state
+        self.update_inner_widget_style()
+
         # Stop network monitoring
         if self.update_timer.isActive():
             self.update_timer.stop()
@@ -387,6 +394,9 @@ class UnifiedNetworkWidget(QWidget):
         self.is_expanded = True
         self.setFixedSize(self.panel_width, self.panel_height)
         self.panel_content.show()
+
+        # Update styling for expanded state
+        self.update_inner_widget_style()
 
         # Update fonts to match current size
         self.update_title_font()
@@ -487,6 +497,9 @@ class UnifiedNetworkWidget(QWidget):
 
                 self.move(x, y)
 
+                # Update styling based on loaded state
+                self.update_inner_widget_style()
+
             else:
                 # No saved position, use default
                 self.position_widget()
@@ -497,82 +510,28 @@ class UnifiedNetworkWidget(QWidget):
             self.position_widget()
 
     def paintEvent(self, event):
-        """Custom paint event with edge-specific rounded corners"""
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        # Colors
-        bg_color = QColor(40, 40, 40, 180)  # Black with 70% opacity
-        border_color = QColor(100, 100, 100, 200)  # Gray border
-
-        if self.underMouse():
-            bg_color = QColor(60, 60, 60, 200)
-
-        # Create path for custom rounded corners
-        path = QPainterPath()
-        rect = self.rect()
-
-        if self.is_expanded:
-            # Expanded panel - edge-specific rounding
-            corner_radius = 12
-
-            if self.is_on_right:
-                # Right edge: round left corners, square right corners
-                path.moveTo(rect.right(), rect.top())
-                path.lineTo(rect.right(), rect.bottom())
-                path.lineTo(rect.left() + corner_radius, rect.bottom())
-                path.quadTo(
-                    rect.left(),
-                    rect.bottom(),
-                    rect.left(),
-                    rect.bottom() - corner_radius,
-                )
-                path.lineTo(rect.left(), rect.top() + corner_radius)
-                path.quadTo(
-                    rect.left(), rect.top(), rect.left() + corner_radius, rect.top()
-                )
-                path.lineTo(rect.right(), rect.top())
-            else:
-                # Left edge: round right corners, square left corners
-                path.moveTo(rect.left(), rect.top())
-                path.lineTo(rect.left(), rect.bottom())
-                path.lineTo(rect.right() - corner_radius, rect.bottom())
-                path.quadTo(
-                    rect.right(),
-                    rect.bottom(),
-                    rect.right(),
-                    rect.bottom() - corner_radius,
-                )
-                path.lineTo(rect.right(), rect.top() + corner_radius)
-                path.quadTo(
-                    rect.right(), rect.top(), rect.right() - corner_radius, rect.top()
-                )
-                path.lineTo(rect.left(), rect.top())
-        else:
-            # Collapsed widget - simple rounded rectangle
-            corner_radius = 6
-            rect_f = QRectF(rect)  # Convert QRect to QRectF
-            path.addRoundedRect(rect_f, corner_radius, corner_radius)
-
-        # Draw background
-        painter.fillPath(path, QBrush(bg_color))
-
-        # Draw border
-        painter.setPen(QPen(border_color, 2))
-        painter.drawPath(path)
-
-        # Draw indicator dots for collapsed state
+        """Custom paint event - draw indicator dots for collapsed state"""
         if not self.is_expanded:
-            painter.setBrush(QBrush(QColor(200, 200, 200, 150)))
+            # Draw dots with same color as border and 70% opacity
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.Antialiasing)
+
+            # Calculate dot positions
             dot_size = 2
             spacing = 6
             start_y = (self.height() - (3 * dot_size + 2 * spacing)) // 2
 
+            # Use same color as border with 70% opacity (120, 120, 120, 180)
+            dot_color = QColor(120, 120, 120, 180)  # 70% opacity
+
             for i in range(3):
                 y = start_y + i * (dot_size + spacing)
-                painter.drawEllipse(
-                    self.width() // 2 - dot_size // 2, y, dot_size, dot_size
-                )
+                x = self.width() // 2 - dot_size // 2
+
+                # Draw the dot with same color as border
+                painter.setBrush(QBrush(dot_color))
+                painter.setPen(QPen(dot_color, 1))
+                painter.drawEllipse(x, y, dot_size, dot_size)
 
     def mousePressEvent(self, event):
         """Handle mouse press for dragging and resizing"""
@@ -656,7 +615,12 @@ class UnifiedNetworkWidget(QWidget):
             center_x = current_pos.x() + self.widget_width // 2
 
         # Determine which edge is closer
+        old_is_on_right = self.is_on_right
         self.is_on_right = center_x > self.screen_width // 2
+
+        # Update styling if edge changed
+        if old_is_on_right != self.is_on_right:
+            self.update_inner_widget_style()
 
         # Animate to proper position
         self.animate_to_edge()
@@ -750,18 +714,62 @@ class UnifiedNetworkWidget(QWidget):
             self.download_speed_label.setText(download_text)
 
     def show_launch_animation(self):
-        """Show initial launch animation"""
+        """Show initial launch animation with sliding transition"""
         # Start in expanded state for 5 seconds
         self.set_expanded_state()
+
+        # Ensure styling is applied immediately after setting expanded state
+        self.update_inner_widget_style()
 
         # Update fonts to match the loaded size
         self.update_title_font()
         self.update_label_fonts()
 
-        self.position_widget()
+        # Calculate final position
+        if self.is_on_right:
+            final_x = self.screen_width - self.panel_width - 10
+        else:
+            final_x = 10
+
+        # Center vertically or maintain current Y if possible
+        current_y = (
+            self.y()
+            if hasattr(self, "y") and self.y() > 0
+            else (self.screen_height - self.panel_height) // 2
+        )
+        final_y = max(0, min(current_y, self.screen_height - self.panel_height))
+
+        # Start position (off-screen)
+        if self.is_on_right:
+            start_x = self.screen_width  # Start from right edge, off-screen
+        else:
+            start_x = -self.panel_width  # Start from left edge, off-screen
+
+        # Set initial position off-screen
+        self.move(start_x, final_y)
+
+        # Force style updates to take effect before showing
+        self.repaint()
+        QApplication.processEvents()
+
         self.show()
 
-        # Set timer to collapse after 5 seconds
+        # Create slide-in animation
+        self.slide_animation = QPropertyAnimation(self, b"geometry")
+        self.slide_animation.setDuration(600)  # 600ms slide duration
+        self.slide_animation.setEasingCurve(QEasingCurve.OutCubic)
+
+        # Set start and end rectangles for animation
+        start_rect = QRect(start_x, final_y, self.panel_width, self.panel_height)
+        end_rect = QRect(final_x, final_y, self.panel_width, self.panel_height)
+
+        self.slide_animation.setStartValue(start_rect)
+        self.slide_animation.setEndValue(end_rect)
+
+        # Start the slide animation
+        self.slide_animation.start()
+
+        # Set timer to collapse after 5 seconds (starts after animation begins)
         self.launch_timer.start(5000)
 
     def initial_collapse(self):
@@ -1025,6 +1033,60 @@ class UnifiedNetworkWidget(QWidget):
         """Handle close button click - terminate the application"""
         self.save_position()
         QApplication.instance().quit()
+
+    def update_inner_widget_style(self):
+        """Update inner widget style based on expanded state and edge position"""
+        if self.is_expanded:
+            # Expanded panel - edge-specific rounding with solid background
+            if self.is_on_right:
+                # Right edge: round left corners, square right corners
+                border_radius = "border-top-left-radius: 12px; border-bottom-left-radius: 12px; border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+            else:
+                # Left edge: round right corners, square left corners
+                border_radius = "border-top-right-radius: 12px; border-bottom-right-radius: 12px; border-top-left-radius: 0px; border-bottom-left-radius: 0px;"
+
+            # Apply solid background style for expanded state
+            self.inner_widget.setStyleSheet(
+                f"""
+                QWidget#inner_widget {{
+                    background-color: rgb(55, 55, 55);
+                    border: 2px solid rgb(100, 100, 100);
+                    {border_radius}
+                }}
+                QWidget#inner_widget:hover {{
+                    background-color: rgb(70, 70, 70);
+                }}
+                QLabel {{
+                    color: #C0C0C0;
+                    background-color: transparent;
+                }}
+                QFrame {{
+                    color: rgba(120, 120, 120, 150);
+                }}
+            """
+            )
+        else:
+            # Collapsed widget - transparent background with border, dots and border same color
+            self.inner_widget.setStyleSheet(
+                """
+                QWidget#inner_widget {
+                    background-color: transparent;
+                    border: 1px solid rgba(120, 120, 120, 180);
+                    border-radius: 6px;
+                }
+                QLabel {
+                    color: #C0C0C0;
+                    background-color: transparent;
+                }
+                QFrame {
+                    color: rgba(120, 120, 120, 150);
+                }
+            """
+            )
+
+        # Force immediate style update
+        self.inner_widget.style().polish(self.inner_widget)
+        self.inner_widget.update()
 
 
 class NetworkMonitorApp(QApplication):
