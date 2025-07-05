@@ -263,7 +263,7 @@ class UnifiedNetworkWidget(QWidget):
         panel_layout.setContentsMargins(15, 12, 15, 15)
         panel_layout.setSpacing(8)
 
-        # Title with close button
+        # Title with toggle and close button
         title_container = QHBoxLayout()
         title_container.setContentsMargins(0, 0, 0, 0)
         title_container.setSpacing(5)
@@ -276,6 +276,16 @@ class UnifiedNetworkWidget(QWidget):
             self.title_label.sizePolicy().Expanding,
             self.title_label.sizePolicy().Preferred,
         )
+
+        # Auto-expand toggle button (radio-style)
+        self.toggle_button = QLabel("●")
+        self.toggle_button.setFixedSize(16, 16)
+        self.toggle_button.setAlignment(Qt.AlignCenter)
+        self.hover_expand_enabled = True  # Default: hover expand enabled
+        self.update_toggle_button_style()
+        self.toggle_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.toggle_button.mousePressEvent = self.toggle_hover_expand
+        self.toggle_button.setToolTip("Toggle hover expand (●=on, ○=off)")
 
         # Close button
         self.close_button = QLabel("×")
@@ -304,6 +314,7 @@ class UnifiedNetworkWidget(QWidget):
         title_container.addWidget(
             self.title_label, 1
         )  # Give title label stretch factor of 1
+        title_container.addWidget(self.toggle_button, 0)  # Add toggle button
         title_container.addWidget(self.close_button, 0)  # Give close button no stretch
         panel_layout.addLayout(title_container)
 
@@ -441,7 +452,7 @@ class UnifiedNetworkWidget(QWidget):
         self.move(x, y)
 
     def save_position(self):
-        """Save current widget position, size, and state to file"""
+        """Save current widget position, size, state, and preferences to file"""
         try:
             position_data = {
                 "x": self.x(),
@@ -450,6 +461,7 @@ class UnifiedNetworkWidget(QWidget):
                 "height": self.panel_height,
                 "is_on_right": self.is_on_right,
                 "is_expanded": self.is_expanded,
+                "hover_expand_enabled": self.hover_expand_enabled,
             }
 
             with open(self.position_file, "w") as f:
@@ -459,7 +471,7 @@ class UnifiedNetworkWidget(QWidget):
             print(f"Error saving position: {e}")
 
     def load_position(self):
-        """Load widget position, size, and state from file"""
+        """Load widget position, size, state, and preferences from file"""
         try:
             if os.path.exists(self.position_file):
                 with open(self.position_file, "r") as f:
@@ -467,6 +479,11 @@ class UnifiedNetworkWidget(QWidget):
 
                 # Restore edge preference
                 self.is_on_right = position_data.get("is_on_right", True)
+
+                # Restore hover expand preference
+                self.hover_expand_enabled = position_data.get(
+                    "hover_expand_enabled", True
+                )
 
                 # Restore panel size with bounds checking
                 saved_width = position_data.get("width", self.panel_width)
@@ -499,6 +516,10 @@ class UnifiedNetworkWidget(QWidget):
 
                 # Update styling based on loaded state
                 self.update_inner_widget_style()
+
+                # Update toggle button style after loading preference
+                if hasattr(self, "toggle_button"):
+                    self.update_toggle_button_style()
 
             else:
                 # No saved position, use default
@@ -600,10 +621,13 @@ class UnifiedNetworkWidget(QWidget):
                 # No need to restart auto-collapse timer since we use hover
                 # Position will be saved automatically by animate_to_edge
             else:
-                # We weren't dragging or resizing - check if we should collapse
+                # We weren't dragging or resizing - handle click behavior
                 if self.is_expanded:
-                    # Click to collapse when expanded
+                    # Click to collapse when expanded (always works)
                     self.collapse_widget()
+                elif not self.hover_expand_enabled:
+                    # Click to expand when hover expand is disabled
+                    self.expand_widget()
 
     def snap_to_edge(self):
         """Snap widget to nearest edge"""
@@ -1017,15 +1041,25 @@ class UnifiedNetworkWidget(QWidget):
         # Stop any pending collapse timer
         self.hover_delay_timer.stop()
 
-        # Only expand if not already expanded and not in middle of operations
-        if not self.is_expanded and not self.dragging and not self.resizing:
+        # Only expand if hover expand is enabled, not already expanded, and not in middle of operations
+        if (
+            self.hover_expand_enabled
+            and not self.is_expanded
+            and not self.dragging
+            and not self.resizing
+        ):
             self.expand_widget()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         """Handle mouse leave events to start collapse timer"""
-        # Don't collapse immediately - start 10 second timer
-        if self.is_expanded and not self.dragging and not self.resizing:
+        # Only auto-collapse if hover expand is enabled
+        if (
+            self.hover_expand_enabled
+            and self.is_expanded
+            and not self.dragging
+            and not self.resizing
+        ):
             self.hover_delay_timer.start(10000)  # 10 seconds delay
         super().leaveEvent(event)
 
@@ -1087,6 +1121,43 @@ class UnifiedNetworkWidget(QWidget):
         # Force immediate style update
         self.inner_widget.style().polish(self.inner_widget)
         self.inner_widget.update()
+
+    def update_toggle_button_style(self):
+        """Update toggle button style based on hover expand state"""
+        if self.hover_expand_enabled:
+            # Filled circle (●) when hover expand is enabled
+            color = "#4CAF50"  # Green
+            symbol = "●"
+        else:
+            # Empty circle (○) when hover expand is disabled
+            color = "#757575"  # Gray
+            symbol = "○"
+
+        self.toggle_button.setText(symbol)
+        self.toggle_button.setStyleSheet(
+            f"""
+            QLabel {{
+                color: {color};
+                background-color: transparent;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: bold;
+                border: 1px solid transparent;
+            }}
+            QLabel:hover {{
+                background-color: rgba(117, 117, 117, 20);
+                border: 1px solid rgba(117, 117, 117, 50);
+            }}
+        """
+        )
+
+    def toggle_hover_expand(self, event):
+        """Toggle the hover expand functionality"""
+        self.hover_expand_enabled = not self.hover_expand_enabled
+        self.update_toggle_button_style()
+
+        # Save the preference
+        self.save_position()
 
 
 class NetworkMonitorApp(QApplication):
