@@ -63,9 +63,9 @@ def launch_in_bg(file_path):
 def load_phnx():
     # sleep(3)
     paths = [
-        "C:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
-        "C:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
-        # "C:\\STDY\\GIT_PROJECTS\\Phoenix\\batch\\main.bat",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
+        # "C:\\STDY\\MYAIS\\Phoenix\\batch\\main.bat",
     ]
     for path in paths:
         launch_in_bg(path)

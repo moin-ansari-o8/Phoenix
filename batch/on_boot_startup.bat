@@ -1,8 +1,6 @@
 @echo off
 echo "phoenix is starting..."
-cd /d C:\STDY\GIT_PROJECTS\Phoenix
-REM Activate virtual environment
-call .venv\Scripts\activate
-
-start "" /B python load.py
+cd /d C:\STDY\MYAIS\Phoenix
+REM Use virtual environment python directly instead of activating
+start "" /B .venv\Scripts\python.exe load.py
 exit

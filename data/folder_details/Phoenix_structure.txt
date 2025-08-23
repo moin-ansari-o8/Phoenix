@@ -137,9 +137,9 @@ def launch_in_bg(file_path):
 def load_phnx():
     # sleep(3)
     paths = [
-        "C:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
-        "C:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
-        # "C:\\STDY\\GIT_PROJECTS\\Phoenix\\batch\\main.bat",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
+        # "C:\\STDY\\MYAIS\\Phoenix\\batch\\main.bat",
     ]
     for path in paths:
         launch_in_bg(path)
@@ -954,18 +954,18 @@ def sort_methods_and_dicts_in_file(file_path):
     print(f"Sorted file created: {new_file_path}")
 
 
-file_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\HelperPhoenix.py"
+file_path = "E:\\STDY\\MYAIS\\Phoenix\\HelperPhoenix.py"
 sort_methods_and_dicts_in_file(file_path)
 
 
 6. batch\main.bat ::
-cd C:\STDY\GIT_PROJECTS\Phoenix
+cd C:\STDY\MYAIS\Phoenix
 
 python MainPHNX.py
 
 7. batch\on_boot_startup.bat ::
 @echo off
-cd /d C:\STDY\GIT_PROJECTS\Phoenix
+cd /d C:\STDY\MYAIS\Phoenix
 start "" /B pythonw load.py
 exit
 
@@ -6533,10 +6533,10 @@ class Utility:
         self._open_with_win("win", "5", 2)
 
     def open_phoenix_folder(self):
-        self._open_with_path("C:\\STDY\\GIT_PROJECTS\\Phoenix\\", 1)
+        self._open_with_path("C:\\STDY\\MYAIS\\Phoenix\\", 1)
 
     def open_quick_conf(self):
-        self._open_with_path("C:\\STDY\\GIT_PROJECTS\\Phoenix\\batch\\quick.bat", 1)
+        self._open_with_path("C:\\STDY\\MYAIS\\Phoenix\\batch\\quick.bat", 1)
         pg.keyDown("win")
         pg.press("up")
         pg.keyUp("win")
@@ -7954,7 +7954,7 @@ class Utility:
             "test-results",
         }
         # Output directory
-        self.output_dir = r"C:\STDY\GIT_PROJECTS\Phoenix\data\folder_details"
+        self.output_dir = r"C:\STDY\MYAIS\Phoenix\data\folder_details"
 
         def ensure_output_dir():
             """Ensure the output directory exists, create it if it doesn't."""
@@ -8122,13 +8122,13 @@ if __name__ == "__main__":
 REM Check if the first argument is "start"
 if "%1" == "start" (
     echo "phoenix is starting..."
-    cd /d C:\STDY\GIT_PROJECTS\Phoenix
+    cd /d C:\STDY\MYAIS\Phoenix
     start "" /B pythonw load.py
     exit
 ) else if "%1" == "main" (
     echo "just MainPHNX is starting..."
     
-    cd C:\STDY\GIT_PROJECTS\Phoenix
+    cd C:\STDY\MYAIS\Phoenix
     python MainPHNX.py
 ) else (
     echo Invalid command. Use "phoenix start/main" to run the program.
@@ -8266,7 +8266,7 @@ def match_input(input_string, tag_to_patterns):
 
 if __name__ == "__main__":
     # Path to your intents.json file
-    file_path = "E:\\STDY\\GIT_PROJECTS\\Phoenix\\data\\intents.json"
+    file_path = "E:\\STDY\\MYAIS\\Phoenix\\data\\intents.json"
     
     # Load and preprocess intents
     intents = load_intents(file_path)
@@ -8460,7 +8460,7 @@ if __name__ == "__main__":
 #         print(f"Oopsie! Couldn't launch: {e}")
 
 # # Replace with the path to your .pyw file
-# launch_pyw_in_bg("C:\\STDY\\GIT_PROJECTS\\Phoenix\\bgprogs\\BgTmPHNX.pyw")
+# launch_pyw_in_bg("C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgTmPHNX.pyw")
 # --------------------------------------------------------------------
 import win32gui
 import win32con
@@ -9386,7 +9386,7 @@ if __name__ == "__main__":
 # -----------------------------------------------------------------------------------------------
 # import json
 
-# file = r"E:\STDY\GIT_PROJECTS\Phoenix\data\intents.json"
+# file = r"E:\STDY\MYAIS\Phoenix\data\intents.json"
 
 # with open(file, "r") as f:
 #     data = json.load(f)
@@ -9482,7 +9482,7 @@ if __name__ == "__main__":
 # # Example Usage
 # if __name__ == "__main__":
 #     # Path to your JSON file
-#     json_file = "C:\\STDY\\GIT_PROJECTS\\Phoenix\\data\\intents.json"
+#     json_file = "C:\\STDY\\MYAIS\\Phoenix\\data\\intents.json"
 
 #     # Create utility and intent handler instances
 #     utility = Utility()

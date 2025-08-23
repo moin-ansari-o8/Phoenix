@@ -16,8 +16,11 @@ class SpeechEngine:
     def __init__(self):
         self.engine = pyttsx3.init("sapi5")
         voices = self.engine.getProperty("voices")
-        self.engine.setProperty("voice", voices[1].id)
+        self.engine.setProperty(
+            "voice", voices[1].id
+        )  # Try Zira voice instead of David
         self.engine.setProperty("rate", 174)
+        self.engine.setProperty("volume", 1.0)
         # self.engine.setProperty("volume", 1.0)
         # self.lock = threading.Lock()
         self.honorifics = True
@@ -32,36 +35,38 @@ class SpeechEngine:
         Thread-safe method to handle text-to-speech.
         """
         self.engine.setProperty("rate", speed)
-        # with self.lock:
-        replacements = [
-            "boss",
-            "captain",
-            "commander",
-            "my lord",
-            "your highness",
-            "your majesty",
-            "my liege",
-            "your grace",
-            "sir",
-            "boss",
-            "master",
-            "sensei",
-        ]
+        try:
+            # with self.lock:
+            replacements = [
+                "boss",
+                "captain",
+                "commander",
+                "my lord",
+                "your majesty",
+                "my liege",
+                "your grace",
+                "sir",
+                "boss",
+                "master",
+                "sensei",
+            ]
 
-        for punctuation in ["", "?", "!", ".", " "]:
-            if f" sir{punctuation}" in audio:
-                if self.honorifics:
-                    replacement = random.choice(replacements)
-                    audio = audio.replace(
-                        f"sir{punctuation}", f"{replacement}{punctuation}"
-                    )
-                    threading.Thread(target=self._manage_honorifics).start()
-                    break
-                else:
-                    audio = audio.replace(f"sir{punctuation}", "")
-        self.engine.say(audio)
-        print(f"$ : {audio}")
-        self.engine.runAndWait()
+            for punctuation in ["", "?", "!", ".", " "]:
+                if f" sir{punctuation}" in audio:
+                    if self.honorifics:
+                        replacement = random.choice(replacements)
+                        audio = audio.replace(
+                            f"sir{punctuation}", f"{replacement}{punctuation}"
+                        )
+                        threading.Thread(target=self._manage_honorifics).start()
+                        break
+                    else:
+                        audio = audio.replace(f"sir{punctuation}", "")
+            self.engine.say(audio)
+            print(f"$ : {audio}")
+            self.engine.runAndWait()
+        except Exception as e:
+            print(f"SpeechEngine Error: {e}")
         return
 
     def threadedSpeak(self, audio):

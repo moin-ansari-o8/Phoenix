@@ -1690,10 +1690,10 @@ class Utility:
         self._open_with_win("win", "5", 2)
 
     def open_phoenix_folder(self):
-        self._open_with_path("C:\\STDY\\GIT_PROJECTS\\Phoenix\\", 1)
+        self._open_with_path("C:\\STDY\\MYAIS\\Phoenix\\", 1)
 
     def open_quick_conf(self):
-        self._open_with_path("C:\\STDY\\GIT_PROJECTS\\Phoenix\\batch\\quick.bat", 1)
+        self._open_with_path("C:\\STDY\\MYAIS\\Phoenix\\batch\\quick.bat", 1)
         pg.keyDown("win")
         pg.press("up")
         pg.keyUp("win")
@@ -3114,7 +3114,7 @@ class Utility:
             "test-results",
         }
         # Output directory
-        self.output_dir = r"C:\STDY\GIT_PROJECTS\Phoenix\data\folder_details"
+        self.output_dir = r"C:\STDY\MYAIS\Phoenix\data\folder_details"
 
         def ensure_output_dir():
             """Ensure the output directory exists, create it if it doesn't."""
