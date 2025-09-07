@@ -154,7 +154,7 @@ class OpenAppHandler:
             try:
                 # Attempt to activate the first matching window
                 print(windows)
-                # if windows[0].isActive() is False:
+                # if windows[0].isActive() is False:+
                 windows[0].activate()
                 print(f"{app_name} is open. Bringing it to focus.")
                 return True
@@ -1873,7 +1873,7 @@ class Utility:
         video_url = search.results[0].watch_url
         print(f"Playing: {video_url}")
         webbrowser.open(video_url)
-        sleep(3)
+        sleep(6)
         self.minimize_window()
 
     def press(self, key, times):

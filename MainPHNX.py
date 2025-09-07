@@ -374,6 +374,7 @@ class PhoenixAssistant:
         self.reload = False
         sleep(90)
         self.reload = True
+        return
 
     def cls_and_print_phnx(self):
         """
@@ -381,6 +382,7 @@ class PhoenixAssistant:
         """
         os.system("cls" if os.name == "nt" else "clear")
         self.print_phoenix()
+        return
         # return True
         # if self.print_phoenix():
         #     sleep(1)
@@ -392,6 +394,7 @@ class PhoenixAssistant:
             for part in parts:
                 if part:
                     self.main(part)
+                    return True
         else:
             self.loop = False
 
