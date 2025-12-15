@@ -17,7 +17,7 @@ class SpeechEngine:
         self.engine = pyttsx3.init("sapi5")
         voices = self.engine.getProperty("voices")
         self.engine.setProperty(
-            "voice", voices[1].id
+            "voice", voices[2].id
         )  # Try Zira voice instead of David
         self.engine.setProperty("rate", 174)
         self.engine.setProperty("volume", 1.0)

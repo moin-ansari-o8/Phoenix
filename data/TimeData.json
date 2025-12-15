@@ -1,5 +1,20 @@
 {
-    "alarms": [],
+    "alarms": [
+        {
+            "id": "A_b74ab4",
+            "ringAlarm": [
+                null,
+                null
+            ],
+            "label": "alarm",
+            "day": [
+                "TODAY"
+            ],
+            "repeat": "once",
+            "ringed": 0,
+            "delete": false
+        }
+    ],
     "timers": [],
     "reminders": [],
     "schedule": [
