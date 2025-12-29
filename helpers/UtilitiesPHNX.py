@@ -937,7 +937,7 @@ class Utility:
         Automates the process of opening Armory Crate application
         and performing specific actions within it.
         """
-        self.desKtoP(3)
+        self.desKtoP(1)
         sleep(1)
         pg.keyDown("win")
         pg.press("7")
@@ -1363,7 +1363,7 @@ class Utility:
             "Time for me to power down. See ya, sir !",
         ]
         hibi = random.choice(hib)
-        self.desKtoP(3)
+        self.desKtoP(1)
         self.speak(hibi)
         os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
         sleep(60)
@@ -1480,7 +1480,7 @@ class Utility:
         elif "alpha" in dt or "1" in dt or "one" in dt or ("first" in dt):
             self.desKtoP(2)
         elif "extra" in dt or "2" in dt or "two" in dt or ("second" in dt):
-            self.desKtoP(3)
+            self.desKtoP(1)
         elif "trash" in dt or "3" in dt or "three" in dt or ("third" in dt):
             self.desKtoP(4)
         self.speak("Done, sir !")
@@ -1588,7 +1588,7 @@ class Utility:
         return app_name
 
     def open_brave(self):
-        self.desKtoP(3)
+        self.desKtoP(1)
         self._click_at_position(500, 500)
         self._open_with_win("win", "2")
         sleep(1)
@@ -1611,7 +1611,7 @@ class Utility:
         self._open_with_win("win", "w")
 
     def open_music(self):
-        self.desKtoP(3)
+        self.desKtoP(1)
         pg.press("win")
         sleep(1)
         keyboard.write("music")
@@ -1662,7 +1662,7 @@ class Utility:
         self._open_drive("G", 2)
 
     def open_study_desk(self):
-        self.desKtoP(3)
+        self.desKtoP(1)
 
     def open_alpha_desk(self):
         self.desKtoP(2)
@@ -1905,7 +1905,7 @@ class Utility:
     def restarT(self):
         res = ["Restarting the pc."]
         resi = random.choice(res)
-        self.desKtoP(3)
+        self.desKtoP(1)
         pg.keyDown("win")
         sleep(1)
         pg.press("d")
@@ -2159,7 +2159,7 @@ class Utility:
         ]
         shti1 = random.choice(sht1)
         shti2 = random.choice(sht2)
-        self.desKtoP(3)
+        self.desKtoP(1)
         self.speak(shti1)
         os.system("shutdown /s")
         self.close_perticular_app("Arc.exe", spk=False)
@@ -2523,7 +2523,7 @@ class Utility:
             STICKY_NOTES_COUNT = 2
 
             # Switch to the 3rd desktop
-            self.desKtoP(3)
+            self.desKtoP(1)
 
             # --- Step 1: Define the Required Windows ---
             required_windows = {
@@ -3070,7 +3070,7 @@ class Utility:
     def setup_study(self):
         """Check for Visual Studio Code window, focus if found, or open via Windows search."""
         # sleep(2)
-        self.desKtoP(3)
+        self.desKtoP(1)
         self.launch_app("Visual Studio Code")
         self.speak("Study setup has been completed!")
 
