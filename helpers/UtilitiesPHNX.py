@@ -16,7 +16,11 @@ import webbrowser
 from plyer import notification
 from pytube import Search
 import psutil
-import pyaudio
+
+try:
+    import pyaudio
+except ImportError:
+    pyaudio = None
 import wave
 import tkinter as tk
 import psutil
@@ -39,7 +43,10 @@ from pyvda import AppView, VirtualDesktop, get_virtual_desktops
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 temp_stdout = sys.stdout
 sys.stdout = open(os.devnull, "w")
-import pygame
+try:
+    import pygame
+except ImportError:
+    pygame = None
 
 sys.stdout.close()
 sys.stdout = temp_stdout

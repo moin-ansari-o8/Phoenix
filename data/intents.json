@@ -1929,6 +1929,77 @@
         "set volume two"
       ],
       "responses": ["okay, sir ", "on it, sir "]
+    },
+    {
+      "tag": "project-update",
+      "patterns": [
+        "i am working on",
+        "working on project",
+        "update project",
+        "i completed",
+        "i finished",
+        "finished working on",
+        "done with",
+        "completed the"
+      ],
+      "responses": ["Noted, sir!", "Project updated!", "Got it!"]
+    },
+    {
+      "tag": "project-query",
+      "patterns": [
+        "what projects am i working on",
+        "show my projects",
+        "project list",
+        "tell me about project",
+        "project status",
+        "what's the status of"
+      ],
+      "responses": ["Let me check that for you."]
+    },
+    {
+      "tag": "goal-update",
+      "patterns": [
+        "i did",
+        "i completed",
+        "goal progress",
+        "update goal",
+        "i practiced",
+        "i made"
+      ],
+      "responses": ["Great progress!", "Well done, sir!"]
+    },
+    {
+      "tag": "goal-query",
+      "patterns": [
+        "show my goals",
+        "what goals",
+        "goal status",
+        "how much progress",
+        "tell me about my goal"
+      ],
+      "responses": ["Here's your goal status."]
+    },
+    {
+      "tag": "todo-add",
+      "patterns": [
+        "add to todo",
+        "add task",
+        "remind me to",
+        "i need to",
+        "add to my list"
+      ],
+      "responses": ["Added to your list!", "Task noted!"]
+    },
+    {
+      "tag": "todo-query",
+      "patterns": [
+        "what are my todos",
+        "show todos",
+        "what do i need to do",
+        "my tasks",
+        "pending tasks"
+      ],
+      "responses": ["Here are your pending tasks."]
     }
   ]
 }
