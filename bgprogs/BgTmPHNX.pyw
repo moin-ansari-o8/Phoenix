@@ -36,6 +36,7 @@ class HandleBgProcess:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.withdraw()  # Hide the GUI window since it's not needed for background process
     gui = VoiceAssistantGUI(root)
     recog = VoiceRecognition(gui)
     spk = SpeechEngine()
@@ -46,7 +47,7 @@ if __name__ == "__main__":
         timer_manager=TimerManager(spk),
         alarm_manager=AlarmManager(spk, alarm_handle=AlarmHandle(asutils)),
         schedule_manager=ScheduleManager(spk),
-        reminder_manager=ReminderManager(spk),
+        reminder_manager=ReminderManager(asutils),
     )
     bg_process = HandleBgProcess(time_based_all)
     bg_process.main()
