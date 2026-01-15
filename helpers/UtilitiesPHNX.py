@@ -396,15 +396,14 @@ class Utility:
         "y",
     ]
     BYE = [
-        "Alrighty, I'm out! Catch you later, sir !",
+        "Catch you later, sir !",
         "I'm off now. See ya soon, sir !",
-        "Later, sir ! I'm signing off.",
+        "Later sir ! I'm signing off.",
         "Peace out! I'm logging off.",
         "Adios Señor! Until we meet again!",
         "Shutting down now. Take care, sir !",
         "Take care! Goodbye, sir !",
         "Take care! See you next time, sir !",
-        "Time for me to power down. See ya, sir !",
     ]
     DEFAULT_LAT = 22.555536875728677
     DEFAULT_LON = 72.9296426402413

@@ -43,10 +43,14 @@ def launch_in_bg(file_path):
         return
 
     ext = os.path.splitext(file_path)[1].lower()
-    
+
     # Use venv python
-    venv_python = os.path.join(os.path.dirname(__file__), ".venv", "Scripts", "python.exe")
-    venv_pythonw = os.path.join(os.path.dirname(__file__), ".venv", "Scripts", "pythonw.exe")
+    venv_python = os.path.join(
+        os.path.dirname(__file__), ".venv", "Scripts", "python.exe"
+    )
+    venv_pythonw = os.path.join(
+        os.path.dirname(__file__), ".venv", "Scripts", "pythonw.exe"
+    )
 
     try:
         if ext == ".pyw":
@@ -74,7 +78,7 @@ def load_phnx():
     for path in paths:
         launch_in_bg(path)
         sleep(0.5)
-    utils.desKtoP(4)
+    utils.desKtoP(1)
     pg.keyDown("win")
     pg.press("r")
     pg.keyUp("win")
