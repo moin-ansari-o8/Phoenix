@@ -105,14 +105,33 @@ def terminate_background_processes():
 
 
 def main():
-    try:
-        terminate_background_processes()
-        startup_phnx()
-        load_phnx()
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        sleep(1)
-        main()
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            terminate_background_processes()
+            startup_phnx()
+            load_phnx()
+            break  # Success, exit loop
+        except KeyboardInterrupt:
+            print("\n\nPhoenix startup cancelled by user.")
+            sys.exit(0)
+        except Exception as e:
+            retry_count += 1
+            print(f"An error occurred during startup (attempt {retry_count}/{max_retries}): {e}")
+            if retry_count < max_retries:
+                print(f"Retrying in 2 seconds...")
+                sleep(2)
+            else:
+                print("\nFailed to start Phoenix after multiple attempts.")
+                print("Please check:")
+                print("1. Python environment is properly configured")
+                print("2. All dependencies are installed")
+                print("3. Background processes are not conflicting")
+                import traceback
+                traceback.print_exc()
+                sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -592,23 +592,37 @@ class Utility:
             print(f"Simulated interaction failed: {e}")
 
     def tot_desk(self):
-        number_of_active_desktops = len(get_virtual_desktops())
-        print(f"There are {number_of_active_desktops} active desktops")
+        try:
+            number_of_active_desktops = len(get_virtual_desktops())
+            print(f"There are {number_of_active_desktops} active desktops")
+        except Exception as e:
+            print(f"Warning: Could not get virtual desktops count (COM/RPC error): {e}")
+            print("Defaulting to 1 desktop...")
 
     def get_cur_desk(self):
-        self._click_at_position(500, 500)
-        sleep(1)
-        self._click_at_position(500, 500)
-        current_desktop = VirtualDesktop.current()
-        desk = current_desktop.number  # for the utility open desktop
-        name = current_desktop.name
-        return desk, name
+        try:
+            self._click_at_position(500, 500)
+            sleep(1)
+            self._click_at_position(500, 500)
+            current_desktop = VirtualDesktop.current()
+            desk = current_desktop.number  # for the utility open desktop
+            name = current_desktop.name
+            return desk, name
+        except Exception as e:
+            # Handle RPC server unavailable or other COM errors gracefully
+            print(f"Warning: Could not get current desktop (COM/RPC error): {e}")
+            print("Continuing with default desktop values...")
+            return 0, "Desktop 1"  # Safe fallback values
 
     def move_cur_window_to_desk(self, desk, desk_name):
-        current_window = AppView.current()
-        target_desktop = VirtualDesktop(desk)
-        current_window.move(target_desktop)
-        print(f"Moved current window to {desk_name}")
+        try:
+            current_window = AppView.current()
+            target_desktop = VirtualDesktop(desk)
+            current_window.move(target_desktop)
+            print(f"Moved current window to {desk_name}")
+        except Exception as e:
+            print(f"Warning: Could not move window to {desk_name} (COM/RPC error): {e}")
+            print("Continuing without window move...")
 
     @staticmethod
     def get_active_window_info():

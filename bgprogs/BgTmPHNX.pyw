@@ -27,26 +27,44 @@ class HandleBgProcess:
 
     def main(self):
         previous_hour = datetime.datetime.now().hour
-        self.tm.clear_time_data()
+        try:
+            self.tm.clear_time_data()
+        except Exception as e:
+            print(f"Warning: Could not clear time data: {e}")
+        
         while True:
-            self.tm.main_time()
-            previous_hour = self.tm.spk_time(previous_hour)
+            try:
+                self.tm.main_time()
+                previous_hour = self.tm.spk_time(previous_hour)
+            except KeyboardInterrupt:
+                print("\nBackground time process stopped by user.")
+                break
+            except Exception as e:
+                print(f"Error in background time process: {e}")
+                print("Continuing...")
+                # Continue running despite errors
             time.sleep(1)
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    gui = VoiceAssistantGUI(root)
-    recog = VoiceRecognition(gui)
-    spk = SpeechEngine()
-    asutils = Utility(reco=recog, spk=spk)
+    try:
+        root = tk.Tk()
+        gui = VoiceAssistantGUI(root)
+        recog = VoiceRecognition(gui)
+        spk = SpeechEngine()
+        asutils = Utility(reco=recog, spk=spk)
 
-    time_based_all = HandleTimeBasedFunctions(
-        utility=asutils,
-        timer_manager=TimerManager(spk),
-        alarm_manager=AlarmManager(spk, alarm_handle=AlarmHandle(asutils)),
-        schedule_manager=ScheduleManager(spk),
-        reminder_manager=ReminderManager(spk),
-    )
-    bg_process = HandleBgProcess(time_based_all)
-    bg_process.main()
+        time_based_all = HandleTimeBasedFunctions(
+            utility=asutils,
+            timer_manager=TimerManager(spk),
+            alarm_manager=AlarmManager(spk, alarm_handle=AlarmHandle(asutils)),
+            schedule_manager=ScheduleManager(spk),
+            reminder_manager=ReminderManager(spk),
+        )
+        bg_process = HandleBgProcess(time_based_all)
+        bg_process.main()
+    except Exception as e:
+        print(f"CRITICAL ERROR: Background time process failed to start: {e}")
+        print("Please check your Python environment and dependencies.")
+        import traceback
+        traceback.print_exc()

@@ -93,16 +93,24 @@ class PhoenixAssistant:
         }
         for func, tags in common_tags.items():
             if tag in tags:
-                if func == self.utility.sleep_phnx or func == self.hib_phnx:
-                    func()
-                elif func == self.utility.perform_window_action:
-                    func(tag)
-                elif func == self.utility.move_direction:
-                    func(tag, query)
-                elif func == self.utility.handle_whatis_whois:
-                    func(query)
-                else:
-                    func(tag, self.tag_response)
+                try:
+                    if func == self.utility.sleep_phnx or func == self.hib_phnx:
+                        func()
+                    elif func == self.utility.perform_window_action:
+                        func(tag)
+                    elif func == self.utility.move_direction:
+                        func(tag, query)
+                    elif func == self.utility.handle_whatis_whois:
+                        func(query)
+                    else:
+                        func(tag, self.tag_response)
+                except Exception as e:
+                    error_msg = f"Error executing action '{tag}': {e}"
+                    print(error_msg)
+                    try:
+                        self.utility.speak(f"Sorry, I encountered an error performing that action.")
+                    except:
+                        pass  # Even speech can fail, don't crash
                 return
         action_map = {
             "addsong": self.utility.add_song,
@@ -172,32 +180,40 @@ class PhoenixAssistant:
             "focus-phnx": self.utility.focus_phnx,
         }
         if tag in action_map:
-            if tag in [
-                "adjustVolume",
-                "adjustBrightness",
-                "changetab",
-                "playsong",
-                "playpause",
-                "type_text",
-                "setTimer",
-                "openelse",
-                "setTimer",
-                "setAlarm",
-                "setReminder",
-                "movewind",
-                "switchdesk",
-                "weather",
-                "greet-to",
-            ]:
-                action_map[tag](query)
-            elif tag in ["maximize", "minimize"]:
-                action_map[tag](True)
-            elif tag in ["open", "close", "select"]:
-                action_map[tag](query, self.tag_response)
-            elif tag in ["forward", "backward"]:
-                action_map[tag](tag, query)
-            else:
-                action_map[tag]()
+            try:
+                if tag in [
+                    "adjustVolume",
+                    "adjustBrightness",
+                    "changetab",
+                    "playsong",
+                    "playpause",
+                    "type_text",
+                    "setTimer",
+                    "openelse",
+                    "setTimer",
+                    "setAlarm",
+                    "setReminder",
+                    "movewind",
+                    "switchdesk",
+                    "weather",
+                    "greet-to",
+                ]:
+                    action_map[tag](query)
+                elif tag in ["maximize", "minimize"]:
+                    action_map[tag](True)
+                elif tag in ["open", "close", "select"]:
+                    action_map[tag](query, self.tag_response)
+                elif tag in ["forward", "backward"]:
+                    action_map[tag](tag, query)
+                else:
+                    action_map[tag]()
+            except Exception as e:
+                error_msg = f"Error executing action '{tag}': {e}"
+                print(error_msg)
+                try:
+                    self.utility.speak(f"Sorry, I encountered an error performing that action.")
+                except:
+                    pass  # Even speech can fail, don't crash
 
     def _getSentProbability(self, main_query, list_of_strings):
         """
@@ -458,13 +474,25 @@ class PhoenixAssistant:
         self.cls_and_print_phnx()
         threading.Thread(target=self.reload_phnx).start()
         while True:
-            if self.reload == True:
-                self.cls_and_print_phnx()
-                threading.Thread(target=self.reload_phnx).start()
-            if self.voice:
-                self.input_voice()
-            else:
-                self.input_chat()
+            try:
+                if self.reload == True:
+                    self.cls_and_print_phnx()
+                    threading.Thread(target=self.reload_phnx).start()
+                if self.voice:
+                    self.input_voice()
+                else:
+                    self.input_chat()
+            except KeyboardInterrupt:
+                print("\nPhoenix shutting down...")
+                break
+            except Exception as e:
+                print(f"Error in main Phoenix loop: {e}")
+                print("Continuing to listen...")
+                # Continue running despite errors
+                try:
+                    self.utility.speak("Sorry, I had a glitch. I'm still listening.")
+                except:
+                    pass
 
     def load_intents(self, file_path):
         with open(file_path, "r") as file:
@@ -612,47 +640,55 @@ class PhoenixAssistant:
 
 
 if __name__ == "__main__":
-    threading.Thread(
-        target=network_main, daemon=True
-    ).start()  # Start the network monitor in the background
-    root = tk.Tk()
-    gui = VoiceAssistantGUI(root)
-    recog = VoiceRecognition(gui)
-    spk = SpeechEngine()
-    asutils = Utility(reco=recog, spk=spk)
-    opn = OpenAppHandler(asutils)
-    clse = CloseAppHandler(asutils)
-    timer_handle = TimerHandle(asutils)
-    alarm_handle = AlarmHandle(asutils)
-    reminder_handle = ReminderHandle(asutils)
-    scheduler_handle = ScheduleHandle(asutils)
-    phnx = PhoenixAssistant(
-        asutils,
-        open_handler=opn,
-        close_handler=clse,
-        timer_handle=timer_handle,
-        alarm_handle=alarm_handle,
-        schedule_handle=scheduler_handle,
-        reminder_handle=reminder_handle,
-    )
-    # asutils.move_window(3)
-    # asutils.desKtoP(3)
-    # asutils.move_window(4)
-    # asutils.desKtoP(4)
-    # asutils.speak("yo boss! shall i setup all the desktops?")
-    # res = asutils.take_command().lower()
-    # resList = res.split()
-    # opn.open_app_if_running("cmd.exe")
-    # asutils.move_window(4)
-    # asutils.speak("Alrighty! Freshen up your mind for a while!")
-    # if "yes" in res or "yes please" in res or "please" in res:
-    #     threading.Thread(target=asutils.rockMsc, args=(0.5, 40)).start()
-    #     asutils.speak("let me setup all the desktops for you sir!")
-    #     asutils.setup_trash()
-    #     asutils.setup_study()
-    #     asutils.setup_alpha()
-    #     asutils.speak("all the desktops are ready for you sir!")
-    #     asutils.desKtoP(4)
-    # else:
-    #     phnx.utility.speak("Never mind sir!")
-    phnx.main_phnx()
+    try:
+        threading.Thread(
+            target=network_main, daemon=True
+        ).start()  # Start the network monitor in the background
+        root = tk.Tk()
+        gui = VoiceAssistantGUI(root)
+        recog = VoiceRecognition(gui)
+        spk = SpeechEngine()
+        asutils = Utility(reco=recog, spk=spk)
+        opn = OpenAppHandler(asutils)
+        clse = CloseAppHandler(asutils)
+        timer_handle = TimerHandle(asutils)
+        alarm_handle = AlarmHandle(asutils)
+        reminder_handle = ReminderHandle(asutils)
+        scheduler_handle = ScheduleHandle(asutils)
+        phnx = PhoenixAssistant(
+            asutils,
+            open_handler=opn,
+            close_handler=clse,
+            timer_handle=timer_handle,
+            alarm_handle=alarm_handle,
+            schedule_handle=scheduler_handle,
+            reminder_handle=reminder_handle,
+        )
+        # asutils.move_window(3)
+        # asutils.desKtoP(3)
+        # asutils.move_window(4)
+        # asutils.desKtoP(4)
+        # asutils.speak("yo boss! shall i setup all the desktops?")
+        # res = asutils.take_command().lower()
+        # resList = res.split()
+        # opn.open_app_if_running("cmd.exe")
+        # asutils.move_window(4)
+        # asutils.speak("Alrighty! Freshen up your mind for a while!")
+        # if "yes" in res or "yes please" in res or "please" in res:
+        #     threading.Thread(target=asutils.rockMsc, args=(0.5, 40)).start()
+        #     asutils.speak("let me setup all the desktops for you sir!")
+        #     asutils.setup_trash()
+        #     asutils.setup_study()
+        #     asutils.setup_alpha()
+        #     asutils.speak("all the desktops are ready for you sir!")
+        #     asutils.desKtoP(4)
+        # else:
+        #     phnx.utility.speak("Never mind sir!")
+        phnx.main_phnx()
+    except KeyboardInterrupt:
+        print("\n\nPhoenix terminated by user. Goodbye!")
+    except Exception as e:
+        print(f"\n\nCRITICAL ERROR in Phoenix: {e}")
+        import traceback
+        traceback.print_exc()
+        print("\nPlease check your configuration and try again.")

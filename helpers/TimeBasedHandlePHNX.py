@@ -431,11 +431,16 @@ class AlarmHandle:
             query (str): The input query for setting the alarm.
         """
         self.utils.speak("just a second, sir.")
-        idx, dsk_nm = self.utils.get_cur_desk()
-        print(idx, dsk_nm)
-        self.utils.get_window("MainPHNX.py")
-        sleep(2)
-        self.utils.maximize_window()
+        try:
+            idx, dsk_nm = self.utils.get_cur_desk()
+            print(idx, dsk_nm)
+            self.utils.get_window("MainPHNX.py")
+            sleep(2)
+            self.utils.maximize_window()
+        except Exception as e:
+            print(f"Warning: Could not track desktop/window (error: {e}). Continuing with alarm setup...")
+            # Continue alarm setup even if window management fails
+            pass
         hour, minute = self.getTime(query)
         if hour is None or minute is None:
             print("Invalid time format. Exiting schedule addition process.")
