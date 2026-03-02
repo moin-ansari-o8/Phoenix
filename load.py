@@ -13,7 +13,7 @@ root = tk.Tk()
 gui = VoiceAssistantGUI(root)
 recog = VoiceRecognition(gui)
 spk = SpeechEngine()
-utils = Utility(reco=recog, spk=spk)
+utils = Utility(spk=spk, reco=recog)
 
 
 def startup_phnx():
@@ -44,12 +44,20 @@ def launch_in_bg(file_path):
 
     ext = os.path.splitext(file_path)[1].lower()
 
+    # Use venv python
+    venv_python = os.path.join(
+        os.path.dirname(__file__), ".venv", "Scripts", "python.exe"
+    )
+    venv_pythonw = os.path.join(
+        os.path.dirname(__file__), ".venv", "Scripts", "pythonw.exe"
+    )
+
     try:
         if ext == ".pyw":
-            subprocess.Popen(["pythonw", file_path], shell=True)
+            subprocess.Popen([venv_pythonw, file_path])
             print(f"✅ Launched .pyw in bg: {os.path.basename(file_path)}")
         elif ext == ".py":
-            subprocess.Popen(["python", file_path], shell=True)
+            subprocess.Popen([venv_python, file_path])
             print(f"✅ Launched .py in bg: {os.path.basename(file_path)}")
         elif ext == ".bat":
             subprocess.Popen(["cmd.exe", "/c", file_path], shell=True)
@@ -70,7 +78,7 @@ def load_phnx():
     for path in paths:
         launch_in_bg(path)
         sleep(0.5)
-    utils.desKtoP(4)
+    utils.desKtoP(1)
     pg.keyDown("win")
     pg.press("r")
     pg.keyUp("win")

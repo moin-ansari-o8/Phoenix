@@ -1,0 +1,48 @@
+{
+  "projects": [],
+  "goals": [],
+  "todos": {
+    "today": [
+      {
+        "id": "todo_174ee6",
+        "task": "Test task 2",
+        "priority": "medium",
+        "completed": false,
+        "created_at": "2026-01-01 23:04",
+        "project_linked": null
+      },
+      {
+        "id": "todo_59bf7e",
+        "task": "Test Phoenix setup",
+        "priority": "medium",
+        "completed": false,
+        "created_at": "2026-01-02 01:25",
+        "project_linked": null
+      },
+      {
+        "id": "todo_cdffb7",
+        "task": "Test Phoenix setup",
+        "priority": "medium",
+        "completed": false,
+        "created_at": "2026-01-02 01:26",
+        "project_linked": null
+      }
+    ],
+    "tomorrow": [],
+    "completed": [
+      {
+        "id": "todo_3a0b7e",
+        "task": "Test task 1",
+        "priority": "high",
+        "completed": true,
+        "created_at": "2026-01-01 23:04",
+        "project_linked": null
+      }
+    ]
+  },
+  "settings": {
+    "reminder_threshold_days": 3,
+    "daily_summary_time": "09:00",
+    "goal_reminder_frequency": "daily"
+  }
+}

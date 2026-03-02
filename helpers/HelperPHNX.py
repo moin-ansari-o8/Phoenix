@@ -9,21 +9,31 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from time import sleep
 from colorama import Fore
+import warnings
+
+# Suppress pygame deprecation warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pygame")
 
 
 class SpeechEngine:
 
     def __init__(self):
-        self.engine = pyttsx3.init("sapi5")
-        voices = self.engine.getProperty("voices")
-        self.engine.setProperty(
-            "voice", voices[1].id
-        )  # Try Zira voice instead of David
-        self.engine.setProperty("rate", 174)
-        self.engine.setProperty("volume", 1.0)
-        # self.engine.setProperty("volume", 1.0)
-        # self.lock = threading.Lock()
+        self.lock = threading.Lock()
         self.honorifics = True
+        self.voice_id = None
+        self.rate = 174
+        self.volume = 1.0
+
+        # Get voice settings once at init
+        try:
+            temp_engine = pyttsx3.init("sapi5")
+            voices = temp_engine.getProperty("voices")
+            if voices and len(voices) > 1:
+                self.voice_id = voices[1].id
+            temp_engine.stop()
+            del temp_engine
+        except Exception:
+            pass
 
     def _manage_honorifics(self):
         self.honorifics = False
@@ -34,37 +44,58 @@ class SpeechEngine:
         """
         Thread-safe method to handle text-to-speech.
         """
-        self.engine.setProperty("rate", speed)
         try:
-            # with self.lock:
-            replacements = [
-                "boss",
-                "captain",
-                "commander",
-                "my lord",
-                "your majesty",
-                "my liege",
-                "your grace",
-                "sir",
-                "boss",
-                "master",
-                "sensei",
-            ]
+            with self.lock:
+                replacements = [
+                    "boss",
+                    "captain",
+                    "commander",
+                    "my lord",
+                    "your majesty",
+                    "my liege",
+                    "your grace",
+                    "sir",
+                    "boss",
+                    "master",
+                    "sensei",
+                ]
 
-            for punctuation in ["", "?", "!", ".", " "]:
-                if f" sir{punctuation}" in audio:
-                    if self.honorifics:
-                        replacement = random.choice(replacements)
-                        audio = audio.replace(
-                            f"sir{punctuation}", f"{replacement}{punctuation}"
-                        )
-                        threading.Thread(target=self._manage_honorifics).start()
-                        break
-                    else:
-                        audio = audio.replace(f"sir{punctuation}", "")
-            self.engine.say(audio)
-            print(f"$ : {audio}")
-            self.engine.runAndWait()
+                for punctuation in ["", "?", "!", ".", " "]:
+                    if f" sir{punctuation}" in audio:
+                        if self.honorifics:
+                            replacement = random.choice(replacements)
+                            audio = audio.replace(
+                                f"sir{punctuation}", f"{replacement}{punctuation}"
+                            )
+                            threading.Thread(target=self._manage_honorifics).start()
+                            break
+                        else:
+                            audio = audio.replace(f"sir{punctuation}", "")
+
+                # Create fresh engine for each speak call (Windows workaround)
+                try:
+                    engine = pyttsx3.init("sapi5")
+                except Exception:
+                    try:
+                        engine = pyttsx3.init()
+                    except Exception:
+                        print(f"$ : {audio}")
+                        return
+
+                try:
+                    if self.voice_id:
+                        engine.setProperty("voice", self.voice_id)
+                    engine.setProperty("rate", speed)
+                    engine.setProperty("volume", self.volume)
+                except:
+                    pass
+
+                engine.say(audio)
+                print(f"$ : {audio}")
+                engine.runAndWait()
+                engine.stop()
+                del engine  # Clean up
+                sleep(0.2)
         except Exception as e:
             print(f"SpeechEngine Error: {e}")
         return

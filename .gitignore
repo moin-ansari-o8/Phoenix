@@ -11,6 +11,8 @@ __pycache__/
 
 package-lock.json
 # Ignore environment files
+.venv/
+.venv_new/
 # Ignore a specific file
 secret_config.json
 SortPythonProgram.py
