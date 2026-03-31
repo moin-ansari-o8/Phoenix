@@ -10,9 +10,21 @@ from PIL import Image, ImageTk
 from time import sleep
 from colorama import Fore
 import warnings
+import numpy as np
 
 # Suppress pygame deprecation warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame")
+
+# Faster-Whisper for offline speech recognition
+try:
+    from faster_whisper import WhisperModel
+
+    WHISPER_AVAILABLE = True
+except ImportError:
+    WHISPER_AVAILABLE = False
+    print(
+        "[Warning] faster-whisper not installed. Using Google Speech Recognition (requires internet)."
+    )
 
 
 class SpeechEngine:
@@ -179,28 +191,83 @@ class VoiceAssistantGUI:
 class VoiceRecognition:
 
     def __init__(self, gui):
+        self.gui = gui
         self.recognizer = sr.Recognizer()
         self.recognizer.pause_threshold = 1
-        self.gui = gui
+        
+        # Initialize Faster-Whisper for offline recognition
+        self.whisper_model = None
+        if WHISPER_AVAILABLE:
+            try:
+                print("[VoiceRecognition] Loading Faster-Whisper (small model)...")
+                self.whisper_model = WhisperModel(
+                    "small",
+                    device="cpu",
+                    compute_type="int8"
+                )
+                print("[VoiceRecognition] Faster-Whisper loaded - Offline mode enabled!")
+            except Exception as e:
+                print(f"[VoiceRecognition] Failed to load Whisper: {e}")
+                print("[VoiceRecognition] Falling back to Google Speech Recognition")
 
     def take_command(self):
         with sr.Microphone() as source:
             self.gui.show_listen_image()
             print(">>>", end="\r")
-            # Adjust for ambient noise and listen indefinitely
+            # Adjust for ambient noise and listen
             self.recognizer.adjust_for_ambient_noise(source)
-            audio = self.recognizer.listen(source, 0, 8)  # No time limit
+            audio = self.recognizer.listen(source, 0, 8)
+        
         try:
             self.recognizer.pause_threshold = 1
             self.gui.show_recognize_image()
             print("<<<", end="\r")
-            query = self.recognizer.recognize_google(audio, language="en-in")
-            # print(f"# : {query}\n")
+            
+            # Use Faster-Whisper if available (offline)
+            if self.whisper_model is not None:
+                query = self._transcribe_with_whisper(audio)
+            else:
+                # Fallback to Google (requires internet)
+                query = self.recognizer.recognize_google(audio, language="en-in")
+            
         except Exception as e:
             print("<!>", end="\r")
             self.gui.hide_listen_image()
             return ""
         return query
+    
+    def _transcribe_with_whisper(self, audio):
+        """Transcribe audio using Faster-Whisper (offline)"""
+        try:
+            # Get raw audio data from speech_recognition AudioData
+            raw_data = audio.get_raw_data(convert_rate=16000, convert_width=2)
+            
+            # Convert to numpy array (int16)
+            audio_array = np.frombuffer(raw_data, dtype=np.int16)
+            
+            # Convert to float32 normalized to [-1.0, 1.0]
+            audio_float = audio_array.astype(np.float32) / 32768.0
+            
+            # Transcribe with Faster-Whisper
+            segments, info = self.whisper_model.transcribe(
+                audio_float,
+                language="en",
+                beam_size=5,
+                vad_filter=True,
+                vad_parameters=dict(
+                    min_silence_duration_ms=500,
+                    threshold=0.3
+                )
+            )
+            
+            # Combine all segments
+            transcription = " ".join([segment.text for segment in segments]).strip()
+            return transcription
+            
+        except Exception as e:
+            print(f"[Whisper Error] {e}")
+            # Fallback to Google if Whisper fails
+            return self.recognizer.recognize_google(audio, language="en-in")
 
 
 "---------------EXTRA----------------"

@@ -15,9 +15,10 @@ dependencies = [
     "pyttsx3>=2.90",
     "SpeechRecognition>=3.10.0",
     "keyboard>=0.13.5",
+    "faster-whisper>=1.0.0",
     
     # GUI and System
-    "PyQt5>=5.15.11",
+    "PyQt5==5.15.11",
     "tkinter-tooltip>=2.1.0",
     "pillow>=11.0.0",
     "plyer>=2.1.0",
