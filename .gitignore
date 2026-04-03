@@ -1,31 +1,62 @@
-trials/
-node_modules/
-# Ignore Python cache files
+# Python
 __pycache__/
 *.py[cod]
-# Ignore log files
-*.log
-
-# Ignore temp files
-*.tmp
-
-package-lock.json
-# Ignore environment files
-.venv/
-.venv_new/
-# Ignore a specific file
-secret_config.json
-SortPythonProgram.py
-
-# .gitignore for Phoenix Desktop Assistant
-__pycache__/
 *.pyc
 *.pyo
-*.log
-*.bak
-*.swp
+
+# Virtual Environments
+.venv/
+.venv_new/
+venv/
+
+# IDE
 .DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Environment
 .env
-*.zip
+secret_config.json
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Logs (all log files and logs folder)
+*.log
+logs/
+*.log.*
+
+# Temporary files (all temp files and temp folder)
+*.tmp
+*.bak
+temp/
+*.wav  # Temporary audio outputs
+*.mp3  # Temporary audio outputs
+test_*_output.*  # Test output files
+
+# Data backups
 data/*.json.bak
-trials/*.zip
+data/*.bak
+
+# Trials and experimental
+trials/
+*.zip
+
+# Models (large files - download separately)
+models/piper_voices/*.onnx
+models/whisper/*.pt
+models/**/*.bin
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# OS specific
+Thumbs.db
+desktop.ini
+
+# Specific exclusions
+SortPythonProgram.py

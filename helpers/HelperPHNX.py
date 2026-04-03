@@ -192,18 +192,26 @@ class SpeechEngine:
         """
         Thread-safe method to handle text-to-speech.
         Uses Edge TTS (neural voice) with pyttsx3 fallback.
-        Sets speaking state for self-voice suppression.
+        Sets speaking flag to pause listener (prevents self-listening).
         """
         # Import here to avoid circular imports
         from helpers.ConsoleUI import phoenix_said, print_block
+        from helpers.QueueManagerPHNX import QueueManager
         
-        # Speaking state file for cross-process communication
-        speaking_file = os.path.join(os.path.dirname(__file__), "..", ".speaking")
+        queue_manager = None
         
         try:
-            # Mark as speaking (create lock file)
-            with open(speaking_file, "w") as f:
-                f.write(str(time.time()))
+            # Connect to queue and set speaking flag FIRST
+            try:
+                print_block("[DEBUG] Setting speaking flag...")
+                queue_manager = QueueManager()
+                queue_manager.set_speaking(True)  # Pause listener
+                print_block("[DEBUG] Speaking flag SET - listener should be paused")
+                queue_manager.clear()  # Clear any queued audio
+            except Exception as e:
+                print_block(f"⚠️  Could not pause listener: {e}")
+                import traceback
+                print_block(f"[DEBUG] Traceback: {traceback.format_exc()}")
             
             with self.lock:
                 # Apply personality (honorifics replacement)
@@ -213,12 +221,9 @@ class SpeechEngine:
                 # Try Edge TTS first (natural voice)
                 if self.use_edge_tts:
                     if self._generate_and_play_edge_tts(audio):
-                        # Remove speaking flag after speech + buffer
-                        sleep(0.5)
-                        try:
-                            os.remove(speaking_file)
-                        except:
-                            pass
+                        # Keep listener paused during speech + buffer
+                        sleep(2.0)  # Increased buffer
+                        print_block("[DEBUG] Speech complete, clearing flag...")
                         return
                     print_block("⚠️  Edge TTS failed, using fallback voice...")
                 
@@ -228,12 +233,16 @@ class SpeechEngine:
         except Exception as e:
             print_block(f"⚠️  Speech error: {e}")
         finally:
-            # Always clean up speaking flag
-            sleep(0.5)  # Buffer time after speech
-            try:
-                os.remove(speaking_file)
-            except:
-                pass
+            # Resume listener after buffer
+            sleep(2.0)  # Increased buffer
+            if queue_manager:
+                try:
+                    queue_manager.set_speaking(False)  # Resume listener
+                    print_block("[DEBUG] Speaking flag CLEARED - listener resumed")
+                except Exception as e:
+                    print_block(f"[DEBUG] Error clearing flag: {e}")
+                except:
+                    pass
     
     def _speak_pyttsx3(self, audio, speed=174):
         """Fallback speech using pyttsx3"""

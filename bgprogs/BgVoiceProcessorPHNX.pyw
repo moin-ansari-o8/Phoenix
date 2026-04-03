@@ -61,10 +61,13 @@ def is_speaking():
                 start_time = float(f.read().strip())
             # Speaking flag valid for max 30 seconds (safety)
             if time.time() - start_time < 30:
+                logger.debug("is_speaking() = True (Phoenix is speaking, audio will be skipped)")
                 return True
             # Stale file, remove it
+            logger.warning("Stale .speaking file detected, removing")
             os.remove(speaking_file)
-        except:
+        except Exception as e:
+            logger.debug(f"Error reading .speaking file: {e}")
             pass
     return False
 
@@ -244,6 +247,18 @@ class VoiceProcessor:
             if is_speaking():
                 logger.debug("Skipping chunk - Phoenix is speaking")
                 self.chunks_processed += 1
+                # Also clear the queue to remove any accumulated audio during speech
+                try:
+                    cleared = 0
+                    while not self.queue_manager.is_empty():
+                        self.queue_manager.receive_chunk(timeout=0.01)
+                        cleared += 1
+                        if cleared > 20:  # Safety limit
+                            break
+                    if cleared > 0:
+                        logger.debug(f"Cleared {cleared} chunks from queue during speaking")
+                except:
+                    pass
                 return
             
             logger.debug(f"Processing chunk: {chunk.duration:.2f}s")

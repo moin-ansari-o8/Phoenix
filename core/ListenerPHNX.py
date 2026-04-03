@@ -195,6 +195,14 @@ class ContinuousListener:
 
             # Continuous listening loop
             while self.running:
+                # Check if Phoenix is speaking - PAUSE listening if so
+                if self.queue_manager.is_speaking():
+                    # Phoenix is speaking, skip audio capture
+                    print_block("[DEBUG] Listener: Phoenix speaking - SKIPPING audio")
+                    stream.read(self.CHUNK_SIZE, exception_on_overflow=False)  # Drain buffer
+                    time.sleep(0.05)  # Brief sleep
+                    continue
+                
                 # Read audio chunk
                 audio_data = stream.read(self.CHUNK_SIZE, exception_on_overflow=False)
                 audio_chunk = np.frombuffer(audio_data, dtype=np.int16)

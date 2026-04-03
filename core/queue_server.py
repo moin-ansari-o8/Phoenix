@@ -1,6 +1,7 @@
 """
 Phoenix Queue Server - Shared queue server for IPC
 Both listener and processor connect to this to share audio chunks
+Also manages speaking state for self-voice suppression
 """
 
 import multiprocessing as mp
@@ -13,8 +14,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("QueueServer")
 
-# Shared queue
+# Shared queue and speaking flag
 audio_queue = None
+speaking_flag = None
 
 
 def get_queue():
@@ -26,12 +28,22 @@ def get_queue():
     return audio_queue
 
 
+def get_speaking_flag():
+    """Return the shared speaking flag (multiprocessing Value)"""
+    global speaking_flag
+    if speaking_flag is None:
+        speaking_flag = mp.Value('i', 0)  # 0 = not speaking, 1 = speaking
+        logger.info("Speaking flag created")
+    return speaking_flag
+
+
 class QueueManager(BaseManager):
     pass
 
 
-# Register the queue getter
+# Register the queue and speaking flag getters
 QueueManager.register("get_audio_queue", callable=get_queue)
+QueueManager.register("get_speaking_flag", callable=get_speaking_flag)
 
 
 def start_queue_server(host="127.0.0.1", port=50000, authkey=b"phoenix_audio_queue"):

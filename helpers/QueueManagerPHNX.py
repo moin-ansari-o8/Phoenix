@@ -36,8 +36,9 @@ class QueueClientManager(BaseManager):
     pass
 
 
-# Register the remote queue getter
+# Register the remote queue and speaking flag getters
 QueueClientManager.register("get_audio_queue")
+QueueClientManager.register("get_speaking_flag")
 
 
 def connect_to_queue_server(
@@ -47,7 +48,7 @@ def connect_to_queue_server(
     retries=10,
     retry_delay=0.5,
 ):
-    """Connect to queue server with retries"""
+    """Connect to queue server with retries, return (queue, speaking_flag, manager)"""
     for attempt in range(retries):
         try:
             logger.info(
@@ -56,8 +57,9 @@ def connect_to_queue_server(
             manager = QueueClientManager(address=(host, port), authkey=authkey)
             manager.connect()
             queue_obj = manager.get_audio_queue()
+            speaking_flag = manager.get_speaking_flag()
             logger.info("Connected to queue server successfully!")
-            return queue_obj
+            return queue_obj, speaking_flag, manager
         except ConnectionRefusedError:
             if attempt < retries - 1:
                 logger.warning(f"Connection refused, retrying in {retry_delay}s...")
@@ -82,7 +84,7 @@ class QueueManager:
     def __init__(self, max_size: int = 10):
         """Initialize queue manager by connecting to queue server"""
         self.max_size = max_size
-        self.queue = connect_to_queue_server()
+        self.queue, self.speaking_flag, self.manager = connect_to_queue_server()
         self._chunks_sent = 0
         self._chunks_received = 0
         self._chunks_dropped = 0
@@ -151,6 +153,21 @@ class QueueManager:
             pass
         if cleared > 0:
             logger.info(f"Cleared {cleared} chunks from queue")
+    
+    def set_speaking(self, is_speaking: bool):
+        """Set the speaking flag (True = Phoenix is speaking, pause listener)"""
+        try:
+            self.speaking_flag.value = 1 if is_speaking else 0
+            logger.debug(f"Speaking flag set to: {is_speaking}")
+        except Exception as e:
+            logger.error(f"Failed to set speaking flag: {e}")
+    
+    def is_speaking(self) -> bool:
+        """Check if Phoenix is currently speaking"""
+        try:
+            return self.speaking_flag.value == 1
+        except:
+            return False
 
     def close(self):
         """Close connection"""
