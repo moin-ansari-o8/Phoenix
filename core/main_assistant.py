@@ -6,9 +6,9 @@ from time import sleep
 import threading
 from difflib import SequenceMatcher
 import os
-from helpers.UtilitiesPHNX import Utility, CloseAppHandler, OpenAppHandler
-from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
-from helpers.TimeBasedHandlePHNX import (
+from utils.helpers.action_utilities import Utility, CloseAppHandler, OpenAppHandler
+from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+from utils.helpers.time_handlers import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,
@@ -416,7 +416,7 @@ class PhoenixAssistant:
 
     def input_chat(self):
         self.loop = False
-        self.utility.get_window("MainPHNX.py")
+        self.utility.get_window("main_assistant.py")
         while True:
             sent = input("Enter command: ").lower().strip()
             if "switch to voice" in sent or "wake up" in sent or "stv" in sent:

@@ -2,7 +2,7 @@ File Structure of "Phoenix":
 ├── .git
 ├── .gitignore
 ├── LICENSE
-├── MainPHNX.py
+├── main_assistant.py
 ├── README.md
 ├── SortPythonProgram.py
 ├── __pycache__
@@ -20,8 +20,8 @@ File Structure of "Phoenix":
 │   ├── main.bat
 │   └── on_boot_startup.bat
 ├── bgprogs
-│   ├── BgBtryPHNX.pyw
-│   └── BgTmPHNX.pyw
+│   ├── battery_monitor.pyw
+│   └── time_monitor.pyw
 ├── cmd_gui.py
 ├── data
 │   ├── TimeData.json
@@ -88,8 +88,8 @@ import sys
 import subprocess
 import pyautogui as pg
 from time import sleep
-from helpers.UtilitiesPHNX import Utility
-from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+from utils.helpers.action_utilities import Utility
+from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
 import tkinter as tk
 from datetime import datetime
 import keyboard
@@ -137,8 +137,8 @@ def launch_in_bg(file_path):
 def load_phnx():
     # sleep(3)
     paths = [
-        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
-        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\battery_monitor.pyw",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\time_monitor.pyw",
         # "C:\\STDY\\MYAIS\\Phoenix\\batch\\main.bat",
     ]
     for path in paths:
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     sys.exit(0)
 
 
-3. MainPHNX.py ::
+3. main_assistant.py ::
 import json
 import re
 import random
@@ -189,9 +189,9 @@ from time import sleep
 import threading
 from difflib import SequenceMatcher
 import os
-from helpers.UtilitiesPHNX import Utility, CloseAppHandler, OpenAppHandler
-from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
-from helpers.TimeBasedHandlePHNX import (
+from utils.helpers.action_utilities import Utility, CloseAppHandler, OpenAppHandler
+from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+from utils.helpers.time_handlers import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,
@@ -576,7 +576,7 @@ class PhoenixAssistant:
 
     def input_chat(self):
         self.loop = False
-        self.utility.get_window("MainPHNX.py")
+        self.utility.get_window("main_assistant.py")
         while True:
             sent = input("Enter command: ").lower().strip()
             if "switch to voice" in sent or "wake up" in sent or "stv" in sent:
@@ -840,7 +840,7 @@ Phoenix is a modular, extensible desktop assistant for Windows. It can respond t
 
 ## Folder Structure
 
-- `MainPHNX.py` — Main assistant logic
+- `main_assistant.py` — Main assistant logic
 - `load.py` — Launches background processes and the assistant
 - `bgprogs/` — Background scripts (battery, time, alarms)
 - `helpers/` — Utility and handler modules
@@ -865,7 +865,7 @@ Phoenix is a modular, extensible desktop assistant for Windows. It can respond t
 - To run the main assistant:
 
   ```powershell
-  python MainPHNX.py
+  python main_assistant.py
   ```
 
 - To run with background monitoring:
@@ -961,7 +961,7 @@ sort_methods_and_dicts_in_file(file_path)
 6. batch\main.bat ::
 cd C:\STDY\MYAIS\Phoenix
 
-python MainPHNX.py
+python main_assistant.py
 
 7. batch\on_boot_startup.bat ::
 @echo off
@@ -3429,7 +3429,7 @@ class AlarmHandle:
             self.utils.speak("just a second, sir.")
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             self.viewAlarm()
             sleep(2)
             self.utils.maximize_window()
@@ -3571,7 +3571,7 @@ class AlarmHandle:
         self.utils.speak("just a second, sir.")
         idx, dsk_nm = self.utils.get_cur_desk()
         print(idx, dsk_nm)
-        self.utils.get_window("MainPHNX.py")
+        self.utils.get_window("main_assistant.py")
         sleep(2)
         self.utils.maximize_window()
         hour, minute = self.getTime(query)
@@ -3719,7 +3719,7 @@ class AlarmHandle:
             ]
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.utils.speak("here are the Existing Alarms:")
@@ -3755,7 +3755,7 @@ class ReminderHandle:
                 return
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.viewReminders()
@@ -3797,7 +3797,7 @@ class ReminderHandle:
                 return
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.viewReminders()
@@ -4158,7 +4158,7 @@ class ReminderHandle:
             headers = ["Index", "Date", "Message", "Reminded", "Time"]
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.utils.speak("Here are the Existing Reminders:")
@@ -4898,7 +4898,7 @@ from tkinter.filedialog import askdirectory
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from helpers.HelperPHNX import SpeechEngine, VoiceRecognition, VoiceAssistantGUI
+from utils.helpers.assistant_io import SpeechEngine, VoiceRecognition, VoiceAssistantGUI
 import win32con
 import ctypes
 from pyvda import AppView, VirtualDesktop, get_virtual_desktops
@@ -6781,7 +6781,7 @@ class Utility:
         sys.exit()
 
     def focus_phnx(self):
-        self.get_window("MainPHNX.py")
+        self.get_window("main_assistant.py")
         responses = [
             "Here I am, like a genie out of a bottle!",
             "Present and accounted for!",
@@ -8129,7 +8129,7 @@ if "%1" == "start" (
     echo "just MainPHNX is starting..."
     
     cd C:\STDY\MYAIS\Phoenix
-    python MainPHNX.py
+    python main_assistant.py
 ) else (
     echo Invalid command. Use "phoenix start/main" to run the program.
 )
@@ -8460,7 +8460,7 @@ if __name__ == "__main__":
 #         print(f"Oopsie! Couldn't launch: {e}")
 
 # # Replace with the path to your .pyw file
-# launch_pyw_in_bg("C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgTmPHNX.pyw")
+# launch_pyw_in_bg("C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\time_monitor.pyw")
 # --------------------------------------------------------------------
 import win32gui
 import win32con
@@ -9194,7 +9194,7 @@ if __name__ == "__main__":
 
 
 # if __name__ == "__main__":
-#     get_window("python.exe", "MainPHNX.py")
+#     get_window("python.exe", "main_assistant.py")
 
 # --------------------------------------------------------------------------
 # import pyautogui

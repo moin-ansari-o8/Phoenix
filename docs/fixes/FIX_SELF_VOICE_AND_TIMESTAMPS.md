@@ -7,8 +7,8 @@
 
 **Solution**: Cross-process speaking state management
 - **HelperPHNX.py** (`speak()` method): Creates `.speaking` file when Phoenix starts speaking, removes it after speech + 0.5s buffer
-- **BgVoiceProcessorPHNX.pyw**: Added `is_speaking()` function that checks for `.speaking` file
-- **BgVoiceProcessorPHNX.pyw** (`process_audio_chunk()`): Skips audio processing if `is_speaking()` returns True
+- **voice_command_processor.py**: Added `is_speaking()` function that checks for `.speaking` file
+- **voice_command_processor.py** (`process_audio_chunk()`): Skips audio processing if `is_speaking()` returns True
 - **ConsoleUI.py**: Added speaking state management methods (for future in-process use)
 
 **How it works**:
@@ -31,8 +31,8 @@ Back to normal listening
 
 **Solution**: Use AudioChunk.timestamp (captured when audio chunk is created)
 - **QueueManagerPHNX.py**: AudioChunk already has `timestamp` field set via `time.time()` when created
-- **BgVoiceProcessorPHNX.pyw** (`process_audio_chunk()`): Extracts timestamp from AudioChunk
-- **BgVoiceProcessorPHNX.pyw** (`transcribe_audio()`): Now accepts optional `timestamp` parameter
+- **voice_command_processor.py** (`process_audio_chunk()`): Extracts timestamp from AudioChunk
+- **voice_command_processor.py** (`transcribe_audio()`): Now accepts optional `timestamp` parameter
 - **ConsoleUI.py** (`user_said()`): Now accepts optional `timestamp` parameter
 
 **How it works**:
@@ -52,11 +52,11 @@ Display: "👤 You [01:52:10]: Hello" ✅ (uses captured timestamp, not current 
 **Problem**: Verbose INFO logs appearing in console (e.g., "Chunk sent: 5.89s, energy: 328.1")
 
 **Solution**: Remove all console handlers from loggers
-- **ListenerPHNX.py**: Added explicit code to remove StreamHandlers from both logger and root logger
+- **continuous_listener.py**: Added explicit code to remove StreamHandlers from both logger and root logger
 - All logging now goes only to files:
   - `phoenix_launcher.log` (launch_phoenix.py)
-  - `phoenix_listener.log` (ListenerPHNX.py)
-  - `bg_voice_processor.log` (BgVoiceProcessorPHNX.pyw)
+  - `phoenix_listener.log` (continuous_listener.py)
+  - `bg_voice_processor.log` (voice_command_processor.py)
   - `phoenix_queue.log` (QueueManagerPHNX.py)
 
 **Console output now shows only**:
@@ -78,14 +78,14 @@ Display: "👤 You [01:52:10]: Hello" ✅ (uses captured timestamp, not current 
 - Wraps speech in try/finally to ensure `.speaking` is always cleaned up
 - Adds 0.5s buffer after speech before removing flag
 
-### bgprogs/BgVoiceProcessorPHNX.pyw
+### bgprogs/voice_command_processor.py
 - Added `is_speaking()` function to check `.speaking` file exists
 - `process_audio_chunk()`: Skips processing if `is_speaking()` returns True
 - `process_audio_chunk()`: Extracts timestamp from AudioChunk for accurate timing
 - `transcribe_audio()`: Accepts optional `timestamp` parameter
 - `transcribe_audio()`: Passes timestamp to `user_said()`
 
-### ListenerPHNX.py
+### continuous_listener.py
 - Added code to explicitly remove StreamHandlers from logger and root logger
 - Ensures all logs go only to `phoenix_listener.log`, not console
 

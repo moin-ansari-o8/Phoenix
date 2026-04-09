@@ -117,7 +117,7 @@ The fan noise was causing VAD to detect "speech" intermittently, preventing 3 co
 - [ ] Run `python test_continuous_listen.py`
 - [ ] Speak a test phrase
 - [ ] Check timestamps show 0.8-1.5s silence threshold
-- [ ] Run `python MainPHNX.py` with fan on
+- [ ] Run `python main_assistant.py` with fan on
 - [ ] Say "Hello Phoenix"
 - [ ] Verify response within 3-5 seconds total
 - [ ] Test long speech (> 30s) to verify auto-processing

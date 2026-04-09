@@ -1,5 +1,5 @@
 """
-Test script to verify BgTmPHNX.pyw fixes
+Test script to verify time_monitor.pyw fixes
 Tests:
 1. Object initialization
 2. ReminderManager has correct utility object
@@ -12,14 +12,14 @@ import datetime
 import tkinter as tk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-from helpers.TimeBasedHandlePHNX import AlarmHandle
-from helpers.UtilitiesPHNX import Utility
-from helpers.HelperPHNX import (
+from utils.helpers.time_handlers import AlarmHandle
+from utils.helpers.action_utilities import Utility
+from utils.helpers.assistant_io import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
 )
-from helpers.TimeBasedRunPHNX import (
+from utils.helpers.time_runner import (
     HandleTimeBasedFunctions,
     TimerManager,
     AlarmManager,

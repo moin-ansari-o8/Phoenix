@@ -15,7 +15,7 @@ class TimerHandle:
 
     def __init__(self, utility):
         self.timer_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self._initialize_timer_file()
         self.utils = utility
@@ -223,7 +223,7 @@ class AlarmHandle:
 
     def __init__(self, utility):
         self.alarm_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self._initialize_alarm_file()
         self.utils = utility
@@ -291,7 +291,7 @@ class AlarmHandle:
             self.utils.speak("just a second, sir.")
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             self.viewAlarm()
             sleep(2)
             self.utils.maximize_window()
@@ -434,7 +434,7 @@ class AlarmHandle:
         try:
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
         except Exception as e:
@@ -586,7 +586,7 @@ class AlarmHandle:
             ]
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.utils.speak("here are the Existing Alarms:")
@@ -606,7 +606,7 @@ class AlarmHandle:
 class ReminderHandle:
     def __init__(self, utility):
         self.reminder_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self.utils = utility
 
@@ -622,7 +622,7 @@ class ReminderHandle:
                 return
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.viewReminders()
@@ -664,7 +664,7 @@ class ReminderHandle:
                 return
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.viewReminders()
@@ -1025,7 +1025,7 @@ class ReminderHandle:
             headers = ["Index", "Date", "Message", "Reminded", "Time"]
             idx, dsk_nm = self.utils.get_cur_desk()
             print(idx, dsk_nm)
-            self.utils.get_window("MainPHNX.py")
+            self.utils.get_window("main_assistant.py")
             sleep(2)
             self.utils.maximize_window()
             self.utils.speak("Here are the Existing Reminders:")
@@ -1061,7 +1061,7 @@ class ScheduleHandle:
 
     def __init__(self, utility):
         self.schedule_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "schedule.json"
+            os.path.dirname(__file__), "..", "..", "data", "schedule.json"
         )
         self.utils = utility
 

@@ -1,6 +1,6 @@
 """
 Processor Helper for Phoenix - Intent Matching and Action Execution
-Extracted from MainPHNX.py for background voice processor
+Extracted from main_assistant.py for background voice processor
 """
 
 import json
@@ -39,7 +39,7 @@ class PhoenixAssistant:
             "yes madam",
             "yes ma'am",
         ]
-        current_dir = os.path.dirname(os.path.dirname(__file__))  # Go up from bgprogs
+        current_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.intents_file_path = os.path.join(current_dir, "data", "intents.json")
         self.intents = self.load_intents(self.intents_file_path)
         self.utility = utility

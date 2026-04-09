@@ -10,7 +10,7 @@ print("TESTING SHARED MEMORY SPEAKING FLAG")
 print("=" * 60)
 
 try:
-    from helpers.QueueManagerPHNX import QueueManager
+    from utils.helpers.queue_manager import QueueManager
 
     print("\n1. Connecting to queue server...")
     qm = QueueManager()

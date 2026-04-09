@@ -2,7 +2,7 @@ import queue
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Dict, Any, Callable, List
 
 from .battery_monitor import BatteryMonitorConfig, BatteryMonitorService
 from .time_monitor import TimeMonitorConfig, TimeMonitorService
@@ -30,7 +30,18 @@ class PhoenixRuntimeManager:
             "last_event": {},
             "last_speech": {},
             "services": {},
+            "flags": {
+                "battery_hit": False,
+                "time_hit": False,
+                "listener_hit": False,
+            },
+            "hit_counts": {
+                "battery": 0,
+                "time": 0,
+                "listener": 0,
+            },
         }
+        self._event_handlers: List[Callable[[Dict[str, Any]], None]] = []
 
         self.battery_service = BatteryMonitorService(
             config=self.config.battery, event_callback=self._on_event
@@ -49,7 +60,21 @@ class PhoenixRuntimeManager:
             self.state["last_speech"][source] = payload.get("message", "")
         if payload.get("type") == "status":
             self.state["services"][source] = payload.get("message")
+        if source == "battery_monitor":
+            self.state["flags"]["battery_hit"] = True
+            self.state["hit_counts"]["battery"] += 1
+        elif source == "time_monitor":
+            self.state["flags"]["time_hit"] = True
+            self.state["hit_counts"]["time"] += 1
+        elif source == "voice_processor":
+            self.state["flags"]["listener_hit"] = True
+            self.state["hit_counts"]["listener"] += 1
         self.events.put(event)
+        for handler in list(self._event_handlers):
+            try:
+                handler(event)
+            except Exception:
+                pass
 
     def _start_thread(self, name: str, target):
         thread = threading.Thread(target=target, args=(self.stop_event,), name=name, daemon=True)
@@ -69,6 +94,15 @@ class PhoenixRuntimeManager:
     def snapshot(self) -> Dict[str, Any]:
         return self.state.copy()
 
+    def set_flag(self, flag_name: str, value: bool):
+        self.state["flags"][flag_name] = value
+
+    def get_flag(self, flag_name: str) -> bool:
+        return bool(self.state["flags"].get(flag_name, False))
+
+    def register_event_handler(self, handler: Callable[[Dict[str, Any]], None]):
+        self._event_handlers.append(handler)
+
     def run_forever(self):
         self.start_all()
         try:
@@ -86,4 +120,3 @@ class PhoenixRuntimeManager:
             print("\n[main] shutdown requested")
         finally:
             self.stop_all()
-

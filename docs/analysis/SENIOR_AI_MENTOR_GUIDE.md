@@ -392,7 +392,7 @@ Respond with just the intent name."""
 
 ### Current: Monolithic
 ```
-MainPHNX.py (700 lines) → UtilitiesPHNX.py (3300 lines)
+main_assistant.py (700 lines) → UtilitiesPHNX.py (3300 lines)
 ```
 
 ### Recommended: Modular Plugin System

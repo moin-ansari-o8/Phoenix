@@ -55,7 +55,7 @@ Phoenix is a **Windows desktop voice assistant** built ~3 years ago as a learnin
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐    │
-│  │  load.py     │────▶│  Queue       │────▶│  MainPHNX.py │    │
+│  │  load.py     │────▶│  Queue       │────▶│  main_assistant.py │    │
 │  │  (Launcher)  │     │  Server      │     │  (Main Brain)│    │
 │  └──────────────┘     └──────────────┘     └──────────────┘    │
 │         │                    │                     │            │
@@ -82,7 +82,7 @@ Phoenix is a **Windows desktop voice assistant** built ~3 years ago as a learnin
 Entry Points:
 ├── load.py ──────────────────▶ Full Launch (spawns all processes)
 ├── launch_phoenix.py ────────▶ Modern Launch (queue-based system)
-├── MainPHNX.py ──────────────▶ Direct Voice Mode (standalone)
+├── main_assistant.py ──────────────▶ Direct Voice Mode (standalone)
 
 Core Flow:
 ├── User speaks ──▶ Microphone ──▶ VoiceRecognition ──▶ Whisper/Google
@@ -118,8 +118,8 @@ Core Flow:
 
 | File | Purpose | Priority | Notes |
 |------|---------|----------|-------|
-| `MainPHNX.py` | **CORE** - Main assistant brain | 🔴 Critical | 700 lines, handles all command processing |
-| `ListenerPHNX.py` | Continuous audio capture | 🔴 Critical | VAD-based listening, sends to queue |
+| `main_assistant.py` | **CORE** - Main assistant brain | 🔴 Critical | 700 lines, handles all command processing |
+| `continuous_listener.py` | Continuous audio capture | 🔴 Critical | VAD-based listening, sends to queue |
 | `load.py` | Legacy launcher | 🟡 Medium | Spawns background processes |
 | `launch_phoenix.py` | Modern 3-process launcher | 🔴 Critical | Queue server + listener + processor |
 | `queue_server.py` | IPC queue server | 🟢 Good | Clean, modern multiprocessing |
@@ -143,9 +143,9 @@ Core Flow:
 
 | File | Purpose | Notes |
 |------|---------|-------|
-| `BgBtryPHNX.pyw` | Battery monitoring | Silent .pyw window |
-| `BgTmPHNX.pyw` | Time-based triggers | Alarms, reminders |
-| `BgVoiceProcessorPHNX.pyw` | Audio transcription | Whisper-based |
+| `battery_monitor.pyw` | Battery monitoring | Silent .pyw window |
+| `time_monitor.pyw` | Time-based triggers | Alarms, reminders |
+| `voice_command_processor.py` | Audio transcription | Whisper-based |
 
 ### 📁 data/ Directory
 
@@ -215,7 +215,7 @@ class VoiceRecognition:
 - `speech_recognition` - Fallback to Google
 - `pyaudio` - Audio capture
 
-### 3. Intent Matching (MainPHNX.py)
+### 3. Intent Matching (main_assistant.py)
 
 **Algorithm:**
 ```python
@@ -489,7 +489,7 @@ Edge TTS is a **significant upgrade** - natural voices, multiple accents, pitch/
 | Issue | Location | Severity |
 |-------|----------|----------|
 | **Hardcoded paths** | load.py, UtilitiesPHNX.py | High |
-| **Duplicate code** | MainPHNX.py ↔ ProcessorPHNX.py | High |
+| **Duplicate code** | main_assistant.py ↔ ProcessorPHNX.py | High |
 | **No config file** | Settings scattered everywhere | High |
 | **Giant files** | UtilitiesPHNX.py (3300 lines) | Medium |
 | **Inconsistent naming** | tim(), sleeP(), shutD() | Medium |
@@ -523,7 +523,7 @@ Edge TTS is a **significant upgrade** - natural voices, multiple accents, pitch/
 
 2. **Fix hardcoded paths** - Use `pathlib` and relative paths
 
-3. **Merge ProcessorPHNX.py into MainPHNX.py** - Remove duplication
+3. **Merge ProcessorPHNX.py into main_assistant.py** - Remove duplication
 
 ### Phase 2: Voice Upgrade (Week 3-4)
 
@@ -671,7 +671,7 @@ trials/
 
 ### Redundant/Duplicate
 ```
-ProcessorPHNX.py ← Duplicate of PhoenixAssistant from MainPHNX.py
+ProcessorPHNX.py ← Duplicate of PhoenixAssistant from main_assistant.py
 Multiple .md guides ← Consolidate into one
 ```
 
@@ -690,7 +690,7 @@ apply_queue_fix.py ← One-time fix script
 |---------------|----------|
 | Full launch (all features) | `python load.py` |
 | Modern launch (queue-based) | `python launch_phoenix.py` |
-| Voice assistant only | `python MainPHNX.py` |
+| Voice assistant only | `python main_assistant.py` |
 | Test voice recognition | `python test_voice_command.py` |
 | Test speaking | `python test_speak.py` |
 

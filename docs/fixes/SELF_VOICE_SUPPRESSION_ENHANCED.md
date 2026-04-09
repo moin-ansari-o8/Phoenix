@@ -67,7 +67,7 @@ def speak(self, audio, speed=174):
     sleep(0.5)  # Extra buffer
 ```
 
-### bgprogs/BgVoiceProcessorPHNX.pyw - process_audio_chunk()
+### bgprogs/voice_command_processor.py - process_audio_chunk()
 ```python
 def process_audio_chunk(self, chunk):
     # Check if speaking

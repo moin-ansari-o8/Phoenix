@@ -26,7 +26,7 @@ Look for the time difference between "Silence CONFIRMED" and "threshold reached"
 
 ### Option 2: Full Phoenix (Real World)
 ```powershell
-python MainPHNX.py
+python main_assistant.py
 ```
 
 Say "Hello Phoenix" and watch timing in debug output.

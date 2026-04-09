@@ -35,7 +35,7 @@ from tkinter.filedialog import askdirectory
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from helpers.HelperPHNX import SpeechEngine, VoiceRecognition, VoiceAssistantGUI
+from utils.helpers.assistant_io import SpeechEngine, VoiceRecognition, VoiceAssistantGUI
 import win32con
 import ctypes
 from pyvda import AppView, VirtualDesktop, get_virtual_desktops
@@ -77,7 +77,7 @@ class OpenAppHandler:
         """
 
         json_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "intents.json"
+            os.path.dirname(__file__), "..", "..", "data", "intents.json"
         )
         with open(json_file, "r") as f:
             self.data = json.load(f)  # Load intents from the JSON file
@@ -244,7 +244,7 @@ class CloseAppHandler:
         :param utility: An instance of a class containing methods for actions.
         """
         json_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "intents.json"
+            os.path.dirname(__file__), "..", "..", "data", "intents.json"
         )
         with open(json_file, "r") as f:
             self.data = json.load(f)  # Load intents from the JSON file
@@ -1429,7 +1429,7 @@ class Utility:
         """Plays a random system intro sound."""
         intr = ["robo1.wav", "robo2.wav"]
         x = random.choice(intr)
-        sound_path = os.path.join(os.path.dirname(__file__), "..", "assets", "sound", x)
+        sound_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sound", x)
         CHUNK = 1024
         wf = wave.open(sound_path, "rb")
         p = pyaudio.PyAudio()
@@ -1532,7 +1532,7 @@ class Utility:
 
     def process_move_window(self, query):
         json_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "intents.json"
+            os.path.dirname(__file__), "..", "..", "data", "intents.json"
         )
         with open(json_file, "r") as f:
             self.data = json.load(f)  # Load intents from the JSON file
@@ -1958,7 +1958,7 @@ class Utility:
         sys.exit()
 
     def focus_phnx(self):
-        self.get_window("MainPHNX.py")
+        self.get_window("main_assistant.py")
         responses = [
             "Here I am, like a genie out of a bottle!",
             "Present and accounted for!",

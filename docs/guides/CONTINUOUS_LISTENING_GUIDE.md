@@ -79,7 +79,7 @@ Then:
 ## 🔄 Program Flow (UNCHANGED)
 
 ```python
-# MainPHNX.py - NO CODE CHANGES NEEDED
+# main_assistant.py - NO CODE CHANGES NEEDED
 while True:
     query = take_command()  # Still returns string
     # Process query as before

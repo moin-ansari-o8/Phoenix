@@ -2,11 +2,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional
 
-import psutil
-
-from helpers.HelperPHNX import SpeechEngine
-
-
 EventCallback = Optional[Callable[[str, Dict], None]]
 
 
@@ -25,11 +20,11 @@ class BatteryMonitorService:
     def __init__(
         self,
         config: BatteryMonitorConfig | None = None,
-        speech_engine: SpeechEngine | None = None,
+        speech_engine=None,
         event_callback: EventCallback = None,
     ):
         self.config = config or BatteryMonitorConfig()
-        self.se = speech_engine or SpeechEngine()
+        self.se = speech_engine
         self.event_callback = event_callback
 
         self.last_plugged_state = None
@@ -44,9 +39,12 @@ class BatteryMonitorService:
 
     def _speak(self, message: str):
         self._emit("speech", {"message": message})
-        self.se.speak(message)
+        if self.se:
+            self.se.speak(message)
 
     def get_battery_status(self):
+        import psutil
+
         battery = psutil.sensors_battery()
         if battery is None:
             raise RuntimeError("Battery information is not available on this system.")
@@ -98,6 +96,13 @@ class BatteryMonitorService:
 
     def run(self, stop_event):
         self._emit("status", {"message": "starting"})
+        if self.se is None:
+            try:
+                from utils.helpers.assistant_io import SpeechEngine
+
+                self.se = SpeechEngine()
+            except Exception as e:
+                self._emit("error", {"message": f"speech engine init failed: {e}"})
         if self.config.initial_delay_seconds > 0:
             stop_event.wait(self.config.initial_delay_seconds)
 
@@ -129,4 +134,3 @@ class BatteryMonitorService:
             stop_event.wait(self.config.check_interval_seconds)
 
         self._emit("status", {"message": "stopped"})
-

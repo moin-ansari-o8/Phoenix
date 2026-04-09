@@ -14,7 +14,7 @@ class HandleTimeBasedFunctions:
         self, timer_manager, alarm_manager, schedule_manager, reminder_manager, utility
     ):
         self.time_data_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self.data = self.load_data()
         self.today_timers = {}
@@ -75,7 +75,7 @@ class ReminderManager:
 
     def __init__(self, util):
         self.reminder_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self.ringing = False
         self.utils = util
@@ -159,7 +159,7 @@ from datetime import time
 class TimerManager:
     def __init__(self, spk):
         self.timer_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self.se = spk
 
@@ -266,7 +266,7 @@ class ScheduleManager:
 
     def __init__(self, spk):
         self.schedule_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self.se = spk
         self.halt = False
@@ -332,7 +332,7 @@ class AlarmManager:
 
     def __init__(self, spk, alarm_handle):
         self.alarm_file = os.path.join(
-            os.path.dirname(__file__), "..", "data", "TimeData.json"
+            os.path.dirname(__file__), "..", "..", "data", "TimeData.json"
         )
         self.se = spk
         self.al = alarm_handle

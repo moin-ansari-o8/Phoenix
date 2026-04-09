@@ -16,7 +16,7 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Get root directory for logging
-_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Setup logging (file only, console has clean output)
 logging.basicConfig(
@@ -30,12 +30,12 @@ logger = logging.getLogger("BgVoiceProcessor")
 
 
 # Import handlers and helpers
-from helpers.QueueManagerPHNX import QueueManager, AudioChunk
-from helpers.HelperPHNX import VoiceAssistantGUI, SpeechEngine
-from helpers.UtilitiesPHNX import Utility, OpenAppHandler, CloseAppHandler
-from helpers.ProcessorPHNX import PhoenixAssistant
-from helpers.ConsoleUI import user_said, phoenix_said, listening, print_block, get_timestamp
-from helpers.TimeBasedHandlePHNX import (
+from utils.helpers.queue_manager import QueueManager, AudioChunk
+from utils.helpers.assistant_io import VoiceAssistantGUI, SpeechEngine
+from utils.helpers.action_utilities import Utility, OpenAppHandler, CloseAppHandler
+from utils.helpers.command_processor import PhoenixAssistant
+from utils.helpers.console_ui import user_said, phoenix_said, listening, print_block, get_timestamp
+from utils.helpers.time_handlers import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,
@@ -75,7 +75,7 @@ def is_speaking():
 class VoiceProcessor:
     """Background voice command processor"""
 
-    # Wake words that trigger processing (same as original MainPHNX.py)
+    # Wake words that trigger processing (same as original main_assistant.py)
     WAKE_WORDS = [
         "phoenix",
         "finish",

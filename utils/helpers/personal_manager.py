@@ -395,7 +395,7 @@ class PersonalManager:
     def __init__(self, data_file=None):
         if data_file is None:
             data_file = os.path.join(
-                os.path.dirname(__file__), "..", "data", "PersonalManager.json"
+                os.path.dirname(__file__), "..", "..", "data", "PersonalManager.json"
             )
 
         self.data_file = data_file

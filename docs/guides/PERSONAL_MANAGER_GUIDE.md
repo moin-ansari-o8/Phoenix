@@ -13,7 +13,7 @@ Your Personal Manager system has been successfully integrated into Phoenix!
 4. **`test_personal_manager.py`** - Test suite
 
 ### Modified Files:
-1. **`bgprogs/BgTmPHNX.pyw`** - Added startup reminders & periodic checks
+1. **`bgprogs/time_monitor.pyw`** - Added startup reminders & periodic checks
 2. **`data/intents.json`** - Added 6 new intent patterns
 
 ## 🎯 Features Implemented
@@ -114,7 +114,7 @@ Edit `data/PersonalManager.json` settings:
 ### Starting the Background Process:
 ```powershell
 # From Phoenix directory
-python bgprogs\BgTmPHNX.pyw
+python bgprogs\time_monitor.pyw
 ```
 
 ### What Happens on Startup:
@@ -203,7 +203,7 @@ This tests:
 ### Background process not starting?
 ```powershell
 # Check for errors
-python bgprogs\BgTmPHNX.pyw
+python bgprogs\time_monitor.pyw
 ```
 
 ### No startup announcement?

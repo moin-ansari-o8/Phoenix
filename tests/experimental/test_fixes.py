@@ -22,7 +22,7 @@ try:
     else:
         print("✅ ConsoleUI_new.py was already renamed")
 
-    from helpers.ConsoleUI import (
+    from utils.helpers.console_ui import (
         get_ui,
         should_ignore_audio,
         start_speaking,
@@ -56,7 +56,7 @@ print("TEST 2: .speaking File Mechanism")
 print("=" * 60)
 
 try:
-    from helpers.HelperPHNX import SpeechEngine
+    from utils.helpers.assistant_io import SpeechEngine
 
     speaking_file = ".speaking"
     if os.path.exists(speaking_file):
@@ -76,7 +76,7 @@ print("=" * 60)
 
 try:
     # Check if the file has is_speaking function
-    processor_file = "bgprogs/BgVoiceProcessorPHNX.pyw"
+    processor_file = "bgprogs/voice_command_processor.py"
     with open(processor_file, "r", encoding="utf-8") as f:
         content = f.read()
 

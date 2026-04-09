@@ -6,7 +6,7 @@ Test Continuous Listening with Faster-Whisper
 - Processes on 0.8s silence
 """
 import tkinter as tk
-from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition
+from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition
 
 print("\n" + "="*70)
 print("🎤 CONTINUOUS LISTENING TEST - Faster-Whisper + VAD")

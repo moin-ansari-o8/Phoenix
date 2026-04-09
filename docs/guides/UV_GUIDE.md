@@ -31,7 +31,7 @@ uv sync
 
 # Activate and run
 .\.venv\Scripts\Activate.ps1
-python MainPHNX.py
+python main_assistant.py
 ```
 
 ---
@@ -55,7 +55,7 @@ uv remove package-name
 uv lock --upgrade
 
 # Run without activating venv
-uv run python MainPHNX.py
+uv run python main_assistant.py
 
 # Install from requirements.txt (if needed)
 uv pip install -r Requirements.txt
@@ -158,7 +158,7 @@ uv pip compile Requirements.txt -o uv.lock
 
 ```powershell
 # One-liner: setup + activate + run
-uv sync; .\.venv\Scripts\Activate.ps1; python MainPHNX.py
+uv sync; .\.venv\Scripts\Activate.ps1; python main_assistant.py
 
 # Update everything
 uv lock --upgrade && uv sync
@@ -208,7 +208,7 @@ Phoenix/
 
 # Daily use:
 .\.venv\Scripts\Activate.ps1
-python MainPHNX.py
+python main_assistant.py
 
 # Update packages:
 uv sync

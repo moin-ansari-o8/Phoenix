@@ -17,7 +17,7 @@ class VoiceProcessorConfig:
 
 
 class VoiceProcessorService:
-    """Professionalized voice processor runner (renamed from BgVoiceProcessorPHNX)."""
+    """Runs the listener runtime stack (queue server + listener + processor)."""
 
     def __init__(
         self,
@@ -28,7 +28,7 @@ class VoiceProcessorService:
         self.event_callback = event_callback
         self.process: subprocess.Popen | None = None
         self._root_dir = Path(__file__).resolve().parents[2]
-        self._script_path = self._root_dir / "bgprogs" / "BgVoiceProcessorPHNX.pyw"
+        self._script_path = self._root_dir / "core" / "launch_phoenix.py"
 
     def _emit(self, event_type: str, payload: Dict):
         if self.event_callback:
@@ -85,4 +85,3 @@ class VoiceProcessorService:
                 stop_event.wait(self.config.restart_delay_seconds)
 
         self._emit("status", {"message": "stopped"})
-

@@ -6,8 +6,8 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from helpers.PersonalManagerPHNX import PersonalManager
-from helpers.HelperPHNX import SpeechEngine
+from utils.helpers.personal_manager import PersonalManager
+from utils.helpers.assistant_io import SpeechEngine
 
 
 def test_speech_engine():
@@ -70,7 +70,7 @@ def test_ollama_helper():
     """Test Ollama helper functionality."""
     print("\n=== Testing Ollama Helper ===")
     try:
-        from helpers.OllamaHelperPHNX import OllamaHelper
+        from utils.helpers.ollama_helper import OllamaHelper
 
         helper = OllamaHelper()
 

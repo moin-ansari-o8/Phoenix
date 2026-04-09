@@ -13,7 +13,7 @@ Now manages:
 - Shared audio queue (existing)
 - **NEW**: Shared speaking flag (`mp.Value('i', 0)`)
 
-### 2. Listener (ListenerPHNX.py)
+### 2. Listener (continuous_listener.py)
 **Checks speaking flag BEFORE capturing audio**:
 ```python
 while self.running:
@@ -75,12 +75,12 @@ T+1500ms: set_speaking(False) → Listener RESUMED
 - Now uses `queue_manager.set_speaking(True/False)`
 - Cleaner, faster, more reliable
 
-### ListenerPHNX.py
+### continuous_listener.py
 - Added check at top of listen loop
 - If `is_speaking() == True` → Skip audio capture
 - Drains audio buffer while Phoenix speaks
 
-### bgprogs/BgVoiceProcessorPHNX.pyw
+### bgprogs/voice_command_processor.py
 - No changes needed! The listener simply won't send chunks while speaking
 
 ## Testing
@@ -129,7 +129,7 @@ python launch_phoenix.py
 
 2. Check if speaking flag is working:
    ```python
-   # Add to ListenerPHNX.py for debugging:
+   # Add to continuous_listener.py for debugging:
    if self.queue_manager.is_speaking():
        print("[DEBUG] Listener paused - Phoenix speaking")
    ```

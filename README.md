@@ -53,18 +53,18 @@ When you start Phoenix, here is exactly what happens:
 
 `load.py` is the launcher. It starts **three separate processes**:
 
-1. **`bgprogs/BgBtryPHNX.pyw`** - Battery Monitor (runs silently in background)
+1. **`bgprogs/battery_monitor.pyw`** - Battery Monitor (runs silently in background)
    - Continuously checks your laptop's battery percentage and charging status.
    - Announces battery levels at specific thresholds (e.g., 50%, 75%, 100% when charging; 85%, 50%, 35%, 25% when on battery).
    - Alerts you when to plug in or unplug the charger.
 
-2. **`bgprogs/BgTmPHNX.pyw`** - Time & Schedule Manager (runs silently in background)
+2. **`bgprogs/time_monitor.pyw`** - Time & Schedule Manager (runs silently in background)
    - Checks and triggers alarms, timers, reminders, and scheduled events.
    - Announces the current time every hour.
    - Announces a water-drinking reminder on startup.
    - Runs periodic checks on your projects (via the Personal Manager).
 
-3. **`MainPHNX.py`** - The main Voice Assistant (runs in the foreground)
+3. **`main_assistant.py`** - The main Voice Assistant (runs in the foreground)
    - This is the program you interact with.
    - Listens for voice commands (activated by saying "Phoenix").
    - Processes your command, finds the matching intent, and executes the corresponding action.
@@ -73,9 +73,9 @@ Before launching these three, `load.py` also:
 - Terminates any previously running background Python processes (to avoid duplicates).
 - Plays a startup greeting based on the time of day ("Good morning", "Good afternoon", etc.).
 
-### Option B: Quick Start (using `MainPHNX.py` directly)
+### Option B: Quick Start (using `main_assistant.py` directly)
 
-If you just want the voice assistant without battery monitoring and time-based features, you can run `MainPHNX.py` directly. This gives you the full voice/chat command experience but without background monitoring.
+If you just want the voice assistant without battery monitoring and time-based features, you can run `main_assistant.py` directly. This gives you the full voice/chat command experience but without background monitoring.
 
 ---
 
@@ -83,12 +83,12 @@ If you just want the voice assistant without battery monitoring and time-based f
 
 ```
 Phoenix/
-|-- MainPHNX.py              # Main voice assistant (the brain)
+|-- main_assistant.py              # Main voice assistant (the brain)
 |-- load.py                   # Launcher - starts everything
 |
 |-- bgprogs/                  # Background processes
-|   |-- BgBtryPHNX.pyw       # Battery monitor
-|   |-- BgTmPHNX.pyw         # Time/alarm/reminder/schedule handler
+|   |-- battery_monitor.pyw       # Battery monitor
+|   |-- time_monitor.pyw         # Time/alarm/reminder/schedule handler
 |
 |-- helpers/                  # All the logic lives here
 |   |-- HelperPHNX.py         # Speech engine, voice recognition, GUI
@@ -128,7 +128,7 @@ Phoenix/
 
 ## Core Files Explained
 
-### `MainPHNX.py` - The Brain
+### `main_assistant.py` - The Brain
 
 This is the file you interact with. Here is what it does step by step:
 
@@ -252,7 +252,7 @@ When you say something, Phoenix compares your words against every pattern in eve
 
 ### 3. The Action Map
 
-Once an intent is matched, the tag is looked up in an action map inside `MainPHNX.py`. This map connects each tag to a specific function. For example:
+Once an intent is matched, the tag is looked up in an action map inside `main_assistant.py`. This map connects each tag to a specific function. For example:
 - `"saytime"` calls `utility.tim()` which speaks the current time.
 - `"playsong"` calls `utility.play_random_song(query)` which searches YouTube and plays the song.
 - `"open"` delegates to `OpenAppHandler` which maps app names to opener functions.
@@ -338,7 +338,7 @@ python load.py
 If you just want to talk to Phoenix without background monitoring:
 
 ```bash
-python MainPHNX.py
+python main_assistant.py
 ```
 
 When Phoenix starts, you will see a small terminal banner:
@@ -423,7 +423,7 @@ Here are some things you can say (or type) to Phoenix:
 
 ## Network Monitor Widget
 
-Phoenix includes a standalone network speed monitor (`NetMonitor/network_monitor.py`). It is a small PyQt5 widget that sits on the edge of your screen and shows real-time upload/download speeds. It launches automatically as a background thread when `MainPHNX.py` starts.
+Phoenix includes a standalone network speed monitor (`NetMonitor/network_monitor.py`). It is a small PyQt5 widget that sits on the edge of your screen and shows real-time upload/download speeds. It launches automatically as a background thread when `main_assistant.py` starts.
 
 ---
 

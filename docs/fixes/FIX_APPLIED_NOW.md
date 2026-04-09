@@ -29,7 +29,7 @@ I've implemented a **multi-layered defense** against self-listening:
    - Clear queue immediately
    - Increased buffer from 0.5s → 2.5s total
 
-2. **bgprogs/BgVoiceProcessorPHNX.pyw** - `process_audio_chunk()`
+2. **bgprogs/voice_command_processor.py** - `process_audio_chunk()`
    - Added active queue draining while speaking
    - Added debug logging to track chunk skipping
    - Enhanced `is_speaking()` with better logging

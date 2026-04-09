@@ -1,5 +1,5 @@
 """
-Quick test of BgTmPHNX.pyw startup (without infinite loop)
+Quick test of time_monitor.pyw startup (without infinite loop)
 Tests that the new Personal Manager integration doesn't break anything
 """
 
@@ -9,21 +9,21 @@ import datetime
 import tkinter as tk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-from helpers.TimeBasedHandlePHNX import AlarmHandle
-from helpers.UtilitiesPHNX import Utility
-from helpers.HelperPHNX import (
+from utils.helpers.time_handlers import AlarmHandle
+from utils.helpers.action_utilities import Utility
+from utils.helpers.assistant_io import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
 )
-from helpers.TimeBasedRunPHNX import (
+from utils.helpers.time_runner import (
     HandleTimeBasedFunctions,
     TimerManager,
     AlarmManager,
     ReminderManager,
     ScheduleManager,
 )
-from helpers.PersonalManagerPHNX import PersonalManager
+from utils.helpers.personal_manager import PersonalManager
 
 print("=" * 70)
 print("BACKGROUND PROCESS STARTUP TEST")
@@ -58,14 +58,14 @@ try:
     print(f"  - Settings: {personal_manager.settings}")
 
     print("\n[5/6] Creating background process handler...")
-    from bgprogs.BgTmPHNX import HandleBgProcess
+    from utils.background.time_monitor import TimeMonitorService
 
-    bg_process = HandleBgProcess(time_based_all, personal_manager, asutils)
+    bg_process = TimeMonitorService()
     print("✓ Background process handler created")
 
     print("\n[6/6] Testing startup reminders...")
     print("  Note: This will speak through your speakers!")
-    bg_process.startup_reminders()
+    bg_process._startup_reminders(asutils, personal_manager)
     print("✓ Startup reminders executed")
 
     print("\n" + "=" * 70)
@@ -73,7 +73,7 @@ try:
     print("=" * 70)
     print("\nYour background process is ready to run!")
     print("\nTo start it normally:")
-    print("  python bgprogs\\BgTmPHNX.pyw")
+    print("  python main.py")
     print("\nIt will:")
     print("  ✓ Announce pending items on startup")
     print("  ✓ Speak time every hour")

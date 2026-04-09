@@ -42,7 +42,7 @@ Your Phoenix assistant now has a complete **Personal Manager** system that track
 
 ## 📝 Files Modified (3 files - MINIMAL CHANGES)
 
-1. **bgprogs/BgTmPHNX.pyw**
+1. **bgprogs/time_monitor.pyw**
    - ✅ Added 1 import line
    - ✅ Added 2 methods: `startup_reminders()` and `periodic_checks()`
    - ✅ Modified constructor to accept personal_manager
@@ -59,7 +59,7 @@ Your Phoenix assistant now has a complete **Personal Manager** system that track
 ## 🎙️ What Works NOW
 
 ### Background Process Announcements:
-When you start `BgTmPHNX.pyw`:
+When you start `time_monitor.pyw`:
 - ✅ Speaks pending todos: "Sir, 2 todos pending today"
 - ✅ Speaks pending goals: "Goals pending: 100 push-ups"
 - ✅ Speaks stale projects: "No update on Dukan in 3 days"
@@ -91,12 +91,12 @@ You need to:
 - ✅ All original functionality preserved
 - ✅ No breaking changes
 - ✅ Background process still works without Personal Manager
-- ✅ Can disable by commenting out 3 lines in BgTmPHNX.pyw
+- ✅ Can disable by commenting out 3 lines in time_monitor.pyw
 
 ### Rollback Instructions (if needed):
 ```python
-# In bgprogs/BgTmPHNX.pyw, comment these lines:
-# from helpers.PersonalManagerPHNX import PersonalManager
+# In bgprogs/time_monitor.pyw, comment these lines:
+# from utils.helpers.personal_manager import PersonalManager
 # personal_manager = PersonalManager()
 # bg_process = HandleBgProcess(time_based_all, personal_manager, asutils)
 # Change back to:
@@ -145,13 +145,13 @@ Phoenix Voice Assistant
 ```powershell
 cd C:\STDY\MYAIS\Phoenix
 .\.venv\Scripts\Activate.ps1
-python bgprogs\BgTmPHNX.pyw
+python bgprogs\time_monitor.pyw
 ```
 
 ### Add Data Manually:
 Edit `data/PersonalManager.json` or use Python:
 ```python
-from helpers.PersonalManagerPHNX import PersonalManager
+from utils.helpers.personal_manager import PersonalManager
 pm = PersonalManager()
 
 # Add project

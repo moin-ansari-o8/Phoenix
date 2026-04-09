@@ -21,7 +21,7 @@ uv sync
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nDone! Now run:" -ForegroundColor Green
     Write-Host "  .\.venv\Scripts\Activate.ps1" -ForegroundColor Cyan
-    Write-Host "  python MainPHNX.py" -ForegroundColor Cyan
+    Write-Host "  python main.py" -ForegroundColor Cyan
 } else {
     Write-Host "`nFailed! Try:" -ForegroundColor Red
     Write-Host "  1. Close this terminal" -ForegroundColor Yellow

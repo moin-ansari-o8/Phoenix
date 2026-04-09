@@ -3,8 +3,8 @@ import sys
 import subprocess
 import pyautogui as pg
 from time import sleep
-from helpers.UtilitiesPHNX import Utility
-from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+from utils.helpers.action_utilities import Utility
+from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
 import tkinter as tk
 from datetime import datetime
 import keyboard
@@ -71,8 +71,8 @@ def launch_in_bg(file_path):
 def load_phnx():
     # sleep(3)
     paths = [
-        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgBtryPHNX.pyw",
-        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\BgTmPHNX.pyw",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\battery_monitor.pyw",
+        "C:\\STDY\\MYAIS\\Phoenix\\bgprogs\\time_monitor.pyw",
         # "C:\\STDY\\MYAIS\\Phoenix\\batch\\main.bat",
     ]
     for path in paths:

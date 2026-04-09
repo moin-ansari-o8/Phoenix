@@ -18,7 +18,7 @@ except ImportError as e:
 
 # Test helpers import
 try:
-    from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition
+    from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition
 
     print("✅ HelperPHNX imported successfully")
 except Exception as e:

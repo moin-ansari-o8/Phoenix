@@ -19,7 +19,7 @@ if %errorlevel% equ 0 (
     echo.
     echo Done! Now run:
     echo   .venv\Scripts\activate.bat
-    echo   python MainPHNX.py
+    echo   python main.py
 ) else (
     echo.
     echo Failed! Close terminal and try again.

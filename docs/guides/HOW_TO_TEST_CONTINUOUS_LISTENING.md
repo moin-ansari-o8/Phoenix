@@ -44,7 +44,7 @@ python test_continuous_listen.py
 If test works, run the full assistant:
 
 ```bash
-python MainPHNX.py
+python main_assistant.py
 ```
 
 Now Phoenix will use continuous listening instead of 8-second timeout.

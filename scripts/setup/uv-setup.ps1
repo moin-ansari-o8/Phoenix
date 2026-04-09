@@ -76,7 +76,7 @@ Write-Host "`nTo activate the environment:" -ForegroundColor Yellow
 Write-Host "  .\.venv\Scripts\Activate.ps1" -ForegroundColor Green
 
 Write-Host "`nTo run Phoenix:" -ForegroundColor Yellow
-Write-Host "  python MainPHNX.py" -ForegroundColor Green
+Write-Host "  python main.py" -ForegroundColor Green
 
 Write-Host "`nTo update dependencies in the future:" -ForegroundColor Yellow
 Write-Host "  uv sync" -ForegroundColor Green

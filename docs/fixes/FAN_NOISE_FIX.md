@@ -61,7 +61,7 @@ The silence timer can ONLY be reset after 3 consecutive speech chunks, not just 
 Run MainPHNX again with your fan on:
 
 ```bash
-python MainPHNX.py
+python main_assistant.py
 ```
 
 You should see:

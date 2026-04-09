@@ -119,7 +119,7 @@ Is it a test?
 # ✅ CORRECT placements:
 core/launch_phoenix.py                    # Main launcher
 helpers/AudioProcessorPHNX.py             # Reusable audio helper
-bgprogs/BgVoiceProcessorPHNX.pyw         # Background processor
+bgprogs/voice_command_processor.py         # Background processor
 tests/unit/test_speech_engine.py          # Unit test
 tests/integration/test_full_pipeline.py   # Integration test
 tests/experimental/test_new_tts.py        # Experimental feature

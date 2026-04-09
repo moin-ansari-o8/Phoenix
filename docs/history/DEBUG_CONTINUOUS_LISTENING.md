@@ -3,7 +3,7 @@
 ## Run MainPHNX with Debug Output
 
 ```bash
-python MainPHNX.py
+python main_assistant.py
 ```
 
 ## What to Look For
@@ -92,7 +92,7 @@ self.MIN_SPEECH_DURATION = 0.2  # Shorter minimum (default 0.3)
 
 ## Test Sequence
 
-1. Run `python MainPHNX.py`
+1. Run `python main_assistant.py`
 2. Wait for "Listening continuously" message
 3. Say "Phoenix what time is it"
 4. Wait 1 second (silence)

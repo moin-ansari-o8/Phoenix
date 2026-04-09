@@ -1,21 +1,7 @@
 import datetime
 import time
-import tkinter as tk
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
-
-from helpers.HelperPHNX import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
-from helpers.PersonalManagerPHNX import PersonalManager
-from helpers.TimeBasedHandlePHNX import AlarmHandle
-from helpers.TimeBasedRunPHNX import (
-    AlarmManager,
-    HandleTimeBasedFunctions,
-    ReminderManager,
-    ScheduleManager,
-    TimerManager,
-)
-from helpers.UtilitiesPHNX import Utility
-
 
 EventCallback = Optional[Callable[[str, Dict], None]]
 
@@ -39,11 +25,11 @@ class TimeMonitorService:
         if self.event_callback:
             self.event_callback("time_monitor", {"type": event_type, **payload})
 
-    def _safe_speak(self, utility: Utility, message: str):
+    def _safe_speak(self, utility, message: str):
         self._emit("speech", {"message": message})
         utility.speak(message)
 
-    def _startup_reminders(self, utility: Utility, personal_manager: PersonalManager):
+    def _startup_reminders(self, utility, personal_manager):
         current_time = datetime.datetime.now().strftime("%I:%M %p")
         self._safe_speak(utility, f"{utility.tM()} {current_time}.")
 
@@ -57,8 +43,8 @@ class TimeMonitorService:
 
     def _periodic_checks(
         self,
-        utility: Utility,
-        personal_manager: PersonalManager,
+        utility,
+        personal_manager,
         current_hour: int,
     ):
         if (
@@ -81,6 +67,23 @@ class TimeMonitorService:
 
         root = None
         try:
+            import tkinter as tk
+            from utils.helpers.action_utilities import Utility
+            from utils.helpers.assistant_io import (
+                SpeechEngine,
+                VoiceAssistantGUI,
+                VoiceRecognition,
+            )
+            from utils.helpers.personal_manager import PersonalManager
+            from utils.helpers.time_handlers import AlarmHandle
+            from utils.helpers.time_runner import (
+                AlarmManager,
+                HandleTimeBasedFunctions,
+                ReminderManager,
+                ScheduleManager,
+                TimerManager,
+            )
+
             root = tk.Tk()
             root.withdraw()
             gui = VoiceAssistantGUI(root)
@@ -126,4 +129,3 @@ class TimeMonitorService:
                 except Exception:
                     pass
             self._emit("status", {"message": "stopped"})
-

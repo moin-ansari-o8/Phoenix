@@ -7,7 +7,7 @@
 deactivate          # If venv is active
 uv sync            # Install everything (10-30 seconds!)
 .\.venv\Scripts\Activate.ps1
-python MainPHNX.py
+python main_assistant.py
 ```
 
 **That's it!**

@@ -50,7 +50,7 @@ Successfully recovered from corrupted virtual environment and implemented the Pe
    - Settings: reminder thresholds, summary times, frequencies
 
 **Files Modified:**
-1. `bgprogs/BgTmPHNX.pyw`
+1. `bgprogs/time_monitor.pyw`
    - Integrated PersonalManager
    - Added startup_reminders() - announces pending items on launch
    - Added periodic_checks() - checks every 6 hours for stale items
@@ -103,7 +103,7 @@ Total: 3/3 tests passed
 
 ### Background Process Test
 ```bash
-.\.venv_new\Scripts\python.exe bgprogs\BgTmPHNX.pyw
+.\.venv_new\Scripts\python.exe bgprogs\time_monitor.pyw
 # Output: "Sir, 2 todos pending today."
 # ✓ Successful startup announcement
 ```
@@ -149,7 +149,7 @@ Utils: pyautogui, plyer, pyvda, tabulate, opencv-python
 .\.venv_new\Scripts\Activate.ps1
 
 # Run background process
-python bgprogs\BgTmPHNX.pyw
+python bgprogs\time_monitor.pyw
 ```
 
 ### Adding Personal Manager Items
@@ -242,7 +242,7 @@ Voice commands like:
 - UV_GUIDE.md, UV_README.md
 
 ### Modified (4 files)
-- bgprogs/BgTmPHNX.pyw (lines 21, 24-62, 82-85)
+- bgprogs/time_monitor.pyw (lines 21, 24-62, 82-85)
 - helpers/HelperPHNX.py (lines 14-41, 48-52)
 - helpers/UtilitiesPHNX.py (lines 18-21, 43-48, 1408-1412)
 - data/intents.json (added 6 intent patterns)
@@ -257,7 +257,7 @@ Run final test:
 
 Run background process:
 ```powershell
-.\.venv_new\Scripts\python.exe bgprogs\BgTmPHNX.pyw
+.\.venv_new\Scripts\python.exe bgprogs\time_monitor.pyw
 # Expected: Voice announces pending todos
 ```
 

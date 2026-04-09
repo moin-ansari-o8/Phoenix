@@ -38,9 +38,11 @@ RUNTIME_CONFIG = RuntimeConfig(
 def main():
     print("[main] Phoenix runtime manager starting...")
     manager = PhoenixRuntimeManager(config=RUNTIME_CONFIG)
+    manager.register_event_handler(
+        lambda event: None
+    )  # placeholder hook for custom automation on thread hits
     manager.run_forever()
 
 
 if __name__ == "__main__":
     main()
-

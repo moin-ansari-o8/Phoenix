@@ -48,8 +48,8 @@ _ctypes.COMError: (-2147023174, 'The RPC server is unavailable.')
 2. Manually start background processes:
    ```powershell
    cd C:\Path\To\Phoenix
-   pythonw bgprogs\BgBtryPHNX.pyw
-   pythonw bgprogs\BgTmPHNX.pyw
+   pythonw bgprogs\battery_monitor.pyw
+   pythonw bgprogs\time_monitor.pyw
    ```
 
 3. Check for errors in console output
@@ -152,7 +152,7 @@ pip install pyaudio --upgrade
 4. **Restart background time process:**
    ```powershell
    taskkill /F /IM pythonw.exe
-   pythonw bgprogs\BgTmPHNX.pyw
+   pythonw bgprogs\time_monitor.pyw
    ```
 
 ---
@@ -172,7 +172,7 @@ pip install pyaudio --upgrade
    ```
 
 2. **Reduce polling frequency:**
-   - Edit `BgTmPHNX.pyw`
+   - Edit `time_monitor.pyw`
    - Increase `time.sleep(1)` to `time.sleep(5)`
 
 3. **Disable unused features:**
@@ -191,7 +191,7 @@ _tkinter.TclError: can't invoke "wm" command
 ### Solution
 This happens when GUI is created but not properly managed.
 
-**In BgTmPHNX.pyw** (background process):
+**In time_monitor.pyw** (background process):
 - GUI is created but never used
 - This is by design (needed for dependencies)
 - Ignore Tkinter warnings in background processes
@@ -238,7 +238,7 @@ except Exception as e:
 
 ### Enable Debug Mode
 ```python
-# Add to top of MainPHNX.py
+# Add to top of main_assistant.py
 import logging
 logging.basicConfig(level=logging.DEBUG)
 ```
@@ -282,7 +282,7 @@ while ($true) {
 3. **Create minimal test case:**
    ```python
    # test_minimal.py
-   from helpers.UtilitiesPHNX import Utility
+   from utils.helpers.action_utilities import Utility
    # Test specific failing function
    ```
 

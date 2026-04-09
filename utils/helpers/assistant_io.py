@@ -74,7 +74,7 @@ class SpeechEngine:
         self._pygame_initialized = False
         
         # Temp file for Edge TTS audio
-        self._temp_audio_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+        self._temp_audio_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data")
         os.makedirs(self._temp_audio_dir, exist_ok=True)
         self._temp_audio_file = os.path.join(self._temp_audio_dir, "phoenix_speech.mp3")
         
@@ -195,8 +195,8 @@ class SpeechEngine:
         Sets speaking flag to pause listener (prevents self-listening).
         """
         # Import here to avoid circular imports
-        from helpers.ConsoleUI import phoenix_said, print_block
-        from helpers.QueueManagerPHNX import QueueManager
+        from utils.helpers.console_ui import phoenix_said, print_block
+        from utils.helpers.queue_manager import QueueManager
         
         queue_manager = None
         
@@ -286,10 +286,10 @@ class VoiceAssistantGUI:
         self.mic_label = tk.Label(self.root, bg="white")
         self.mic_label.pack()
         self.listen_img_path = os.path.join(
-            os.path.dirname(__file__), "..", "assets", "img", "green.png"
+            os.path.dirname(__file__), "..", "..", "assets", "img", "green.png"
         )
         self.recognize_img_path = os.path.join(
-            os.path.dirname(__file__), "..", "assets", "img", "red.png"
+            os.path.dirname(__file__), "..", "..", "assets", "img", "red.png"
         )
         if not os.path.exists(self.listen_img_path):
             print("Error: Listen image not found!")

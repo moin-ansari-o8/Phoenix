@@ -11,8 +11,8 @@ Based on: PHOENIX_COMPREHENSIVE_ANALYSIS.md + SENIOR_REVIEW_PHOENIX_ARCHITECTURE
 - Queue IPC foundation exists:
   - core/queue_server.py
   - helpers/QueueManagerPHNX.py
-  - core/ListenerPHNX.py
-  - bgprogs/BgVoiceProcessorPHNX.pyw
+  - core/continuous_listener.py
+  - bgprogs/voice_command_processor.py
 - Self-voice suppression exists:
   - Shared speaking flag via QueueManager
   - Listener skips capture while Phoenix is speaking
@@ -33,7 +33,7 @@ Based on: PHOENIX_COMPREHENSIVE_ANALYSIS.md + SENIOR_REVIEW_PHOENIX_ARCHITECTURE
 ## 2) What is partially done (started, but not connected)
 
 - Reorganization to core/ is partial:
-  - core/ has launch_phoenix.py, MainPHNX.py, ListenerPHNX.py, queue_server.py
+  - core/ has launch_phoenix.py, main_assistant.py, continuous_listener.py, queue_server.py
   - But root launch files are empty and docs still point to old paths
 - Plugin system is built as prototype but not wired into runtime path:
   - No production import/usage from main runtime flow
@@ -69,7 +69,7 @@ Based on: PHOENIX_COMPREHENSIVE_ANALYSIS.md + SENIOR_REVIEW_PHOENIX_ARCHITECTURE
 
 ## 4) Critical blockers to fix first
 
-1. Resolve merge conflict in bgprogs/BgTmPHNX.pyw
+1. Resolve merge conflict in bgprogs/time_monitor.pyw
    - File currently has unresolved conflict markers
 
 2. Fix broken launcher wiring
@@ -78,12 +78,12 @@ Based on: PHOENIX_COMPREHENSIVE_ANALYSIS.md + SENIOR_REVIEW_PHOENIX_ARCHITECTURE
 
 3. Pick one canonical runtime architecture
    - Current state mixes:
-     - core/MainPHNX.py monolith path
-     - helpers/ProcessorPHNX.py + bgprogs/BgVoiceProcessorPHNX.pyw queue path
+     - core/main_assistant.py monolith path
+     - helpers/ProcessorPHNX.py + bgprogs/voice_command_processor.py queue path
    - Need one final source of truth
 
 4. Align docs with real runnable entrypoints
-   - README still describes load.py and root MainPHNX.py style flow
+   - README still describes load.py and root main_assistant.py style flow
    - Current code is mixed after partial reorganization
 
 ---
@@ -91,14 +91,14 @@ Based on: PHOENIX_COMPREHENSIVE_ANALYSIS.md + SENIOR_REVIEW_PHOENIX_ARCHITECTURE
 ## 5) Exact remaining work list
 
 ### Phase A - Make project run cleanly (must-do)
-- [ ] Fix BgTmPHNX.pyw merge conflicts
+- [ ] Fix time_monitor.pyw merge conflicts
 - [ ] Repair launch path resolution in core/launch_phoenix.py
 - [ ] Create proper root wrappers OR remove empty root launch files
 - [ ] Decide one primary run command and make it reliable
 - [ ] Update README run instructions to that one command
 
 ### Phase B - Connect architecture (must-do)
-- [ ] Remove duplicated assistant logic between core/MainPHNX.py and helpers/ProcessorPHNX.py
+- [ ] Remove duplicated assistant logic between core/main_assistant.py and helpers/ProcessorPHNX.py
 - [ ] Keep one intent engine and one action routing flow
 - [ ] Integrate plugin system into real execution path (not example-only)
 - [ ] Move remaining direct utility calls to plugin actions (gradually)

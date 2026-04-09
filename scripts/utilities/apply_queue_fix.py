@@ -193,8 +193,8 @@ class PhoenixLauncher:
         self.python_exe = sys.executable
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self.queue_server_script = os.path.join(self.base_dir, "queue_server.py")
-        self.listener_script = os.path.join(self.base_dir, "ListenerPHNX.py")
-        self.processor_script = os.path.join(self.base_dir, "bgprogs", "BgVoiceProcessorPHNX.pyw")
+        self.listener_script = os.path.join(self.base_dir, "continuous_listener.py")
+        self.processor_script = os.path.join(self.base_dir, "bgprogs", "voice_command_processor.py")
         
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)

@@ -14,7 +14,7 @@ You had a **2-step wake word system** like Google Assistant:
 
 ---
 
-## How Original MainPHNX.py Worked
+## How Original main_assistant.py Worked
 
 ### The `input_voice()` method (lines 437-475):
 
@@ -83,7 +83,7 @@ def handle_command(self, sent):
 
 ---
 
-## Wake Words List (from MainPHNX.py line 452-459)
+## Wake Words List (from main_assistant.py line 452-459)
 
 - "phoenix"
 - "finish" (sounds like phoenix)
@@ -98,13 +98,13 @@ def handle_command(self, sent):
 
 ## Current Problem
 
-In the new 2-program architecture (`BgVoiceProcessorPHNX.pyw`), I did NOT include this wake word logic. It processes ALL speech regardless of wake word.
+In the new 2-program architecture (`voice_command_processor.py`), I did NOT include this wake word logic. It processes ALL speech regardless of wake word.
 
 ---
 
 ## My Proposed Fix
 
-Add this logic to `BgVoiceProcessorPHNX.pyw`:
+Add this logic to `voice_command_processor.py`:
 
 ```python
 class VoiceProcessor:

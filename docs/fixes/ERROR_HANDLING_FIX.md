@@ -21,8 +21,8 @@ _ctypes.COMError: (-2147023174, 'The RPC server is unavailable.', (None, None, N
 **Crash Points:**
 1. `UtilitiesPHNX.py:608` - `get_cur_desk()` calling `VirtualDesktop.current()`
 2. `TimeBasedHandlePHNX.py:434` - `setAlarm()` requiring desktop tracking
-3. `BgTmPHNX.pyw:30` - Background process main loop
-4. `MainPHNX.py:192` - Action execution without error handling
+3. `time_monitor.pyw:30` - Background process main loop
+4. `main_assistant.py:192` - Action execution without error handling
 
 ---
 
@@ -56,7 +56,7 @@ def get_cur_desk(self):
 def setAlarm(self, query):
     try:
         idx, dsk_nm = self.utils.get_cur_desk()
-        self.utils.get_window("MainPHNX.py")
+        self.utils.get_window("main_assistant.py")
         self.utils.maximize_window()
     except Exception as e:
         print(f"Warning: Window management failed - continuing alarm setup...")
@@ -70,7 +70,7 @@ def setAlarm(self, query):
 ---
 
 ### 3. **Background Process Protection**
-**File:** `bgprogs/BgTmPHNX.pyw`
+**File:** `bgprogs/time_monitor.pyw`
 
 ```python
 def main(self):
@@ -94,7 +94,7 @@ def main(self):
 ---
 
 ### 4. **Main Loop Protection**
-**File:** `MainPHNX.py`
+**File:** `main_assistant.py`
 
 ```python
 def main_phnx(self):
@@ -119,7 +119,7 @@ def main_phnx(self):
 ---
 
 ### 5. **Action Execution Safety**
-**File:** `MainPHNX.py` - `_execute_action()` method
+**File:** `main_assistant.py` - `_execute_action()` method
 
 ```python
 if tag in action_map:

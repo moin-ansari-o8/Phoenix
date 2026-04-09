@@ -23,6 +23,7 @@ ALLOWED_ROOT_FILES = {
     "validate_structure.py",
     "REORGANIZATION_PLAN.md",
     "REORGANIZATION_QUICKSTART.md",
+    "main.py",
 }
 
 ALLOWED_ROOT_DIRS = {
@@ -31,8 +32,7 @@ ALLOWED_ROOT_DIRS = {
     ".venv",
     "__pycache__",
     "core",
-    "helpers",
-    "bgprogs",
+    "utils",
     "docs",
     "tests",
     "scripts",

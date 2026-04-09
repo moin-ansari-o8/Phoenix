@@ -38,9 +38,9 @@ class PhoenixLauncher:
         # Get script paths
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self.queue_server_script = os.path.join(self.base_dir, "queue_server.py")
-        self.listener_script = os.path.join(self.base_dir, "ListenerPHNX.py")
-        self.processor_script = os.path.join(
-            self.base_dir, "bgprogs", "BgVoiceProcessorPHNX.pyw"
+        self.listener_script = os.path.join(self.base_dir, "continuous_listener.py")
+        self.processor_script = os.path.abspath(
+            os.path.join(self.base_dir, "..", "utils", "background", "voice_command_processor.py")
         )
 
         # Setup signal handlers

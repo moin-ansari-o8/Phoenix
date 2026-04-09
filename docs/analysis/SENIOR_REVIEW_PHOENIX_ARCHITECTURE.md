@@ -79,7 +79,7 @@ Phoenix/
 │   ├── __init__.py
 │   ├── config.py                  # Load config.json or config.yaml
 │   ├── engine.py                  # Main orchestrator (your manager.py idea)
-│   ├── listener.py                # Moved from ListenerPHNX.py
+│   ├── listener.py                # Moved from continuous_listener.py
 │   ├── processor.py               # Voice command processor
 │   ├── intent_matcher.py          # Semantic + fuzzy matching
 │   └── speech/
@@ -960,7 +960,7 @@ MCP_CONFIG = """
 ## 🚀 Implementation Priority
 
 ### Phase 1: Quick Wins (This Week)
-1. Fix merge conflict in `BgTmPHNX.pyw`
+1. Fix merge conflict in `time_monitor.pyw`
 2. Switch Whisper to "tiny" model
 3. Fix pyttsx3 reinitialization (create once, reuse)
 4. Reduce silence threshold to 0.4s
@@ -997,17 +997,17 @@ MCP_CONFIG = """
 
 ## ⚠️ Current Issues to Fix
 
-1. **Merge Conflict in BgTmPHNX.pyw**
+1. **Merge Conflict in time_monitor.pyw**
    - Lines 72-151 have `<<<<<<<` and `>>>>>>>` markers
    - Need to resolve before any changes
 
 2. **Duplicate Code**
-   - `ListenerPHNX.py` exists in both root and `/core`
+   - `continuous_listener.py` exists in both root and `/core`
    - Need to consolidate
 
 3. **Large Files**
    - `UtilitiesPHNX.py` is 3300+ lines
-   - `MainPHNX.py` is 700+ lines
+   - `main_assistant.py` is 700+ lines
    - Need to break into smaller modules
 
 ---

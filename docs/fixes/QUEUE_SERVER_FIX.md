@@ -5,8 +5,8 @@ Listener and processor create separate queues. They need to connect to the SAME 
 
 ## Solution: 3-Program Architecture
 1. **queue_server.py** - Hosts the shared queue
-2. **ListenerPHNX.py** - Connects to server, sends audio
-3. **BgVoiceProcessorPHNX.pyw** - Connects to server, receives audio
+2. **continuous_listener.py** - Connects to server, sends audio
+3. **voice_command_processor.py** - Connects to server, receives audio
 
 ---
 

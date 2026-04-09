@@ -59,7 +59,7 @@ if speech_duration_so_far >= self.MAX_SPEECH_DURATION:
 
 Run with fan on:
 ```powershell
-python MainPHNX.py
+python main_assistant.py
 ```
 
 Watch the timestamps to verify:

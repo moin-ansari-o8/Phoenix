@@ -15,9 +15,9 @@ import pyaudio
 # Add parent directory to path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from helpers.QueueManagerPHNX import QueueManager, create_audio_chunk
-from helpers.HelperPHNX import VoiceAssistantGUI
-from helpers.ConsoleUI import listening, detected, processing, print_block, get_timestamp
+from utils.helpers.queue_manager import QueueManager, create_audio_chunk
+from utils.helpers.assistant_io import VoiceAssistantGUI
+from utils.helpers.console_ui import listening, detected, processing, print_block, get_timestamp
 
 # VAD (Voice Activity Detection) for continuous listening
 try:
