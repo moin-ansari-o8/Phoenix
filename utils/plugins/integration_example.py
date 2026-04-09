@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 
 # Add Phoenix root to path
-PHOENIX_ROOT = Path(__file__).parent.parent
+PHOENIX_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PHOENIX_ROOT))
 
 # Setup logging

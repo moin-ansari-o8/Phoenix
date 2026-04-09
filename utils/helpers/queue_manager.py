@@ -122,14 +122,14 @@ class QueueManager:
         """Check if queue is empty"""
         try:
             return self.queue.empty()
-        except:
+        except Exception:
             return True
 
     def get_size(self) -> int:
         """Get approximate queue size"""
         try:
             return self.queue.qsize()
-        except:
+        except Exception:
             return 0
 
     def get_stats(self) -> Dict[str, int]:
@@ -149,7 +149,7 @@ class QueueManager:
             while not self.queue.empty():
                 self.queue.get_nowait()
                 cleared += 1
-        except:
+        except Exception:
             pass
         if cleared > 0:
             logger.info(f"Cleared {cleared} chunks from queue")
@@ -166,7 +166,7 @@ class QueueManager:
         """Check if Phoenix is currently speaking"""
         try:
             return self.speaking_flag.value == 1
-        except:
+        except Exception:
             return False
 
     def close(self):

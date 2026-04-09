@@ -7,7 +7,6 @@ import pyttsx3
 import speech_recognition as sr
 import tkinter as tk
 from PIL import Image, ImageTk
-from time import sleep
 from colorama import Fore
 import warnings
 import numpy as np
@@ -241,8 +240,6 @@ class SpeechEngine:
                     print_block("[DEBUG] Speaking flag CLEARED - listener resumed")
                 except Exception as e:
                     print_block(f"[DEBUG] Error clearing flag: {e}")
-                except:
-                    pass
     
     def _speak_pyttsx3(self, audio, speed=174):
         """Fallback speech using pyttsx3"""
@@ -259,7 +256,7 @@ class SpeechEngine:
                 engine.setProperty("voice", self.voice_id)
             engine.setProperty("rate", speed)
             engine.setProperty("volume", self.volume)
-        except:
+        except Exception:
             pass
         
         engine.say(audio)

@@ -117,7 +117,7 @@ class ReminderManager:
                         reminder_time.hour > current_datetime.hour
                         and reminder_time.minute > current_datetime.minute
                         and not reminder["reminded"]
-                        and self.ringing == False
+                        and not self.ringing
                     ):
                         reminder["reminded"] = True
                         self.utils.speak(
@@ -130,7 +130,7 @@ class ReminderManager:
                         reminder_time.hour == current_datetime.hour
                         and reminder_time.minute == current_datetime.minute
                         and not reminder["reminded"]
-                        and self.ringing == False
+                        and not self.ringing
                     ):
                         self.utils.speak(
                             f"Sir, here's your reminder for today {reminder_time.hour}:{reminder_time.minute} to {reminder['message']}"
@@ -291,7 +291,7 @@ class ScheduleManager:
                 try:
                     schedule_time = schedule["time"]
                     # print(current_time, schedule_time)
-                    if (current_time == schedule_time) and (self.halt == False):
+                    if (current_time == schedule_time) and (not self.halt):
                         self.speak(f"{(schedule['message'])}")
                         threading.Thread(target=self._do_halt).start()
                 except Exception as e:
@@ -386,7 +386,7 @@ class AlarmManager:
                         if (
                             current_hour == alarm_hour
                             and current_minute == alarm_minute
-                            and self.ringing == False
+                            and not self.ringing
                         ):
                             # Alarm triggered
                             self.speak(
