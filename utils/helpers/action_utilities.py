@@ -23,14 +23,9 @@ except ImportError:
     pyaudio = None
 import wave
 import tkinter as tk
-import psutil
-import time
-from time import sleep
-import psutil
 import win32gui
 import win32process
 import pygetwindow as gw
-import subprocess
 from tkinter.filedialog import askdirectory
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -368,7 +363,7 @@ class Utility:
         "fifty": 50,
     }
     current_dir = os.path.dirname(__file__)
-    SONGS_FILE = os.path.join(current_dir, "..", "data", "songs.txt")
+    SONGS_FILE = os.path.join(current_dir, "..", "..", "data", "songs.txt")
     OK = [
         "K!",
         "Alrighty!",

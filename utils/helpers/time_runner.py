@@ -4,8 +4,6 @@ import threading
 from time import sleep
 import json
 from datetime import datetime
-import time
-from time import sleep
 
 
 class HandleTimeBasedFunctions:
@@ -148,9 +146,9 @@ class ReminderManager:
             print(f"An error occurred: {e}")
 
     def ringing_reminder(self):
-        self.ringing == True
+        self.ringing = True
         sleep(65)
-        self.ringing == False
+        self.ringing = False
 
 
 from datetime import time

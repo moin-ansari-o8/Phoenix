@@ -8,7 +8,6 @@ import random
 import uuid
 from tabulate import tabulate
 from collections import defaultdict
-from time import sleep
 
 
 class TimerHandle:
@@ -687,6 +686,7 @@ class ReminderHandle:
                 print("Invalid choices. Please choose from '1', '2', or '3'.")
                 return
             if "1" in edit_choices:
+                new_date = ""
                 while not new_date:
                     new_date = input("Enter the new date (DD-MM-YY): ").strip()
                     if "break" in new_date:
