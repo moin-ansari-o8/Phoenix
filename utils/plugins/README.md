@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the modular plugin architecture for Phoenix voice assistant. The helpers folder has been broken down into focused, single-responsibility plugins for better maintainability and extensibility.
+This is the modular plugin architecture for Phoenix voice assistant. The runtime is organized under `utils/`, with focused, single-responsibility plugin modules for maintainability and extensibility.
 
 ## Structure
 

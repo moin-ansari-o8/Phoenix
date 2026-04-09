@@ -114,8 +114,13 @@ class ReminderManager:
                 )
                 if current_datetime.date() == reminder_date.date():
                     if (
-                        reminder_time.hour > current_datetime.hour
-                        and reminder_time.minute > current_datetime.minute
+                        (
+                            reminder_time.hour > current_datetime.hour
+                            or (
+                                reminder_time.hour == current_datetime.hour
+                                and reminder_time.minute > current_datetime.minute
+                            )
+                        )
                         and not reminder["reminded"]
                         and not self.ringing
                     ):

@@ -204,13 +204,12 @@ class OpenAppHandler:
 
                 for func, tags in self.action_map.items():
                     if entity in tags:
+                        random_response = random.choice(self.open_intent["responses"])
                         if self.open_app_if_running(entity):
                             self.utils.speak(
                                 f"{entity.capitalize()} is now {random_response}."
                             )
                             return
-                        # Print a random response from the "responses" list
-                        random_response = random.choice(self.open_intent["responses"])
 
                         # Call the function
                         func()

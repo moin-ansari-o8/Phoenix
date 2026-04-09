@@ -917,7 +917,6 @@ class ReminderHandle:
                 if day in after_for:
                     found_day = day
                     break
-            found_day = None
             if found_day:
                 if "tomorrow" in after_for:
                     next_day = today + timedelta(days=1)
