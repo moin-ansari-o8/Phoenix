@@ -7,7 +7,7 @@ This is the modular plugin architecture for Phoenix voice assistant. The helpers
 ## Structure
 
 ```
-plugin-temp/
+utils/plugins/
 ├── __init__.py         # Package init, exports BasePlugin & PluginRegistry
 ├── base.py             # Core plugin system (BasePlugin, PluginRegistry)
 ├── README.md           # This file
@@ -29,7 +29,7 @@ plugin-temp/
 ### Basic Usage
 
 ```python
-from plugin_temp import PluginRegistry
+from utils.plugins import PluginRegistry
 
 # Initialize registry with speech engine
 registry = PluginRegistry(speech_engine=my_speech_engine)
@@ -49,7 +49,7 @@ registry.auto_execute("open_brave")  # Finds apps plugin automatically
 ### Individual Plugin Usage
 
 ```python
-from plugin_temp.normal import AppsPlugin, SystemPlugin
+from utils.plugins.normal import AppsPlugin, SystemPlugin
 
 # Create plugin instance
 apps = AppsPlugin(speech_engine=my_speech_engine)
@@ -190,7 +190,7 @@ Personal task management.
 ### Step 1: Inherit from BasePlugin
 
 ```python
-from plugin_temp.base import BasePlugin
+from utils.plugins.base import BasePlugin
 
 class MyCustomPlugin(BasePlugin):
     PLUGIN_NAME = "custom"
@@ -247,7 +247,7 @@ registry.execute("custom", "my_action", "test")
 The `normal/` folder is for standard plugins. Future MCP (Model Context Protocol) plugins will go in a separate `mcp/` folder:
 
 ```
-plugin-temp/
+utils/plugins/
 ├── normal/    # Standard plugins
 └── mcp/       # MCP server plugins (future)
     ├── __init__.py

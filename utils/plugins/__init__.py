@@ -6,7 +6,7 @@ This package contains the modular plugin system for Phoenix voice assistant.
 Plugins are organized by category for maintainability and extensibility.
 
 Structure:
-    plugin-temp/
+    utils/plugins/
     ├── __init__.py         # This file - package initialization
     ├── base.py             # BasePlugin class and plugin registry
     └── normal/             # Standard plugins (non-MCP)
@@ -22,7 +22,7 @@ Structure:
         └── personal.py     # Personal manager (todos, goals, projects)
 
 Usage:
-    from plugin_temp import PluginRegistry
+    from utils.plugins import PluginRegistry
 
     registry = PluginRegistry(speech_engine, voice_recognition)
     registry.load_all_plugins()
