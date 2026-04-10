@@ -147,6 +147,13 @@ class PhoenixRuntimeManager:
             self._set_status("🎧 Listening...")
             return
 
+        if clean.startswith("[IGNORED_HEARD]"):
+            heard = clean.removeprefix("[IGNORED_HEARD]").strip()
+            if heard and heard != "<empty>":
+                self._print_feed(f"👤 [Ignored]: {heard}")
+            self._set_status("🎧 Listening...")
+            return
+
         if clean.startswith("[PROCESSING]"):
             self._set_status("🧠 Processing...")
             return

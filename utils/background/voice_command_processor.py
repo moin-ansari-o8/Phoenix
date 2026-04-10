@@ -186,7 +186,7 @@ class VoiceProcessor:
 
     def _runtime_trace(self, tag: str, message: str):
         """Emit concise stdout trace lines that the runtime manager can forward."""
-        print(f"[{tag}] {message}", flush=True)
+        print(f"\n[{tag}] {message}", flush=True)
 
     def transcribe_audio(self, chunk: AudioChunk, timestamp: str = None) -> str:
         """
@@ -223,9 +223,6 @@ class VoiceProcessor:
             transcription = " ".join([segment.text for segment in segments]).strip()
 
             if transcription:
-                # Show what was heard using TUI with accurate timestamp
-                user_said(transcription, timestamp)
-                self._runtime_trace("HEARD", transcription)
                 logger.info(f"Transcribed: '{transcription}'")
                 self.transcriptions_count += 1
             else:
@@ -298,30 +295,31 @@ class VoiceProcessor:
 
             if has_wake and not self.loop:
                 # Wake word detected, process command
+                self._runtime_trace("HEARD", transcription)
                 logger.info(f"Wake word detected: '{transcription}'")
                 self._runtime_trace("PROCESSING", "wake word detected")
                 result = self.phoenix_assistant.main(transcription)
                 self._runtime_trace(
-                    "INTENT", "matched" if result is not False else "no match"
+                    "INTENT", "matched" if result is not False else "no match"  
                 )
                 self.loop = True if result is not False else False
                 listening()  # Back to listening
 
             elif self.loop:
                 # Follow-up mode - process without wake word
+                self._runtime_trace("HEARD", transcription)
                 logger.info(f"Follow-up: '{transcription}'")
                 self._runtime_trace("PROCESSING", "follow-up mode")
                 result = self.phoenix_assistant.main(transcription)
                 self._runtime_trace(
-                    "INTENT", "matched" if result is not False else "no match"
+                    "INTENT", "matched" if result is not False else "no match"  
                 )
                 self.loop = True if result is not False else False
                 listening()  # Back to listening
 
             else:
                 # No wake word - ignored
-                logger.debug(f"Ignored (no wake word): '{transcription}'")
-                self._runtime_trace("IGNORED", "no wake word")
+                self._runtime_trace("IGNORED_HEARD", transcription)
                 self.loop = False
                 listening()  # Back to listening
 

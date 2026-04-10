@@ -139,7 +139,7 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             self._current_status = status
             self._render_status()
 
-    def log_chat(self, speaker, message):
+    def log_chat(self, speaker, message, is_ignored=False):
         with self._ui_lock:
             # Clear status line
             sys.stdout.write("\r\033[2K")
@@ -148,8 +148,12 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             timestamp = datetime.now().strftime("%H:%M:%S")
             time_txt = Text(f"[{timestamp}] ", style="time")
 
-            if speaker == "You":
-                speaker_txt = Text("You: ", style="user")
+            if is_ignored:
+                speaker_txt = Text("[Heard noise/speech]: ", style="yellow")
+                msg_txt = Text(message, style="yellow")
+            elif speaker == "You":
+                user_name = getattr(AppConfig, 'user_name', 'User')
+                speaker_txt = Text(f"{user_name}: ", style="user")
                 msg_txt = Text(message, style="white")
             else:
                 speaker_txt = Text(AppConfig.name + ": ",  style="phoenix")
@@ -229,13 +233,13 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                             self._set_status("Listening...")
                             continue
 
-                        if clean.startswith("[IGNORED]") or clean.startswith(
-                            "[INTENT]"
-                        ):
+                        if clean.startswith("[IGNORED_HEARD]"):
+                            heard = clean.removeprefix("[IGNORED_HEARD]").strip()
+                            if heard and heard != "<empty>":
+                                self.log_chat("You", heard, is_ignored=True)
                             self._set_status("Listening...")
                             continue
 
-                        if clean.startswith("[PROCESSING]"):
                             self._set_status("Processing...")
                             continue
 

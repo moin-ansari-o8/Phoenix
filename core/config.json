@@ -1,24 +1,19 @@
 {
-    "active_profile": "igris",
-    "profiles": {
-        "phoenix": {
-            "name": "Phoenix",
-            "voice": "en-IN-NeerjaNeural",
-            "wake_words": [
-                "phoenix",
-                "hey phoenix",
-                "ok phoenix"
-            ]
-        },
-        "igris": {
-            "name": "Igris",
-            "voice": "en-GB-RyanNeural",
-            "wake_words": [
-                "igris",
-                "hey igris",
-                "arise igris",
-                "arise"
-            ]
-        }
+  "active_profile": "igris",
+  "user": {
+    "name": "kALY",
+    "tags": ["Sir", "Master", "Boss", "My Liege"]
+  },
+  "profiles": {
+    "phoenix": {
+      "name": "Phoenix",
+      "voice": "en-IN-NeerjaNeural",
+      "wake_words": ["phoenix", "hey phoenix", "ok phoenix"]
+    },
+    "igris": {
+      "name": "Igris",
+      "voice": "en-GB-RyanNeural",
+      "wake_words": ["igris", "hey igris", "arise igris", "arise"]
     }
+  }
 }
