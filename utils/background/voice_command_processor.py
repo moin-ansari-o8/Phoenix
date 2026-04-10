@@ -12,11 +12,12 @@ import logging
 from datetime import datetime
 import numpy as np
 
-# Add parent directory to path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 # Get root directory for logging
 _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# Add project root to path so absolute imports like `utils.helpers...` resolve
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 # Setup logging (file only, console has clean output)
 logging.basicConfig(
@@ -34,7 +35,13 @@ from utils.helpers.queue_manager import QueueManager, AudioChunk
 from utils.helpers.assistant_io import VoiceAssistantGUI, SpeechEngine
 from utils.helpers.action_utilities import Utility, OpenAppHandler, CloseAppHandler
 from utils.helpers.command_processor import PhoenixAssistant
-from utils.helpers.console_ui import user_said, phoenix_said, listening, print_block, get_timestamp
+from utils.helpers.console_ui import (
+    user_said,
+    phoenix_said,
+    listening,
+    print_block,
+    get_timestamp,
+)
 from utils.helpers.time_handlers import (
     TimerHandle,
     AlarmHandle,
@@ -61,7 +68,9 @@ def is_speaking():
                 start_time = float(f.read().strip())
             # Speaking flag valid for max 30 seconds (safety)
             if time.time() - start_time < 30:
-                logger.debug("is_speaking() = True (Phoenix is speaking, audio will be skipped)")
+                logger.debug(
+                    "is_speaking() = True (Phoenix is speaking, audio will be skipped)"
+                )
                 return True
             # Stale file, remove it
             logger.warning("Stale .speaking file detected, removing")
@@ -76,16 +85,9 @@ class VoiceProcessor:
     """Background voice command processor"""
 
     # Wake words that trigger processing (same as original main_assistant.py)
-    WAKE_WORDS = [
-        "phoenix",
-        "finish",
-        "feelings",
-        "feeling",
-        "friend",
-        "buddy",
-        "love",
-        "baby",
-    ]
+    from core.config import AppConfig
+    WAKE_WORDS = AppConfig.wake_words
+
 
     def __init__(self, queue_manager):
         """
@@ -125,22 +127,27 @@ class VoiceProcessor:
                 # Try CUDA (GPU) first for maximum speed
                 try:
                     import torch
+
                     cuda_available = torch.cuda.is_available()
                 except ImportError:
                     cuda_available = False
-                
+
                 if cuda_available:
                     logger.info("Loading Faster-Whisper (small model) on CUDA/GPU...")
                     self.whisper_model = WhisperModel(
                         "small", device="cuda", compute_type="float16"
                     )
-                    logger.info("Faster-Whisper loaded on GPU - Ultra-fast transcription!")
+                    logger.info(
+                        "Faster-Whisper loaded on GPU - Ultra-fast transcription!"
+                    )
                 else:
                     logger.info("CUDA not available, loading Faster-Whisper on CPU...")
                     self.whisper_model = WhisperModel(
                         "small", device="cpu", compute_type="int8"
                     )
-                    logger.info("Faster-Whisper loaded on CPU - Ready for transcription!")
+                    logger.info(
+                        "Faster-Whisper loaded on CPU - Ready for transcription!"
+                    )
             except Exception as e:
                 logger.error(f"Failed to load Whisper: {e}")
                 raise RuntimeError("Whisper is required for voice processor!")
@@ -176,6 +183,10 @@ class VoiceProcessor:
         """Check if text contains any wake word"""
         text_lower = text.lower()
         return any(word in text_lower for word in self.WAKE_WORDS)
+
+    def _runtime_trace(self, tag: str, message: str):
+        """Emit concise stdout trace lines that the runtime manager can forward."""
+        print(f"[{tag}] {message}", flush=True)
 
     def transcribe_audio(self, chunk: AudioChunk, timestamp: str = None) -> str:
         """
@@ -214,10 +225,12 @@ class VoiceProcessor:
             if transcription:
                 # Show what was heard using TUI with accurate timestamp
                 user_said(transcription, timestamp)
+                self._runtime_trace("HEARD", transcription)
                 logger.info(f"Transcribed: '{transcription}'")
                 self.transcriptions_count += 1
             else:
                 logger.debug("Empty transcription")
+                self._runtime_trace("HEARD", "<empty>")
                 listening()  # Back to listening
 
             return transcription
@@ -256,15 +269,19 @@ class VoiceProcessor:
                         if cleared > 20:  # Safety limit
                             break
                     if cleared > 0:
-                        logger.debug(f"Cleared {cleared} chunks from queue during speaking")
+                        logger.debug(
+                            f"Cleared {cleared} chunks from queue during speaking"
+                        )
                 except:
                     pass
                 return
-            
+
             logger.debug(f"Processing chunk: {chunk.duration:.2f}s")
-            
+
             # Get timestamp from when audio was captured (for accurate timing)
-            chunk_timestamp = datetime.fromtimestamp(chunk.timestamp).strftime("%H:%M:%S")
+            chunk_timestamp = datetime.fromtimestamp(chunk.timestamp).strftime(
+                "%H:%M:%S"
+            )
 
             # Step 1: Transcribe audio chunk with Whisper
             transcription = self.transcribe_audio(chunk, chunk_timestamp)
@@ -282,20 +299,29 @@ class VoiceProcessor:
             if has_wake and not self.loop:
                 # Wake word detected, process command
                 logger.info(f"Wake word detected: '{transcription}'")
+                self._runtime_trace("PROCESSING", "wake word detected")
                 result = self.phoenix_assistant.main(transcription)
+                self._runtime_trace(
+                    "INTENT", "matched" if result is not False else "no match"
+                )
                 self.loop = True if result is not False else False
                 listening()  # Back to listening
 
             elif self.loop:
                 # Follow-up mode - process without wake word
                 logger.info(f"Follow-up: '{transcription}'")
+                self._runtime_trace("PROCESSING", "follow-up mode")
                 result = self.phoenix_assistant.main(transcription)
+                self._runtime_trace(
+                    "INTENT", "matched" if result is not False else "no match"
+                )
                 self.loop = True if result is not False else False
                 listening()  # Back to listening
 
             else:
                 # No wake word - ignored
                 logger.debug(f"Ignored (no wake word): '{transcription}'")
+                self._runtime_trace("IGNORED", "no wake word")
                 self.loop = False
                 listening()  # Back to listening
 

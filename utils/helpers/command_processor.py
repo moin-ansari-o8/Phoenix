@@ -382,10 +382,14 @@ class PhoenixAssistant:
 
     def remove_phoenix_except_folder(self, sent):
         """
-        Remove 'phoenix' from the string except when it's part of folder name like 'phoenix folder'.
+        Remove Phoenix wake-word variants except when used as 'phoenix folder'.
         """
+        aliases_pattern = r"phoenix|phoenim|phonix|phoneix|fenix|pheonix"
         sent = re.sub(
-            "(?<!\\w)phoenix(?! folder)(?!\\w)", "", sent, flags=re.IGNORECASE
+            rf"(?<!\\w)({aliases_pattern})(?! folder)(?!\\w)",
+            "",
+            sent,
+            flags=re.IGNORECASE,
         ).strip()
         return sent
 

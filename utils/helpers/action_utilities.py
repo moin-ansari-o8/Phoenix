@@ -1423,7 +1423,9 @@ class Utility:
         """Plays a random system intro sound."""
         intr = ["robo1.wav", "robo2.wav"]
         x = random.choice(intr)
-        sound_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sound", x)
+        sound_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "assets", "sound", x
+        )
         CHUNK = 1024
         wf = wave.open(sound_path, "rb")
         p = pyaudio.PyAudio()
@@ -2250,7 +2252,7 @@ class Utility:
                 continue
 
     def speak(self, message, speed=174):
-        self.speech_engine.speak(message, speed)
+        return self.speech_engine.speak(message, speed)
 
     def start_thread(self, function_name, *args, **kwargs):
         """

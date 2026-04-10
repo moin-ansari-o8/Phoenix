@@ -18,11 +18,11 @@ SAVE_CURSOR = "\033[s"
 RESTORE_CURSOR = "\033[u"
 
 # Status states
-STATUS_LISTENING = "🎧 Listening..."
-STATUS_DETECTED = "🎙️  Voice detected..."
-STATUS_PROCESSING = "🧠 Processing..."
-STATUS_SPEAKING = "🔊 Speaking..."
-STATUS_READY = "✅ Ready"
+STATUS_LISTENING = "Listening..."
+STATUS_DETECTED = "Voice detected..."
+STATUS_PROCESSING = "Processing..."
+STATUS_SPEAKING = "Speaking..."
+STATUS_READY = "Ready"
 
 
 class ConsoleUI:

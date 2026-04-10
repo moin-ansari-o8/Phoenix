@@ -26,9 +26,12 @@ class BatteryMonitorService:
         self.config = config or BatteryMonitorConfig()
         self.se = speech_engine
         self.event_callback = event_callback
+        self._pending_speech: list[str] = []
 
         self.last_plugged_state = None
-        self.triggered_plugged = {v: False for v in self.config.charge_thresholds_plugged}
+        self.triggered_plugged = {
+            v: False for v in self.config.charge_thresholds_plugged
+        }
         self.triggered_unplugged = {
             v: False for v in self.config.charge_thresholds_unplugged
         }
@@ -37,10 +40,29 @@ class BatteryMonitorService:
         if self.event_callback:
             self.event_callback("battery_monitor", {"type": event_type, **payload})
 
+    def _drain_pending_speech(self):
+        if not self.se:
+            return
+
+        while self._pending_speech:
+            next_message = self._pending_speech[0]
+            spoken = False
+
+            try:
+                spoken = self.se.speak(next_message)
+            except Exception as e:
+                self._emit("error", {"message": f"speech delivery failed: {e}"})
+                break
+
+            if spoken is False:
+                break
+
+            self._pending_speech.pop(0)
+
     def _speak(self, message: str):
         self._emit("speech", {"message": message})
-        if self.se:
-            self.se.speak(message)
+        self._pending_speech.append(message)
+        self._drain_pending_speech()
 
     def get_battery_status(self):
         import psutil
@@ -108,6 +130,7 @@ class BatteryMonitorService:
 
         while not stop_event.is_set():
             try:
+                self._drain_pending_speech()
                 percentage, plugged = self.get_battery_status()
                 self._emit(
                     "status",

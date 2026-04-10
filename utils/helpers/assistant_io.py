@@ -22,6 +22,15 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pygame")
 # Hide pygame welcome message
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
+# Keep helper-level console output quiet unless explicitly enabled.
+CONSOLE_VERBOSE = os.environ.get("PHOENIX_CONSOLE_VERBOSE", "0") == "1"
+
+
+def _console_print(*args, force=False, **kwargs):
+    if force or CONSOLE_VERBOSE:
+        print(*args, **kwargs)
+
+
 # Edge TTS for natural voice (like IGRS)
 try:
     import edge_tts
@@ -30,7 +39,10 @@ try:
     EDGE_TTS_AVAILABLE = True
 except ImportError:
     EDGE_TTS_AVAILABLE = False
-    print("[Warning] edge-tts or pygame not installed. Using pyttsx3 fallback.")
+    _console_print(
+        "[Warning] edge-tts or pygame not installed. Using pyttsx3 fallback.",
+        force=True,
+    )
 
 # Faster-Whisper for offline speech recognition
 try:
@@ -39,8 +51,9 @@ try:
     WHISPER_AVAILABLE = True
 except ImportError:
     WHISPER_AVAILABLE = False
-    print(
-        "[Warning] faster-whisper not installed. Using Google Speech Recognition (requires internet)."
+    _console_print(
+        "[Warning] faster-whisper not installed. Using Google Speech Recognition (requires internet).",
+        force=True,
     )
 
 # VAD (Voice Activity Detection) for continuous listening
@@ -50,7 +63,10 @@ try:
     VAD_AVAILABLE = True
 except ImportError:
     VAD_AVAILABLE = False
-    print("[Warning] webrtcvad not installed. Install with: pip install webrtcvad")
+    _console_print(
+        "[Warning] webrtcvad not installed. Install with: pip install webrtcvad",
+        force=True,
+    )
 
 
 class SpeechEngine:
@@ -58,33 +74,36 @@ class SpeechEngine:
     Speech Engine using Edge TTS (natural neural voices) with pyttsx3 fallback.
     Edge TTS provides much more natural-sounding voices like IGRS.
     """
-    
+
     # Neural voice options - pick your favorite!
     # Male: en-US-GuyNeural, en-US-ChristopherNeural, en-GB-RyanNeural, en-AU-WilliamNeural
     # Female: en-US-JennyNeural, en-US-AriaNeural, en-GB-SoniaNeural
-    EDGE_VOICE = "en-US-ChristopherNeural"  # Natural male voice
+    from core.config import AppConfig
+    EDGE_VOICE = AppConfig.voice
     EDGE_PITCH = "+0Hz"  # Adjust pitch: "+5Hz", "-5Hz", etc.
-    EDGE_RATE = "+10%"   # Slightly faster speech
-    
+    EDGE_RATE = "+10%"  # Slightly faster speech
+
     def __init__(self):
         self.lock = threading.Lock()
         self.honorifics = True
         self.use_edge_tts = EDGE_TTS_AVAILABLE
         self._pygame_initialized = False
-        
+
         # Temp file for Edge TTS audio
-        self._temp_audio_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+        self._temp_audio_dir = os.path.join(
+            os.path.dirname(__file__), "..", "..", "data"
+        )
         os.makedirs(self._temp_audio_dir, exist_ok=True)
         self._temp_audio_file = os.path.join(self._temp_audio_dir, "phoenix_speech.mp3")
-        
+
         if self.use_edge_tts:
-            print(f"🎤 Voice Engine: Edge TTS ({self.EDGE_VOICE})")
-        
+            _console_print(f"🎤 Voice Engine: Edge TTS ({self.EDGE_VOICE})")
+
         # Fallback: pyttsx3 settings
         self.voice_id = None
         self.rate = 174
         self.volume = 1.0
-        
+
         if not self.use_edge_tts:
             try:
                 temp_engine = pyttsx3.init("sapi5")
@@ -93,7 +112,7 @@ class SpeechEngine:
                     self.voice_id = voices[1].id
                 temp_engine.stop()
                 del temp_engine
-                print("🎤 Voice Engine: pyttsx3 (SAPI5)")
+                _console_print("🎤 Voice Engine: pyttsx3 (SAPI5)")
             except Exception:
                 pass
 
@@ -101,92 +120,117 @@ class SpeechEngine:
         self.honorifics = False
         sleep(30)
         self.honorifics = True
-    
+
     def _apply_honorifics(self, audio):
         """Replace 'sir' with random honorifics for personality"""
         replacements = [
-            "boss", "captain", "commander", "my lord", "your majesty",
-            "my liege", "your grace", "sir", "boss", "master", "sensei",
+            "boss",
+            "captain",
+            "commander",
+            "my lord",
+            "your majesty",
+            "my liege",
+            "your grace",
+            "sir",
+            "boss",
+            "master",
+            "sensei",
         ]
-        
+
         for punctuation in ["", "?", "!", ".", " "]:
             if f" sir{punctuation}" in audio:
                 if self.honorifics:
                     replacement = random.choice(replacements)
-                    audio = audio.replace(f"sir{punctuation}", f"{replacement}{punctuation}")
+                    audio = audio.replace(
+                        f"sir{punctuation}", f"{replacement}{punctuation}"
+                    )
                     threading.Thread(target=self._manage_honorifics).start()
                     break
                 else:
                     audio = audio.replace(f"sir{punctuation}", "")
         return audio
-    
+
     def _init_pygame(self):
         """Initialize pygame mixer if not already done"""
         if not self._pygame_initialized:
             try:
-                pygame.mixer.init()
+                pygame.mixer.init(frequency=24000, size=-16, channels=2, buffer=4096)
                 self._pygame_initialized = True
             except Exception as e:
-                print(f"⚠️ Pygame init failed: {e}")
+                _console_print(f"⚠️ Pygame init failed: {e}", force=True)
                 return False
         return True
-    
+
     def _cleanup_pygame(self):
         """Cleanup pygame mixer after playback"""
         try:
             pygame.mixer.music.unload()
         except:
             pass
-    
+
     def _generate_and_play_edge_tts(self, text):
         """Generate and play speech using Edge TTS (synchronous wrapper)"""
         try:
             # Initialize pygame if needed
             if not self._init_pygame():
+                _console_print("[WARN] Pygame failed to init inside TTS.", force=True)
                 return False
-            
-            # Cleanup any previous audio
+
             self._cleanup_pygame()
-            
-            # Remove old file if exists
-            if os.path.exists(self._temp_audio_file):
-                try:
-                    os.remove(self._temp_audio_file)
-                except:
-                    pass
-            
-            # Generate speech with Edge TTS using a new event loop
+
+            import uuid
+            # Use unique temp file to avoid locks!
+            unique_filename = f"phoenix_speech_{uuid.uuid4().hex[:8]}.mp3"
+            unique_path = os.path.join(self._temp_audio_dir, unique_filename)
+
             async def generate():
-                communicate = edge_tts.Communicate(
-                    text, 
-                    self.EDGE_VOICE, 
-                    pitch=self.EDGE_PITCH, 
-                    rate=self.EDGE_RATE
-                )
-                await communicate.save(self._temp_audio_file)
-            
-            # Create new event loop for this thread
+                for attempt in range(3):
+                    try:
+                        import edge_tts
+                        communicate = edge_tts.Communicate(
+                            text,
+                            self.EDGE_VOICE,
+                            pitch=self.EDGE_PITCH,
+                            rate=self.EDGE_RATE,
+                        )
+                        await communicate.save(unique_path)
+                        return True
+                    except Exception as e:
+                        if attempt == 2:
+                            _console_print(f"[ERROR] Edge TTS Generation Failed: {e}", force=True)
+                            raise e
+                        _console_print(f"[WARN] Edge TTS attempt {attempt+1} failed ({e}), retrying...", force=True)
+                        await asyncio.sleep(1.0)
+                return False
+
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
+            success = False
             try:
-                loop.run_until_complete(generate())
+                success = loop.run_until_complete(generate())
             finally:
                 loop.close()
-            
-            # Play the audio
-            if os.path.exists(self._temp_audio_file):
-                pygame.mixer.music.load(self._temp_audio_file)
+
+            if success and os.path.exists(unique_path):
+                import pygame
+                pygame.mixer.music.load(unique_path)
                 pygame.mixer.music.play()
                 while pygame.mixer.music.get_busy():
                     pygame.time.Clock().tick(10)
                 self._cleanup_pygame()
+                
+                try:
+                    os.remove(unique_path)
+                except:
+                    pass
                 return True
+                
             return False
-            
+
         except Exception as e:
-            print(f"⚠️ Edge TTS error: {e}")
+            _console_print(f"?? Edge TTS error caught outside: {e}", force=True)
             return False
-    
+
     def speak(self, audio, speed=174):
         """
         Thread-safe method to handle text-to-speech.
@@ -194,53 +238,55 @@ class SpeechEngine:
         Sets speaking flag to pause listener (prevents self-listening).
         """
         # Import here to avoid circular imports
-        from utils.helpers.console_ui import phoenix_said, print_block
+        from utils.helpers.console_ui import phoenix_said
         from utils.helpers.queue_manager import QueueManager
-        
+
         queue_manager = None
-        
+        speak_success = False
+
         try:
             # Connect to queue and set speaking flag FIRST
             try:
-                print_block("[DEBUG] Setting speaking flag...")
                 queue_manager = QueueManager()
                 queue_manager.set_speaking(True)  # Pause listener
-                print_block("[DEBUG] Speaking flag SET - listener should be paused")
                 queue_manager.clear()  # Clear any queued audio
             except Exception as e:
-                print_block(f"⚠️  Could not pause listener: {e}")
-                import traceback
-                print_block(f"[DEBUG] Traceback: {traceback.format_exc()}")
-            
+                _console_print(f"[WARN] Could not pause listener: {e}", force=True)
+
             with self.lock:
                 # Apply personality (honorifics replacement)
                 audio = self._apply_honorifics(audio)
                 phoenix_said(audio)  # TUI output
-                
+
                 # Try Edge TTS first (natural voice)
                 if self.use_edge_tts:
                     if self._generate_and_play_edge_tts(audio):
-                        # Keep listener paused during speech + buffer
-                        sleep(2.0)  # Increased buffer
-                        print_block("[DEBUG] Speech complete, clearing flag...")
-                        return
-                    print_block("⚠️  Edge TTS failed, using fallback voice...")
-                
-                # Fallback to pyttsx3
-                self._speak_pyttsx3(audio, speed)
-                
+                        speak_success = True
+                    else:
+                        _console_print(
+                            "[WARN] Edge TTS failed, using fallback voice...",
+                            force=True,
+                        )
+
+                if not speak_success:
+                    # Fallback to pyttsx3
+                    speak_success = self._speak_pyttsx3(audio, speed)
+
         except Exception as e:
-            print_block(f"⚠️  Speech error: {e}")
+            _console_print(f"[ERROR] Speech error: {e}", force=True)
+            speak_success = False
         finally:
             # Resume listener after buffer
             sleep(2.0)  # Increased buffer
             if queue_manager:
                 try:
                     queue_manager.set_speaking(False)  # Resume listener
-                    print_block("[DEBUG] Speaking flag CLEARED - listener resumed")
                 except Exception as e:
-                    print_block(f"[DEBUG] Error clearing flag: {e}")
-    
+                    _console_print(
+                        f"[WARN] Error clearing speaking flag: {e}", force=True
+                    )
+        return speak_success
+
     def _speak_pyttsx3(self, audio, speed=174):
         """Fallback speech using pyttsx3"""
         try:
@@ -249,8 +295,8 @@ class SpeechEngine:
             try:
                 engine = pyttsx3.init()
             except Exception:
-                return
-        
+                return False
+
         try:
             if self.voice_id:
                 engine.setProperty("voice", self.voice_id)
@@ -258,12 +304,13 @@ class SpeechEngine:
             engine.setProperty("volume", self.volume)
         except Exception:
             pass
-        
+
         engine.say(audio)
         engine.runAndWait()
         engine.stop()
         del engine
         sleep(0.2)
+        return True
 
     def threadedSpeak(self, audio):
         """
@@ -289,9 +336,9 @@ class VoiceAssistantGUI:
             os.path.dirname(__file__), "..", "..", "assets", "img", "red.png"
         )
         if not os.path.exists(self.listen_img_path):
-            print("Error: Listen image not found!")
+            _console_print("Error: Listen image not found!", force=True)
         if not os.path.exists(self.recognize_img_path):
-            print("Error: Recognize image not found!")
+            _console_print("Error: Recognize image not found!", force=True)
         self.listen_img = Image.open(self.listen_img_path)
         self.recognize_img = Image.open(self.recognize_img_path)
         max_width = max(4, 4)
@@ -377,7 +424,7 @@ class VoiceRecognition:
                 self.vad = webrtcvad.Vad()
                 self.vad.set_mode(3)  # Most aggressive (human voice only)
             except Exception as e:
-                print(f"⚠️ VAD init failed: {e}")
+                _console_print(f"⚠️ VAD init failed: {e}", force=True)
                 self.vad = None
 
         # Initialize Faster-Whisper for offline recognition
@@ -388,25 +435,26 @@ class VoiceRecognition:
                 # Try CUDA (GPU) first for maximum speed
                 try:
                     import torch
+
                     cuda_available = torch.cuda.is_available()
                 except ImportError:
                     cuda_available = False
-                
+
                 if cuda_available:
-                    print("🚀 Loading Whisper on GPU (CUDA)...")
+                    _console_print("🚀 Loading Whisper on GPU (CUDA)...")
                     self.whisper_model = WhisperModel(
                         "small", device="cuda", compute_type="float16"
                     )
-                    print("✅ Speech recognition ready (GPU accelerated)")
+                    _console_print("✅ Speech recognition ready (GPU accelerated)")
                 else:
-                    print("💻 Loading Whisper on CPU...")
+                    _console_print("💻 Loading Whisper on CPU...")
                     self.whisper_model = WhisperModel(
                         "small", device="cpu", compute_type="int8"
                     )
-                    print("✅ Speech recognition ready (CPU mode)")
+                    _console_print("✅ Speech recognition ready (CPU mode)")
             except Exception as e:
-                print(f"⚠️ Whisper load failed: {e}")
-                print("⚠️ Using Google Speech (requires internet)")
+                _console_print(f"⚠️ Whisper load failed: {e}", force=True)
+                _console_print("⚠️ Using Google Speech (requires internet)", force=True)
 
     def _detect_speech(self, audio_chunk):
         """Detect if audio chunk contains speech using VAD and/or energy"""
@@ -442,7 +490,7 @@ class VoiceRecognition:
 
         # Show when speech starts (once per utterance)
         if result and not self.is_speaking:
-            print("🎙️ Voice detected...")
+            _console_print("🎙️ Voice detected...")
 
         return result
 
@@ -457,7 +505,7 @@ class VoiceRecognition:
 
     def _continuous_listen_whisper(self):
         """Continuous listening with Faster-Whisper (no timeouts)"""
-        print("\n🎧 Listening... (speak naturally, pause when done)")
+        _console_print("\n🎧 Listening... (speak naturally, pause when done)")
         try:
             # Initialize PyAudio
             audio = pyaudio.PyAudio()
@@ -522,13 +570,13 @@ class VoiceRecognition:
                     # Check if speech duration exceeded max
                     speech_duration_so_far = current_time - self.speech_start_time
                     if speech_duration_so_far >= self.MAX_SPEECH_DURATION:
-                        print("⏱️ Max duration reached, processing...")
+                        _console_print("⏱️ Max duration reached, processing...")
                         stream.stop_stream()
                         stream.close()
                         audio.terminate()
 
                         self.gui.show_recognize_image()
-                        print("🧠 Processing speech...")
+                        _console_print("🧠 Processing speech...")
                         result = self._transcribe_buffer()
                         self.gui.hide_listen_image()
                         return result
@@ -556,7 +604,7 @@ class VoiceRecognition:
 
                         if speech_duration >= self.MIN_SPEECH_DURATION:
                             self.gui.show_recognize_image()
-                            print("🧠 Processing speech...")
+                            _console_print("🧠 Processing speech...")
 
                             # Transcribe
                             result = self._transcribe_buffer()
@@ -571,7 +619,7 @@ class VoiceRecognition:
                     self.audio_buffer.append(audio_chunk)
 
         except Exception as e:
-            print(f"\n⚠️ Listening error: {e}")
+            _console_print(f"\n⚠️ Listening error: {e}", force=True)
             try:
                 stream.stop_stream()
                 stream.close()
@@ -586,7 +634,7 @@ class VoiceRecognition:
         try:
             # Combine all chunks
             audio_array = np.concatenate(self.audio_buffer)
-            
+
             # Calculate duration for display
             duration = len(audio_array) / self.SAMPLE_RATE
 
@@ -607,33 +655,33 @@ class VoiceRecognition:
 
             # Combine all segments
             transcription = " ".join([segment.text for segment in segments]).strip()
-            
+
             # Show what was heard (the key user request!)
             if transcription:
-                print(f"\n👤 You said: \"{transcription}\"")
+                _console_print(f'\n👤 You said: "{transcription}"')
             else:
-                print("❓ Couldn't understand that")
-            
+                _console_print("❓ Couldn't understand that")
+
             return transcription
 
         except Exception as e:
-            print(f"⚠️ Transcription error: {e}")
+            _console_print(f"⚠️ Transcription error: {e}", force=True)
             return ""
 
     def _fallback_listen(self):
         """Fallback to old speech_recognition method"""
         with sr.Microphone() as source:
             self.gui.show_listen_image()
-            print(">>>", end="\r")
+            _console_print(">>>", end="\r")
             self.recognizer.adjust_for_ambient_noise(source)
             audio = self.recognizer.listen(source, 0, 8)
 
         try:
             self.gui.show_recognize_image()
-            print("<<<", end="\r")
+            _console_print("<<<", end="\r")
             query = self.recognizer.recognize_google(audio, language="en-in")
         except Exception as e:
-            print("<!>", end="\r")
+            _console_print("<!>", end="\r")
             self.gui.hide_listen_image()
             return ""
         return query

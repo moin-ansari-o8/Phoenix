@@ -17,7 +17,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from utils.helpers.queue_manager import QueueManager, create_audio_chunk
 from utils.helpers.assistant_io import VoiceAssistantGUI
-from utils.helpers.console_ui import listening, detected, processing, print_block, get_timestamp
+from utils.helpers.console_ui import (
+    listening,
+    detected,
+    processing,
+    print_block,
+    get_timestamp,
+)
 
 # VAD (Voice Activity Detection) for continuous listening
 try:
@@ -37,13 +43,19 @@ logger = logging.getLogger("PhoenixListener")
 
 # Remove any console handlers that may have been added
 for handler in logger.handlers[:]:
-    if isinstance(handler, logging.StreamHandler) and handler.stream in (sys.stdout, sys.stderr):
+    if isinstance(handler, logging.StreamHandler) and handler.stream in (
+        sys.stdout,
+        sys.stderr,
+    ):
         logger.removeHandler(handler)
 
 # Also remove from root logger
 root_logger = logging.getLogger()
 for handler in root_logger.handlers[:]:
-    if isinstance(handler, logging.StreamHandler) and handler.stream in (sys.stdout, sys.stderr):
+    if isinstance(handler, logging.StreamHandler) and handler.stream in (
+        sys.stdout,
+        sys.stderr,
+    ):
         root_logger.removeHandler(handler)
 
 
@@ -104,6 +116,10 @@ class ContinuousListener:
 
         logger.info("ContinuousListener initialized successfully")
 
+    def _runtime_trace(self, tag: str, message: str):
+        """Emit line-based runtime traces for the manager parser."""
+        print(f"[{tag}] {message}", flush=True)
+
     def _detect_speech(self, audio_chunk):
         """Detect if audio chunk contains speech using VAD and/or energy"""
         # Energy-based detection
@@ -157,7 +173,9 @@ class ContinuousListener:
 
             if success:
                 self.chunks_sent += 1
-                logger.info(f"Chunk sent: {chunk.duration:.2f}s, energy: {energy_level:.1f}")
+                logger.info(
+                    f"Chunk sent: {chunk.duration:.2f}s, energy: {energy_level:.1f}"
+                )
             else:
                 logger.warning("Queue full - chunk dropped")
 
@@ -182,6 +200,7 @@ class ContinuousListener:
 
             self.gui.show_listen_image()
             listening()  # TUI status
+            self._runtime_trace("VOICE_STATE", "listening")
 
             # Reset state
             self.audio_buffer = []
@@ -199,10 +218,12 @@ class ContinuousListener:
                 if self.queue_manager.is_speaking():
                     # Phoenix is speaking, skip audio capture
                     print_block("[DEBUG] Listener: Phoenix speaking - SKIPPING audio")
-                    stream.read(self.CHUNK_SIZE, exception_on_overflow=False)  # Drain buffer
+                    stream.read(
+                        self.CHUNK_SIZE, exception_on_overflow=False
+                    )  # Drain buffer
                     time.sleep(0.05)  # Brief sleep
                     continue
-                
+
                 # Read audio chunk
                 audio_data = stream.read(self.CHUNK_SIZE, exception_on_overflow=False)
                 audio_chunk = np.frombuffer(audio_data, dtype=np.int16)
@@ -233,6 +254,7 @@ class ContinuousListener:
                     if not self.is_speaking:
                         # Speech just started
                         detected()  # TUI status
+                        self._runtime_trace("VOICE_STATE", "detected")
                         logger.debug(f"Speech CONFIRMED (chunk {chunk_count})")
                         self.is_speaking = True
                         self.speech_start_time = current_time
@@ -246,6 +268,7 @@ class ContinuousListener:
                     speech_duration_so_far = current_time - self.speech_start_time
                     if speech_duration_so_far >= self.MAX_SPEECH_DURATION:
                         processing()  # TUI status
+                        self._runtime_trace("VOICE_STATE", "processing")
                         self.gui.show_recognize_image()
 
                         # Send to processor
@@ -259,6 +282,7 @@ class ContinuousListener:
                         self.gui.hide_recognize_image()
                         self.gui.show_listen_image()
                         listening()  # TUI status
+                        self._runtime_trace("VOICE_STATE", "listening")
 
                 elif confirmed_silence and self.is_speaking:
                     # Confirmed silence during speech
@@ -278,6 +302,7 @@ class ContinuousListener:
 
                         if speech_duration >= self.MIN_SPEECH_DURATION:
                             processing()  # TUI status
+                            self._runtime_trace("VOICE_STATE", "processing")
                             self.gui.show_recognize_image()
 
                             # Send to processor
@@ -291,6 +316,7 @@ class ContinuousListener:
                             self.gui.hide_recognize_image()
                             self.gui.show_listen_image()
                             # Note: listening() will be called after processor shows output
+                            self._runtime_trace("VOICE_STATE", "listening")
                         else:
                             # Too short, ignore
                             self.audio_buffer = []
@@ -298,6 +324,7 @@ class ContinuousListener:
                             self.silence_start_time = None
                             self.speech_start_time = None
                             listening()  # Back to listening
+                            self._runtime_trace("VOICE_STATE", "listening")
 
                 elif self.is_speaking:
                     # Transitional state - buffer audio but don't change state

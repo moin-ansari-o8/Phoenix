@@ -10,6 +10,7 @@ import time
 import signal
 import logging
 from datetime import datetime
+import psutil
 
 # Setup logging (file only - console has clean TUI output)
 logging.basicConfig(
@@ -40,7 +41,9 @@ class PhoenixLauncher:
         self.queue_server_script = os.path.join(self.base_dir, "queue_server.py")
         self.listener_script = os.path.join(self.base_dir, "continuous_listener.py")
         self.processor_script = os.path.abspath(
-            os.path.join(self.base_dir, "..", "utils", "background", "voice_command_processor.py")
+            os.path.join(
+                self.base_dir, "..", "utils", "background", "voice_command_processor.py"
+            )
         )
 
         # Setup signal handlers
@@ -53,16 +56,25 @@ class PhoenixLauncher:
         self.shutdown()
         sys.exit(0)
 
+    def _safe_print(self, text: str):
+        """Print text safely even when terminal encoding cannot render unicode chars."""
+        try:
+            print(text)
+        except UnicodeEncodeError:
+            safe = text.encode("ascii", errors="replace").decode("ascii")
+            print(safe)
+
     def _print_banner(self):
         """Print Phoenix banner"""
-        banner = """
-╔═══════════════════════════════════════════════════════════════╗
-║                      PHOENIX VOICE ASSISTANT                   ║
-╠═══════════════════════════════════════════════════════════════╣
-║  Speak naturally, pause 0.8s when done. Press Ctrl+C to exit. ║
-╚═══════════════════════════════════════════════════════════════╝
-"""
-        print(banner)
+        banner = (
+            "\n"
+            "+-------------------------------------------------------------+\n"
+            "|                    PHOENIX VOICE ASSISTANT                 |\n"
+            "+-------------------------------------------------------------+\n"
+            "| Speak naturally, pause 0.8s when done. Press Ctrl+C to exit.|\n"
+            "+-------------------------------------------------------------+\n"
+        )
+        self._safe_print(banner)
         logger.info("Phoenix Launcher Starting...")
         logger.info(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -72,25 +84,68 @@ class PhoenixLauncher:
 
         if not os.path.exists(self.queue_server_script):
             logger.error(f"Queue server script not found: {self.queue_server_script}")
-            print(f"❌ Queue server not found")
+            self._safe_print("[ERROR] Queue server not found")
             return False
 
         if not os.path.exists(self.listener_script):
             logger.error(f"Listener script not found: {self.listener_script}")
-            print(f"❌ Listener not found")
+            self._safe_print("[ERROR] Listener not found")
             return False
 
         if not os.path.exists(self.processor_script):
             logger.error(f"Processor script not found: {self.processor_script}")
-            print(f"❌ Processor not found")
+            self._safe_print("[ERROR] Processor not found")
             return False
 
         return True
+
+    def _cleanup_stale_processes(self):
+        """Aggressively kill leftover Phoenix python processes from previous crashed sessions."""
+        import subprocess
+
+        current_pid = str(os.getpid())
+        killed = 0
+        try:
+            # Better on Windows than psutil due to permission blocks
+            output = subprocess.check_output(
+                'powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name=\'python.exe\' OR Name=\'pythonw.exe\'\\" | ForEach-Object { \\"$($_.CommandLine) $($_.ProcessId)\\" }"',
+                shell=True,
+                text=True,
+            )
+            for line in output.splitlines():
+                line = line.strip().lower()
+                if not line or current_pid in line:
+                    continue
+                # Identify Phoenix background workers
+                if (
+                    "queue_server.py" in line
+                    or "continuous_listener.py" in line
+                    or "voice_command_processor.py" in line
+                ):
+                    parts = line.split()
+                    if parts:
+                        pid = parts[-1]
+                        try:
+                            # Force kill the zombie PID
+                            subprocess.run(
+                                f"taskkill /F /PID {pid}",
+                                shell=True,
+                                capture_output=True,
+                            )
+                            killed += 1
+                        except Exception:
+                            pass
+        except Exception as e:
+            logger.warning(f"Error during aggressive cleanup: {e}")
+
+        if killed:
+            logger.info(f"Aggressively cleaned up {killed} stale Phoenix process(es)")
 
     def start_queue_server(self):
         """Start the queue server (required for IPC)"""
         try:
             logger.info("Starting queue server...")
+            self._cleanup_stale_processes()
 
             # Start queue server as hidden process on Windows
             if sys.platform == "win32":
@@ -189,7 +244,7 @@ class PhoenixLauncher:
 
     def monitor_processes(self):
         """Monitor all processes and restart if needed"""
-        print("✅ Phoenix ready!\n")
+        self._safe_print("[OK] Phoenix ready!\n")
         logger.info("Phoenix is ready")
 
         self.running = True

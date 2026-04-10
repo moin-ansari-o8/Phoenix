@@ -1,5 +1,6 @@
+import json
+import os
 from dataclasses import dataclass, field
-
 
 @dataclass
 class QueueConfig:
@@ -7,7 +8,25 @@ class QueueConfig:
     port: int = 50000
     authkey: bytes = b"phoenix_audio_queue"
 
-
 @dataclass
 class RuntimeConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
+
+class AppConfig:
+    name = "Igris"
+    voice = "en-GB-RyanNeural"
+    wake_words = ["igris", "hey igris"]
+
+    @classmethod
+    def load(cls):
+        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            active = data.get("active_profile", "igris")
+            profile = data.get("profiles", {}).get(active, {})
+            cls.name = profile.get("name", cls.name)
+            cls.voice = profile.get("voice", cls.voice)
+            cls.wake_words = profile.get("wake_words", cls.wake_words)
+
+AppConfig.load()

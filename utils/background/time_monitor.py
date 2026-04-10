@@ -16,18 +16,41 @@ class TimeMonitorConfig:
 class TimeMonitorService:
     """Professionalized time monitor (renamed from BgTmPHNX)."""
 
-    def __init__(self, config: TimeMonitorConfig | None = None, event_callback: EventCallback = None):
+    def __init__(
+        self,
+        config: TimeMonitorConfig | None = None,
+        speech_engine=None,
+        event_callback: EventCallback = None,
+    ):
         self.config = config or TimeMonitorConfig()
+        self.se = speech_engine
         self.event_callback = event_callback
         self.last_check_hour = None
+        self._pending_speech: list[str] = []
 
     def _emit(self, event_type: str, payload: Dict):
         if self.event_callback:
             self.event_callback("time_monitor", {"type": event_type, **payload})
 
+    def _drain_pending_speech(self, utility):
+        while self._pending_speech:
+            next_message = self._pending_speech[0]
+            spoken = False
+            try:
+                spoken = utility.speak(next_message)
+            except Exception as e:
+                self._emit("error", {"message": f"speech delivery failed: {e}"})
+                break
+
+            if spoken is False:
+                break
+
+            self._pending_speech.pop(0)
+
     def _safe_speak(self, utility, message: str):
         self._emit("speech", {"message": message})
-        utility.speak(message)
+        self._pending_speech.append(message)
+        self._drain_pending_speech(utility)
 
     def _startup_reminders(self, utility, personal_manager):
         current_time = datetime.datetime.now().strftime("%I:%M %p")
@@ -88,7 +111,8 @@ class TimeMonitorService:
             root.withdraw()
             gui = VoiceAssistantGUI(root)
             recognition = VoiceRecognition(gui)
-            speech = SpeechEngine()
+            speech = self.se or SpeechEngine()
+            self.se = speech
             utility = Utility(spk=speech, reco=recognition)
 
             time_based_all = HandleTimeBasedFunctions(
@@ -110,6 +134,7 @@ class TimeMonitorService:
 
             while not stop_event.is_set():
                 try:
+                    self._drain_pending_speech(utility)
                     time_based_all.main_time()
                     previous_hour = time_based_all.spk_time(previous_hour)
                     current_hour = datetime.datetime.now().hour

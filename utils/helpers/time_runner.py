@@ -37,7 +37,7 @@ class HandleTimeBasedFunctions:
                 "%I:%M %p"
             )  # Format current time as hh:mm AM/PM
             self.utils.speak(f"{self.utils.tM()} {tt}.")
-            sleep(15)  # Pause before announcing the weather report
+            sleep(10)  # Pause before announcing water hydration text
             self.utils.speak(self.utils.wtR())
             return current_hour  # Update the previous_hour
         return previous_hour  # No change in hour, return the same previous_hour

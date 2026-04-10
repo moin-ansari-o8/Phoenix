@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 import threading
 import time
 from dataclasses import dataclass
@@ -34,6 +35,12 @@ class VoiceProcessorService:
         if self.event_callback:
             self.event_callback("voice_processor", {"type": event_type, **payload})
 
+    def _build_subprocess_env(self) -> Dict[str, str]:
+        env = os.environ.copy()
+        env.setdefault("PYTHONIOENCODING", "utf-8")
+        env.setdefault("PYTHONUTF8", "1")
+        return env
+
     def _stream_output(self):
         if not self.process or not self.process.stdout:
             return
@@ -52,11 +59,16 @@ class VoiceProcessorService:
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
+                    encoding="utf-8",
+                    errors="replace",
+                    env=self._build_subprocess_env(),
                 )
                 self._emit("status", {"message": "running", "pid": self.process.pid})
 
                 stream_thread = threading.Thread(
-                    target=self._stream_output, name="voice-processor-log-stream", daemon=True
+                    target=self._stream_output,
+                    name="voice-processor-log-stream",
+                    daemon=True,
                 )
                 stream_thread.start()
 

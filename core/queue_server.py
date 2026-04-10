@@ -8,6 +8,13 @@ import multiprocessing as mp
 from multiprocessing.managers import BaseManager
 import time
 import logging
+import os
+import sys
+
+# Ensure project root is importable in this process (required for unpickling AudioChunk)
+_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT_DIR not in sys.path:
+    sys.path.insert(0, _ROOT_DIR)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -32,7 +39,7 @@ def get_speaking_flag():
     """Return the shared speaking flag (multiprocessing Value)"""
     global speaking_flag
     if speaking_flag is None:
-        speaking_flag = mp.Value('i', 0)  # 0 = not speaking, 1 = speaking
+        speaking_flag = mp.Value("i", 0)  # 0 = not speaking, 1 = speaking
         logger.info("Speaking flag created")
     return speaking_flag
 
@@ -49,8 +56,14 @@ QueueManager.register("get_speaking_flag", callable=get_speaking_flag)
 def start_queue_server(host="127.0.0.1", port=50000, authkey=b"phoenix_audio_queue"):
     """Start the queue server"""
     try:
-        logger.info(f"Starting queue server on {host}:{port}")
-        manager = QueueManager(address=(host, port), authkey=authkey)
+        if sys.platform == "win32":
+            address = r"\\.\pipe\phoenix_audio_queue"
+            logger.info(f"Starting queue server on Named Pipe {address}")
+        else:
+            address = (host, port)
+            logger.info(f"Starting queue server on {host}:{port}")
+
+        manager = QueueManager(address=address, authkey=authkey)
         server = manager.get_server()
         logger.info("Queue server ready!")
         logger.info("Listener and processor can now connect...")

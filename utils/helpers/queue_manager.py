@@ -49,12 +49,19 @@ def connect_to_queue_server(
     retry_delay=0.5,
 ):
     """Connect to queue server with retries, return (queue, speaking_flag, manager)"""
+    import sys
+
+    if sys.platform == "win32":
+        address = r"\\.\pipe\phoenix_audio_queue"
+    else:
+        address = (host, port)
+
     for attempt in range(retries):
         try:
             logger.info(
-                f"Connecting to queue server at {host}:{port} (attempt {attempt+1}/{retries})..."
+                f"Connecting to queue server at {address} (attempt {attempt+1}/{retries})..."
             )
-            manager = QueueClientManager(address=(host, port), authkey=authkey)
+            manager = QueueClientManager(address=address, authkey=authkey)
             manager.connect()
             queue_obj = manager.get_audio_queue()
             speaking_flag = manager.get_speaking_flag()
@@ -153,7 +160,7 @@ class QueueManager:
             pass
         if cleared > 0:
             logger.info(f"Cleared {cleared} chunks from queue")
-    
+
     def set_speaking(self, is_speaking: bool):
         """Set the speaking flag (True = Phoenix is speaking, pause listener)"""
         try:
@@ -161,7 +168,7 @@ class QueueManager:
             logger.debug(f"Speaking flag set to: {is_speaking}")
         except Exception as e:
             logger.error(f"Failed to set speaking flag: {e}")
-    
+
     def is_speaking(self) -> bool:
         """Check if Phoenix is currently speaking"""
         try:
