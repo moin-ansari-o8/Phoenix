@@ -79,24 +79,35 @@ class SpeechEngine:
     # Male: en-US-GuyNeural, en-US-ChristopherNeural, en-GB-RyanNeural, en-AU-WilliamNeural
     # Female: en-US-JennyNeural, en-US-AriaNeural, en-GB-SoniaNeural
     from core.config import AppConfig
+
     EDGE_VOICE = AppConfig.voice
+    PIPER_VOICE = AppConfig.piper_voice
+    TTS_ENGINE = AppConfig.tts_engine  # "edge" or "piper"
     EDGE_PITCH = "+0Hz"  # Adjust pitch: "+5Hz", "-5Hz", etc.
     EDGE_RATE = "+10%"  # Slightly faster speech
 
     def __init__(self):
         self.lock = threading.Lock()
         self.honorifics = True
-        self.use_edge_tts = EDGE_TTS_AVAILABLE
+        self.use_edge_tts = (self.TTS_ENGINE == "edge") and EDGE_TTS_AVAILABLE
+        self.use_piper_tts = self.TTS_ENGINE == "piper"
         self._pygame_initialized = False
 
-        # Temp file for Edge TTS audio
+        # Temp file for TTS audio
         self._temp_audio_dir = os.path.join(
             os.path.dirname(__file__), "..", "..", "data"
         )
         os.makedirs(self._temp_audio_dir, exist_ok=True)
         self._temp_audio_file = os.path.join(self._temp_audio_dir, "phoenix_speech.mp3")
 
-        if self.use_edge_tts:
+        # Piper config
+        self._piper_models_dir = os.path.join(
+            os.path.dirname(__file__), "..", "..", "voice"
+        )
+
+        if self.use_piper_tts:
+            _console_print(f"🎤 Voice Engine: Piper TTS ({self.PIPER_VOICE})")
+        elif self.use_edge_tts:
             _console_print(f"🎤 Voice Engine: Edge TTS ({self.EDGE_VOICE})")
 
         # Fallback: pyttsx3 settings
@@ -104,17 +115,18 @@ class SpeechEngine:
         self.rate = 174
         self.volume = 1.0
 
-        if not self.use_edge_tts:
-            try:
-                temp_engine = pyttsx3.init("sapi5")
-                voices = temp_engine.getProperty("voices")
-                if voices and len(voices) > 1:
-                    self.voice_id = voices[1].id
-                temp_engine.stop()
-                del temp_engine
+        try:
+            temp_engine = pyttsx3.init("sapi5")
+            voices = temp_engine.getProperty("voices")
+            if voices and len(voices) > 0:
+                idx = min(AppConfig.fallback_voice_index, len(voices) - 1)
+                self.voice_id = voices[idx].id
+            temp_engine.stop()
+            del temp_engine
+            if not self.use_edge_tts:
                 _console_print("🎤 Voice Engine: pyttsx3 (SAPI5)")
-            except Exception:
-                pass
+        except Exception:
+            pass
 
     def _manage_honorifics(self):
         self.honorifics = False
@@ -168,6 +180,75 @@ class SpeechEngine:
         except:
             pass
 
+    def _generate_and_play_piper_tts(self, text):
+        """Generate and play speech using Piper (local offline TTS)"""
+        try:
+            import uuid
+            import subprocess
+            import ctypes
+
+            unique_filename = f"piper_speech_{uuid.uuid4().hex[:8]}.wav"
+            unique_path = os.path.join(self._temp_audio_dir, unique_filename)
+            model_file = os.path.join(
+                self._piper_models_dir, f"{self.PIPER_VOICE}.onnx"
+            )
+
+            if not os.path.exists(model_file):
+                _console_print(
+                    f"[ERROR] Piper model not found: {model_file}", force=True
+                )
+                return False
+
+            # Create sub process locally
+            piper_exe = sys.executable.replace("python.exe", "piper.exe")
+            for attempt in range(3):
+                try:
+                    proc = subprocess.run(
+                        [
+                            piper_exe,
+                            "--model",
+                            model_file,
+                            "--output_file",
+                            unique_path,
+                        ],
+                        input=text.encode("utf-8"),
+                        capture_output=True,
+                        check=False,
+                    )
+                    if proc.returncode == 0 and os.path.exists(unique_path):
+                        break
+                    elif attempt == 2:
+                        _console_print(
+                            f"[ERROR] Piper failed: {proc.stderr.decode('utf-8', errors='ignore')}",
+                            force=True,
+                        )
+                        return False
+                except Exception as e:
+                    if attempt == 2:
+                        _console_print(f"[ERROR] Piper exception: {e}", force=True)
+                        return False
+                    time.sleep(0.5)
+
+            # Play with Windows MCI
+            winmm = ctypes.windll.winmm
+            alias = f"phoenix_piper_{uuid.uuid4().hex[:8]}"
+            abs_path = os.path.abspath(unique_path)
+
+            winmm.mciSendStringW(f"close {alias}", None, 0, None)
+            winmm.mciSendStringW(f'open "{abs_path}" alias {alias}', None, 0, None)
+            winmm.mciSendStringW(f"play {alias} wait", None, 0, None)
+            winmm.mciSendStringW(f"close {alias}", None, 0, None)
+
+            try:
+                os.remove(unique_path)
+            except:
+                pass
+            return True
+
+        except Exception as e:
+            _console_print(f"?? Piper TTS error: {e}", force=True)
+            return False
+
     def _generate_and_play_edge_tts(self, text):
         """Generate and play speech using Edge TTS (synchronous wrapper)"""
         try:
@@ -179,6 +260,7 @@ class SpeechEngine:
             self._cleanup_pygame()
 
             import uuid
+
             # Use unique temp file to avoid locks!
             unique_filename = f"phoenix_speech_{uuid.uuid4().hex[:8]}.mp3"
             unique_path = os.path.join(self._temp_audio_dir, unique_filename)
@@ -187,19 +269,23 @@ class SpeechEngine:
                 for attempt in range(3):
                     try:
                         import edge_tts
+
                         communicate = edge_tts.Communicate(
                             text,
                             self.EDGE_VOICE,
-                            pitch=self.EDGE_PITCH,
-                            rate=self.EDGE_RATE,
                         )
                         await communicate.save(unique_path)
                         return True
                     except Exception as e:
                         if attempt == 2:
-                            _console_print(f"[ERROR] Edge TTS Generation Failed: {e}", force=True)
+                            _console_print(
+                                f"[ERROR] Edge TTS Generation Failed: {e}", force=True
+                            )
                             raise e
-                        _console_print(f"[WARN] Edge TTS attempt {attempt+1} failed ({e}), retrying...", force=True)
+                        _console_print(
+                            f"[WARN] Edge TTS attempt {attempt+1} failed ({e}), retrying...",
+                            force=True,
+                        )
                         await asyncio.sleep(1.0)
                 return False
 
@@ -210,21 +296,21 @@ class SpeechEngine:
                 success = loop.run_until_complete(generate())
             finally:
                 loop.close()
-
             if success and os.path.exists(unique_path):
-                import pygame
-                pygame.mixer.music.load(unique_path)
-                pygame.mixer.music.play()
-                while pygame.mixer.music.get_busy():
-                    pygame.time.Clock().tick(10)
-                self._cleanup_pygame()
-                
+                import ctypes
+
+                winmm = ctypes.windll.winmm
+                alias = f"phoenix_{uuid.uuid4().hex[:8]}"
+                abs_path = os.path.abspath(unique_path)
+                winmm.mciSendStringW(f"close {alias}", None, 0, None)
+                winmm.mciSendStringW(f'open "{abs_path}" alias {alias}', None, 0, None)
+                winmm.mciSendStringW(f"play {alias} wait", None, 0, None)
+                winmm.mciSendStringW(f"close {alias}", None, 0, None)
                 try:
                     os.remove(unique_path)
                 except:
                     pass
                 return True
-                
             return False
 
         except Exception as e:
@@ -251,15 +337,26 @@ class SpeechEngine:
                 queue_manager.set_speaking(True)  # Pause listener
                 queue_manager.clear()  # Clear any queued audio
             except Exception as e:
-                _console_print(f"[WARN] Could not pause listener: {e}", force=True)
+                from core.config import AppConfig
+
+                if AppConfig.current_mode != "text":
+                    _console_print(f"[WARN] Could not pause listener: {e}", force=True)
 
             with self.lock:
                 # Apply personality (honorifics replacement)
                 audio = self._apply_honorifics(audio)
                 phoenix_said(audio)  # TUI output
 
+                if self.use_piper_tts:
+                    if self._generate_and_play_piper_tts(audio):
+                        speak_success = True
+                    else:
+                        _console_print(
+                            "[WARN] Piper TTS failed, using fallback...", force=True
+                        )
+
                 # Try Edge TTS first (natural voice)
-                if self.use_edge_tts:
+                elif self.use_edge_tts:
                     if self._generate_and_play_edge_tts(audio):
                         speak_success = True
                     else:

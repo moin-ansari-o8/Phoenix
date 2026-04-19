@@ -5,10 +5,13 @@ import threading
 import time
 import os
 from datetime import datetime
+import msvcrt
 
 from rich.console import Console
 from rich.text import Text
 from rich.theme import Theme
+
+from core.config import AppConfig
 
 from utils.background.manager import RuntimeConfig, PhoenixRuntimeManager
 from utils.background.battery_monitor import BatteryMonitorConfig
@@ -121,6 +124,12 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         self.battery_service.se = self.shared_speech_engine
         self.time_service.se = self.shared_speech_engine
 
+        if AppConfig.current_mode == "text" and hasattr(self, "voice_service"):
+            if hasattr(self.voice_service, "spk"):
+                self.voice_service.spk = self.shared_speech_engine
+                if hasattr(self.voice_service, "utility"):
+                    self.voice_service.utility.spk = self.shared_speech_engine
+
         self._current_status = f"{AppConfig.name} Runtime Online"
 
     def stop_all(self):
@@ -131,6 +140,14 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         # Clears the current line and rewrites the status
         sys.stdout.write(f"\r\033[2K{self._current_status}")
         sys.stdout.flush()
+
+    def _set_idle_status(self):
+        from core.config import AppConfig
+
+        if AppConfig.current_mode == "text":
+            pass  # Keep it at whatever text was typed by user
+        elif self._current_status != "Processing...":
+            self._set_status("Listening...")
 
     def _set_status(self, status: str):
         with self._ui_lock:
@@ -152,11 +169,11 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                 speaker_txt = Text("[Heard noise/speech]: ", style="yellow")
                 msg_txt = Text(message, style="yellow")
             elif speaker == "You":
-                user_name = getattr(AppConfig, 'user_name', 'User')
+                user_name = getattr(AppConfig, "user_name", "User")
                 speaker_txt = Text(f"{user_name}: ", style="user")
                 msg_txt = Text(message, style="white")
             else:
-                speaker_txt = Text(AppConfig.name + ": ",  style="phoenix")
+                speaker_txt = Text(AppConfig.name + ": ", style="phoenix")
                 msg_txt = Text(message, style="bright_white")
 
             final_text = time_txt + speaker_txt + msg_txt
@@ -167,11 +184,38 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
 
     def run_forever(self):
         # Start background threads
-        # We need to disable the noisy logging from parent:
-        self._print_feed = lambda x: None  # No more raw prints
-        self._print_startup_logo = lambda: None  # No ascii art
+        self._print_feed = lambda x: None
+        self._print_startup_logo = lambda: None
 
         self.start_all()
+
+        # Purely text mode assistant instantiation
+        self.text_assistant = None
+        if AppConfig.current_mode == "text":
+            from utils.helpers.action_utilities import (
+                Utility,
+                OpenAppHandler,
+                CloseAppHandler,
+            )
+            from utils.helpers.time_handlers import (
+                TimerHandle,
+                AlarmHandle,
+                ReminderHandle,
+                ScheduleHandle,
+            )
+            from utils.helpers.command_processor import PhoenixAssistant
+
+            # Use the shared speech engine in text mode
+            utility = Utility(spk=self.shared_speech_engine, reco=None)
+            self.text_assistant = PhoenixAssistant(
+                utility=utility,
+                open_handler=OpenAppHandler(utility),
+                close_handler=CloseAppHandler(utility),
+                timer_handle=TimerHandle(utility),
+                alarm_handle=AlarmHandle(utility),
+                schedule_handle=ScheduleHandle(utility),
+                reminder_handle=ReminderHandle(utility),
+            )
 
         # Give UI empty space
         os.system("cls" if os.name == "nt" else "clear")
@@ -179,36 +223,63 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         self.console.print(
             "\n[bold dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]"
         )
-        self.console.print(f" [bold magenta]{AppConfig.name} AI Assistant[/]  [dim]v2.0[/]")
+        self.console.print(
+            f" [bold magenta]{AppConfig.name} AI Assistant[/]  [dim]v2.0[/]"
+        )
         self.console.print(
             "[bold dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n"
         )
 
-        self._set_status("Listening...")
+        self._set_idle_status()
+
+        if AppConfig.current_mode == "text":
+            self._set_status("[Text Mode] You: ")
 
         try:
+            text_buffer = ""
             while not self.stop_event.is_set():
+                if (
+                    AppConfig.current_mode == "text"
+                    and self._current_status != "Processing..."
+                ):
+                    if msvcrt.kbhit():
+                        c = msvcrt.getwch()
+                        if c in ("\r", "\n"):
+                            cmd = text_buffer.strip()
+                            text_buffer = ""
+                            if cmd:
+                                self.log_chat("You", cmd)
+                                self._set_status("Processing...")
+
+                                # Execute async
+                                def ex(t):
+                                    try:
+                                        self.text_assistant.main(t)
+                                    except Exception as e:
+                                        self.log_chat("Phoenix", f"Error: {e}")
+                                    self._set_status("[Text Mode] You: ")
+
+                                threading.Thread(
+                                    target=ex, args=(cmd,), daemon=True
+                                ).start()
+                        elif c == "\x08":  # backspace
+                            text_buffer = text_buffer[:-1]
+                            self._set_status(f"[Text Mode] You: {text_buffer}")
+                        else:
+                            text_buffer += c
+                            self._set_status(f"[Text Mode] You: {text_buffer}")
+
                 try:
-                    event = self.events.get(timeout=0.25)
+                    event = self.events.get(timeout=0.05)
                     source = event.get("source")
                     event_type = event.get("type")
                     message = event.get("message") or event.get("line", "")
-
-                    # DEBUG SYSTEM: Print all events to terminal
-                    # sys.stdout.write("\r\033[2K")
-                    # msg_preview = message.strip() if message else str(event)
-                    # self.console.print(
-                    #     f"[dim yellow][debug] {source} | {event_type} | {msg_preview}[/]"
-                    # )
-                    # self._render_status()
 
                     if source == "voice_processor" and event_type == "log":
                         clean = message.strip()
                         if (
                             not clean
                             or "DEBUG" in clean
-                            
-                            
                             or "---" in clean
                             or "|" in clean
                         ):
@@ -217,9 +288,7 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                         if clean.startswith("[VOICE_STATE]"):
                             state = clean.removeprefix("[VOICE_STATE]").strip().lower()
                             if state == "listening":
-                                # Don't overwrite processing with listening immediately
-                                if self._current_status != "Processing...":
-                                    self._set_status("Listening...")
+                                self._set_idle_status()
                             elif state == "processing":
                                 self._set_status("Processing...")
                             elif state == "detected":
@@ -230,26 +299,30 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                             heard = clean.removeprefix("[HEARD]").strip()
                             if heard and heard != "<empty>":
                                 self.log_chat("You", heard)
-                            self._set_status("Listening...")
+                            self._set_idle_status()
                             continue
 
                         if clean.startswith("[IGNORED_HEARD]"):
                             heard = clean.removeprefix("[IGNORED_HEARD]").strip()
                             if heard and heard != "<empty>":
                                 self.log_chat("You", heard, is_ignored=True)
-                            self._set_status("Listening...")
+                            self._set_idle_status()
                             continue
 
-                            self._set_status("Processing...")
-                            continue
-
-                        if clean.startswith("Phoenix"):
+                        if "Phoenix [" in clean:
                             try:
                                 msg = clean.split("]: ", 1)[1]
                             except IndexError:
-                                msg = clean.replace("Phoenix", "").strip()
+                                msg = clean.split("Phoenix")[1].strip()
+                            # Clean up ANSI and tags if any
+                            if msg.startswith("["):
+                                try:
+                                    msg = msg.split("]: ", 1)[1]
+                                except:
+                                    pass
+
                             self.log_chat("Phoenix", msg)
-                            self._set_status("Listening...")
+                            self._set_idle_status()
                             continue
 
                         # Ignore other random print outputs from VoiceProcessor

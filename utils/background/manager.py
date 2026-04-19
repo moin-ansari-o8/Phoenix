@@ -66,15 +66,19 @@ class PhoenixRuntimeManager:
             speech_engine=self.shared_speech_engine,
             event_callback=self._on_event,
         )
-        self.voice_service = VoiceProcessorService(
-            config=self.config.voice, event_callback=self._on_event
-        )
+        from core.config import AppConfig
+
+        if AppConfig.current_mode == "voice":
+            self.voice_service = VoiceProcessorService(
+                config=self.config.voice, event_callback=self._on_event
+            )
+        else:
+            self.voice_service = None
 
     def _print_startup_logo(self):
         logo = (
             "\n"
             "   ____  _   _  ___  _____ _   _ ___ __  __\n"
-            "  |  _ \\| | | |/ _ \\| ____| \\ | |_ _|  \\/  |\n"
             "  | |_) | |_| | | | |  _| |  \\| || || |\\/| |\n"
             "  |  __/|  _  | |_| | |___| |\\  || || |  | |\n"
             "  |_|   |_| |_|\\___/|_____|_| \\_|___|_|  |_|\n"
@@ -249,7 +253,8 @@ class PhoenixRuntimeManager:
         self._preload_runtime_dependencies()
         self._start_thread("battery-monitor-thread", self.battery_service.run)
         self._start_thread("time-monitor-thread", self.time_service.run)
-        self._start_thread("voice-processor-thread", self.voice_service.run)
+        if self.voice_service:
+            self._start_thread("voice-processor-thread", self.voice_service.run)
 
     def stop_all(self):
         self.stop_event.set()
