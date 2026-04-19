@@ -18,10 +18,8 @@ from Utils.limbs.time_handlers import (
     ReminderHandle,
     ScheduleHandle,
 )
-from NetMonitor.network_monitor import network_main
 import asyncio
 import websockets
-import asyncio
 import json
 
 
@@ -654,9 +652,6 @@ class PhoenixAssistant:
 
 if __name__ == "__main__":
     try:
-        threading.Thread(
-            target=network_main, daemon=True
-        ).start()  # Start the network monitor in the background
         root = tk.Tk()
         gui = VoiceAssistantGUI(root)
         recog = VoiceRecognition(gui)
