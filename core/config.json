@@ -22,5 +22,19 @@
       "wake_words": ["igris", "hey igris", "arise igris", "arise"],
       "fallback_voice_index": 0
     }
+  },
+  "ai_manager": {
+    "current_mode": "local",
+    "local": {
+      "gemma3:latest": true,
+      "llama3.2:latest": false,
+      "mistral:latest": false,
+      "phi3:latest": false
+    },
+    "online": {
+      "cohere-command-r-plus": false,
+      "gpt-4o-mini": false,
+      "claude-3-haiku": false
+    }
   }
 }
