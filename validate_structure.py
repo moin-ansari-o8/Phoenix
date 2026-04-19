@@ -43,7 +43,6 @@ ALLOWED_ROOT_DIRS = {
     "data",
     "gui",
     "trials",
-    "NetMonitor",
     "5.9.0",
     "MDs",
     "batch",  # Legacy folders
