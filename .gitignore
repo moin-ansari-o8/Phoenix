@@ -49,6 +49,9 @@ models/piper_voices/*.onnx
 models/whisper/*.pt
 models/**/*.bin
 
+# TTS / Audio Voices
+voice/
+
 # Build artifacts
 dist/
 build/
