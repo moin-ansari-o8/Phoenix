@@ -120,7 +120,7 @@ class BatteryMonitorService:
         self._emit("status", {"message": "starting"})
         if self.se is None:
             try:
-                from utils.helpers.assistant_io import SpeechEngine
+                from utils.services.assistant_io import SpeechEngine
 
                 self.se = SpeechEngine()
             except Exception as e:

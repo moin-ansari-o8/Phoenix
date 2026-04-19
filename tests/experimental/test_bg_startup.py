@@ -9,21 +9,21 @@ import datetime
 import tkinter as tk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-from utils.helpers.time_handlers import AlarmHandle
-from utils.helpers.action_utilities import Utility
-from utils.helpers.assistant_io import (
+from utils.services.time_handlers import AlarmHandle
+from utils.services.action_utilities import Utility
+from utils.services.assistant_io import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
 )
-from utils.helpers.time_runner import (
+from utils.services.time_runner import (
     HandleTimeBasedFunctions,
     TimerManager,
     AlarmManager,
     ReminderManager,
     ScheduleManager,
 )
-from utils.helpers.personal_manager import PersonalManager
+from utils.services.personal_manager import PersonalManager
 
 print("=" * 70)
 print("BACKGROUND PROCESS STARTUP TEST")

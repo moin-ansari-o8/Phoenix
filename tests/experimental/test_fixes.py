@@ -22,7 +22,7 @@ try:
     else:
         print("✅ ConsoleUI_new.py was already renamed")
 
-    from utils.helpers.console_ui import (
+    from utils.services.console_ui import (
         get_ui,
         should_ignore_audio,
         start_speaking,
@@ -56,7 +56,7 @@ print("TEST 2: .speaking File Mechanism")
 print("=" * 60)
 
 try:
-    from utils.helpers.assistant_io import SpeechEngine
+    from utils.services.assistant_io import SpeechEngine
 
     speaking_file = ".speaking"
     if os.path.exists(speaking_file):

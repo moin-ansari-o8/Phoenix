@@ -49,7 +49,7 @@ class PhoenixRuntimeManager:
 
         self.shared_speech_engine = None
         try:
-            from utils.helpers.assistant_io import SpeechEngine
+            from utils.services.assistant_io import SpeechEngine
 
             self.shared_speech_engine = SpeechEngine()
         except Exception:

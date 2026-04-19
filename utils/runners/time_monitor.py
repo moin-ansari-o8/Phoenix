@@ -91,15 +91,15 @@ class TimeMonitorService:
         root = None
         try:
             import tkinter as tk
-            from utils.helpers.action_utilities import Utility
-            from utils.helpers.assistant_io import (
+            from utils.services.action_utilities import Utility
+            from utils.services.assistant_io import (
                 SpeechEngine,
                 VoiceAssistantGUI,
                 VoiceRecognition,
             )
-            from utils.helpers.personal_manager import PersonalManager
-            from utils.helpers.time_handlers import AlarmHandle
-            from utils.helpers.time_runner import (
+            from utils.services.personal_manager import PersonalManager
+            from utils.services.time_handlers import AlarmHandle
+            from utils.services.time_runner import (
                 AlarmManager,
                 HandleTimeBasedFunctions,
                 ReminderManager,

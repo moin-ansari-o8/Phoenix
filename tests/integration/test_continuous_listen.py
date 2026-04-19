@@ -5,12 +5,13 @@ Test Continuous Listening with Faster-Whisper
 - Speak as long as you want
 - Processes on 0.8s silence
 """
-import tkinter as tk
-from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition
 
-print("\n" + "="*70)
+import tkinter as tk
+from utils.services.assistant_io import VoiceAssistantGUI, VoiceRecognition
+
+print("\n" + "=" * 70)
 print("🎤 CONTINUOUS LISTENING TEST - Faster-Whisper + VAD")
-print("="*70)
+print("=" * 70)
 
 root = tk.Tk()
 gui = VoiceAssistantGUI(root)
@@ -27,16 +28,16 @@ if recog.whisper_model is not None:
 else:
     print("⚠️  Fallback to Google (8-second timeout)")
 
-print("\n" + "-"*70)
+print("\n" + "-" * 70)
 print("🎤 Start speaking... (0.8s pause to process)")
-print("-"*70)
+print("-" * 70)
 
 result = recog.take_command()
 
-print("-"*70)
+print("-" * 70)
 if result:
-    print(f"✅ You said: \"{result}\"")
+    print(f'✅ You said: "{result}"')
     print(f"📊 Words: {len(result.split())}")
 else:
     print("❌ No speech detected")
-print("="*70)
+print("=" * 70)

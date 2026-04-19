@@ -31,18 +31,18 @@ logger = logging.getLogger("BgVoiceProcessor")
 
 
 # Import handlers and helpers
-from utils.helpers.queue_manager import QueueManager, AudioChunk
-from utils.helpers.assistant_io import VoiceAssistantGUI, SpeechEngine
-from utils.helpers.action_utilities import Utility, OpenAppHandler, CloseAppHandler
-from utils.helpers.command_processor import PhoenixAssistant
-from utils.helpers.console_ui import (
+from utils.services.queue_manager import QueueManager, AudioChunk
+from utils.services.assistant_io import VoiceAssistantGUI, SpeechEngine
+from utils.services.action_utilities import Utility, OpenAppHandler, CloseAppHandler
+from utils.services.command_processor import PhoenixAssistant
+from utils.services.console_ui import (
     user_said,
     phoenix_said,
     listening,
     print_block,
     get_timestamp,
 )
-from utils.helpers.time_handlers import (
+from utils.services.time_handlers import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,

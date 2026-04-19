@@ -30,11 +30,11 @@ class GlobalSpeechWorker(threading.Thread):
         self._current_speech = ""
 
     def run(self):
-        import utils.helpers.console_ui
+        import utils.services.console_ui
 
-        utils.helpers.console_ui.phoenix_said = lambda x: None
+        utils.services.console_ui.phoenix_said = lambda x: None
 
-        from utils.helpers.assistant_io import SpeechEngine
+        from utils.services.assistant_io import SpeechEngine
 
         try:
             pythoncom.CoInitialize()
@@ -192,18 +192,18 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         # Purely text mode assistant instantiation
         self.text_assistant = None
         if AppConfig.current_mode == "text":
-            from utils.helpers.action_utilities import (
+            from utils.services.action_utilities import (
                 Utility,
                 OpenAppHandler,
                 CloseAppHandler,
             )
-            from utils.helpers.time_handlers import (
+            from utils.services.time_handlers import (
                 TimerHandle,
                 AlarmHandle,
                 ReminderHandle,
                 ScheduleHandle,
             )
-            from utils.helpers.command_processor import PhoenixAssistant
+            from utils.services.command_processor import PhoenixAssistant
 
             # Use the shared speech engine in text mode
             utility = Utility(spk=self.shared_speech_engine, reco=None)

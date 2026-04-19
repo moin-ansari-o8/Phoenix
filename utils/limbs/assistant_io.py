@@ -324,8 +324,8 @@ class SpeechEngine:
         Sets speaking flag to pause listener (prevents self-listening).
         """
         # Import here to avoid circular imports
-        from utils.helpers.console_ui import phoenix_said
-        from utils.helpers.queue_manager import QueueManager
+        from utils.services.console_ui import phoenix_said
+        from utils.services.queue_manager import QueueManager
 
         queue_manager = None
         speak_success = False

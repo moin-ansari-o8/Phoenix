@@ -30,7 +30,11 @@ from tkinter.filedialog import askdirectory
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils.helpers.assistant_io import SpeechEngine, VoiceRecognition, VoiceAssistantGUI
+from utils.services.assistant_io import (
+    SpeechEngine,
+    VoiceRecognition,
+    VoiceAssistantGUI,
+)
 import win32con
 import ctypes
 from pyvda import AppView, VirtualDesktop, get_virtual_desktops

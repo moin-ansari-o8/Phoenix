@@ -6,9 +6,13 @@ from time import sleep
 import threading
 from difflib import SequenceMatcher
 import os
-from utils.helpers.action_utilities import Utility, CloseAppHandler, OpenAppHandler
-from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
-from utils.helpers.time_handlers import (
+from utils.services.action_utilities import Utility, CloseAppHandler, OpenAppHandler
+from utils.services.assistant_io import (
+    VoiceAssistantGUI,
+    VoiceRecognition,
+    SpeechEngine,
+)
+from utils.services.time_handlers import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,
@@ -108,7 +112,9 @@ class PhoenixAssistant:
                     error_msg = f"Error executing action '{tag}': {e}"
                     print(error_msg)
                     try:
-                        self.utility.speak(f"Sorry, I encountered an error performing that action.")
+                        self.utility.speak(
+                            f"Sorry, I encountered an error performing that action."
+                        )
                     except:
                         pass  # Even speech can fail, don't crash
                 return
@@ -211,7 +217,9 @@ class PhoenixAssistant:
                 error_msg = f"Error executing action '{tag}': {e}"
                 print(error_msg)
                 try:
-                    self.utility.speak(f"Sorry, I encountered an error performing that action.")
+                    self.utility.speak(
+                        f"Sorry, I encountered an error performing that action."
+                    )
                 except:
                     pass  # Even speech can fail, don't crash
 
@@ -440,11 +448,11 @@ class PhoenixAssistant:
             if self.voice == False:
                 break
             sent = self.takeCommand().lower().strip()
-            
+
             # Debug: show what was heard
             if sent:
                 print(f"# : {sent}")
-            
+
             if "switch to chat" in sent:
                 self.voice = False
                 break
@@ -695,5 +703,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n\nCRITICAL ERROR in Phoenix: {e}")
         import traceback
+
         traceback.print_exc()
         print("\nPlease check your configuration and try again.")

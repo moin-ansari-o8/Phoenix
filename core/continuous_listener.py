@@ -15,9 +15,9 @@ import pyaudio
 # Add parent directory to path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils.helpers.queue_manager import QueueManager, create_audio_chunk
-from utils.helpers.assistant_io import VoiceAssistantGUI
-from utils.helpers.console_ui import (
+from utils.services.queue_manager import QueueManager, create_audio_chunk
+from utils.services.assistant_io import VoiceAssistantGUI
+from utils.services.console_ui import (
     listening,
     detected,
     processing,

@@ -3,8 +3,12 @@ import sys
 import subprocess
 import pyautogui as pg
 from time import sleep
-from utils.helpers.action_utilities import Utility
-from utils.helpers.assistant_io import VoiceAssistantGUI, VoiceRecognition, SpeechEngine
+from utils.services.action_utilities import Utility
+from utils.services.assistant_io import (
+    VoiceAssistantGUI,
+    VoiceRecognition,
+    SpeechEngine,
+)
 import tkinter as tk
 from datetime import datetime
 import keyboard
@@ -115,7 +119,7 @@ def terminate_background_processes():
 def main():
     max_retries = 3
     retry_count = 0
-    
+
     while retry_count < max_retries:
         try:
             terminate_background_processes()
@@ -127,7 +131,9 @@ def main():
             sys.exit(0)
         except Exception as e:
             retry_count += 1
-            print(f"An error occurred during startup (attempt {retry_count}/{max_retries}): {e}")
+            print(
+                f"An error occurred during startup (attempt {retry_count}/{max_retries}): {e}"
+            )
             if retry_count < max_retries:
                 print(f"Retrying in 2 seconds...")
                 sleep(2)
@@ -138,6 +144,7 @@ def main():
                 print("2. All dependencies are installed")
                 print("3. Background processes are not conflicting")
                 import traceback
+
                 traceback.print_exc()
                 sys.exit(1)
 
