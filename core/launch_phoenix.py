@@ -42,7 +42,7 @@ class PhoenixLauncher:
         self.listener_script = os.path.join(self.base_dir, "continuous_listener.py")
         self.processor_script = os.path.abspath(
             os.path.join(
-                self.base_dir, "..", "utils", "background", "voice_command_processor.py"
+                self.base_dir, "..", "Utils", "runners", "voice_command_processor.py"
             )
         )
 

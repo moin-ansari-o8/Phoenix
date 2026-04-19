@@ -1,7 +1,7 @@
 """Test voice command with Faster-Whisper"""
 
 import tkinter as tk
-from utils.services.assistant_io import VoiceAssistantGUI, VoiceRecognition
+from Utils.limbs.assistant_io import VoiceAssistantGUI, VoiceRecognition
 
 print("\n" + "=" * 60)
 print("🎤 Voice Command Test - Faster-Whisper")

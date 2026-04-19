@@ -9,21 +9,21 @@ import datetime
 import tkinter as tk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-from utils.services.time_handlers import AlarmHandle
-from utils.services.action_utilities import Utility
-from utils.services.assistant_io import (
+from Utils.limbs.time_handlers import AlarmHandle
+from Utils.limbs.action_utilities import Utility
+from Utils.limbs.assistant_io import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
 )
-from utils.services.time_runner import (
+from Utils.limbs.time_runner import (
     HandleTimeBasedFunctions,
     TimerManager,
     AlarmManager,
     ReminderManager,
     ScheduleManager,
 )
-from utils.services.personal_manager import PersonalManager
+from Utils.limbs.personal_manager import PersonalManager
 
 print("=" * 70)
 print("BACKGROUND PROCESS STARTUP TEST")
@@ -58,7 +58,7 @@ try:
     print(f"  - Settings: {personal_manager.settings}")
 
     print("\n[5/6] Creating background process handler...")
-    from utils.runners.time_monitor import TimeMonitorService
+    from Utils.runners.time_monitor import TimeMonitorService
 
     bg_process = TimeMonitorService()
     print("✓ Background process handler created")

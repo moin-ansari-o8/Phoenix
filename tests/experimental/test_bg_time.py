@@ -12,14 +12,14 @@ import datetime
 import tkinter as tk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-from utils.services.time_handlers import AlarmHandle
-from utils.services.action_utilities import Utility
-from utils.services.assistant_io import (
+from Utils.limbs.time_handlers import AlarmHandle
+from Utils.limbs.action_utilities import Utility
+from Utils.limbs.assistant_io import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
 )
-from utils.services.time_runner import (
+from Utils.limbs.time_runner import (
     HandleTimeBasedFunctions,
     TimerManager,
     AlarmManager,
@@ -46,7 +46,7 @@ try:
     print("\n[TEST 2] Creating ReminderManager with asutils...")
     reminder_mgr = ReminderManager(asutils)
     print(f"✓ ReminderManager created")
-    print(f"  - Has 'utils' attribute: {hasattr(reminder_mgr, 'utils')}")
+    print(f"  - Has 'Utils' attribute: {hasattr(reminder_mgr, 'Utils')}")
     print(f"  - Utils object type: {type(reminder_mgr.utils).__name__}")
     print(f"  - Utils has 'speak' method: {hasattr(reminder_mgr.utils, 'speak')}")
     print(f"  - Utils has 'tM' method: {hasattr(reminder_mgr.utils, 'tM')}")

@@ -8,8 +8,8 @@ import os
 import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-from utils.services.personal_manager import PersonalManager
-from utils.services.ollama_helper import OllamaHelper
+from Utils.limbs.personal_manager import PersonalManager
+from Utils.limbs.ollama_helper import OllamaHelper
 
 print("=" * 70)
 print("PERSONAL MANAGER INTEGRATION TEST")

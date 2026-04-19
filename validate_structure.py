@@ -32,7 +32,7 @@ ALLOWED_ROOT_DIRS = {
     ".venv",
     "__pycache__",
     "core",
-    "utils",
+    "Utils",
     "docs",
     "tests",
     "scripts",

@@ -282,7 +282,7 @@ while ($true) {
 3. **Create minimal test case:**
    ```python
    # test_minimal.py
-   from utils.helpers.action_utilities import Utility
+   from Utils.limbs.action_utilities import Utility
    # Test specific failing function
    ```
 

@@ -15,7 +15,7 @@ import numpy as np
 # Get root directory for logging
 _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-# Add project root to path so absolute imports like `utils.helpers...` resolve
+# Add project root to path so absolute imports like `Utils.limbs...` resolve
 if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
@@ -31,18 +31,18 @@ logger = logging.getLogger("BgVoiceProcessor")
 
 
 # Import handlers and helpers
-from utils.services.queue_manager import QueueManager, AudioChunk
-from utils.services.assistant_io import VoiceAssistantGUI, SpeechEngine
-from utils.services.action_utilities import Utility, OpenAppHandler, CloseAppHandler
-from utils.services.command_processor import PhoenixAssistant
-from utils.services.console_ui import (
+from Utils.limbs.queue_manager import QueueManager, AudioChunk
+from Utils.limbs.assistant_io import VoiceAssistantGUI, SpeechEngine
+from Utils.limbs.action_utilities import Utility, OpenAppHandler, CloseAppHandler
+from Utils.limbs.command_processor import PhoenixAssistant
+from Utils.limbs.console_ui import (
     user_said,
     phoenix_said,
     listening,
     print_block,
     get_timestamp,
 )
-from utils.services.time_handlers import (
+from Utils.limbs.time_handlers import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,

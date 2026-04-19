@@ -12,11 +12,12 @@ import logging
 from datetime import datetime
 import numpy as np
 
-# Add parent directory to path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 # Get root directory for logging
-_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# Add project root to path so absolute imports like `Utils.limbs...` resolve
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 # Setup logging (file only, console has clean output)
 logging.basicConfig(
@@ -30,12 +31,18 @@ logger = logging.getLogger("BgVoiceProcessor")
 
 
 # Import handlers and helpers
-from helpers.QueueManagerPHNX import QueueManager, AudioChunk
-from helpers.HelperPHNX import VoiceAssistantGUI, SpeechEngine
-from helpers.UtilitiesPHNX import Utility, OpenAppHandler, CloseAppHandler
-from helpers.ProcessorPHNX import PhoenixAssistant
-from helpers.ConsoleUI import user_said, phoenix_said, listening, print_block, get_timestamp
-from helpers.TimeBasedHandlePHNX import (
+from Utils.limbs.queue_manager import QueueManager, AudioChunk
+from Utils.limbs.assistant_io import VoiceAssistantGUI, SpeechEngine
+from Utils.limbs.action_utilities import Utility, OpenAppHandler, CloseAppHandler
+from Utils.limbs.command_processor import PhoenixAssistant
+from Utils.limbs.console_ui import (
+    user_said,
+    phoenix_said,
+    listening,
+    print_block,
+    get_timestamp,
+)
+from Utils.limbs.time_handlers import (
     TimerHandle,
     AlarmHandle,
     ReminderHandle,
@@ -52,40 +59,13 @@ except ImportError:
     logger.warning("faster-whisper not installed. Processor will not work without it!")
 
 
-def is_speaking():
-    """Check if Phoenix is currently speaking (via shared file)"""
-    speaking_file = os.path.join(_root_dir, ".speaking")
-    if os.path.exists(speaking_file):
-        try:
-            with open(speaking_file, "r") as f:
-                start_time = float(f.read().strip())
-            # Speaking flag valid for max 30 seconds (safety)
-            if time.time() - start_time < 30:
-                logger.debug("is_speaking() = True (Phoenix is speaking, audio will be skipped)")
-                return True
-            # Stale file, remove it
-            logger.warning("Stale .speaking file detected, removing")
-            os.remove(speaking_file)
-        except Exception as e:
-            logger.debug(f"Error reading .speaking file: {e}")
-            pass
-    return False
-
-
 class VoiceProcessor:
     """Background voice command processor"""
 
-    # Wake words that trigger processing (same as original MainPHNX.py)
-    WAKE_WORDS = [
-        "phoenix",
-        "finish",
-        "feelings",
-        "feeling",
-        "friend",
-        "buddy",
-        "love",
-        "baby",
-    ]
+    # Wake words that trigger processing (same as original main_assistant.py)
+    from core.config import AppConfig
+
+    WAKE_WORDS = AppConfig.wake_words
 
     def __init__(self, queue_manager):
         """
@@ -125,22 +105,27 @@ class VoiceProcessor:
                 # Try CUDA (GPU) first for maximum speed
                 try:
                     import torch
+
                     cuda_available = torch.cuda.is_available()
                 except ImportError:
                     cuda_available = False
-                
+
                 if cuda_available:
                     logger.info("Loading Faster-Whisper (small model) on CUDA/GPU...")
                     self.whisper_model = WhisperModel(
                         "small", device="cuda", compute_type="float16"
                     )
-                    logger.info("Faster-Whisper loaded on GPU - Ultra-fast transcription!")
+                    logger.info(
+                        "Faster-Whisper loaded on GPU - Ultra-fast transcription!"
+                    )
                 else:
                     logger.info("CUDA not available, loading Faster-Whisper on CPU...")
                     self.whisper_model = WhisperModel(
                         "small", device="cpu", compute_type="int8"
                     )
-                    logger.info("Faster-Whisper loaded on CPU - Ready for transcription!")
+                    logger.info(
+                        "Faster-Whisper loaded on CPU - Ready for transcription!"
+                    )
             except Exception as e:
                 logger.error(f"Failed to load Whisper: {e}")
                 raise RuntimeError("Whisper is required for voice processor!")
@@ -177,6 +162,62 @@ class VoiceProcessor:
         text_lower = text.lower()
         return any(word in text_lower for word in self.WAKE_WORDS)
 
+    def _runtime_trace(self, tag: str, message: str):
+        """Emit concise stdout trace lines that the runtime manager can forward."""
+        print(f"\n[{tag}] {message}", flush=True)
+
+    def _build_dynamic_prompt(self) -> str:
+        """
+        Builds a dynamic context string (initial_prompt) to feed to Faster-Whisper.
+        This tells the model what words to 'expect', fixing phonetically hallucinated
+        wake words (e.g. 'increase' instead of 'igris', 'rice' instead of 'arise').
+        """
+        try:
+            from core.config import AppConfig
+            import json
+
+            # Start with proper capitalized forms of wake words
+            prompt_words = set()
+            for ww in self.WAKE_WORDS:
+                prompt_words.add(ww.capitalize())
+
+            # Add the user name
+            user_name = getattr(AppConfig, "user_name", "User").capitalize()
+            prompt_words.add(user_name)
+
+            # Load intents.json to add domain-specific vocabulary
+            intents_path = os.path.join(_root_dir, "data", "intents.json")
+            if os.path.exists(intents_path):
+                with open(intents_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+                # Extract some high-value command words from patterns
+                # We don't want the prompt to be too huge, but Whisper handles a comma-separated list well.
+                for intent in data.get("intents", []):
+                    for pattern in intent.get("patterns", []):
+                        for word in pattern.split():
+                            word = word.lower().strip("?!.,;")
+                            if (
+                                len(word) > 4
+                            ):  # Filter out common short words to save token space
+                                prompt_words.add(word)
+
+            # Give specific hints for known troublesome phonetic pairs
+            prompt_words.add("Arise")
+            prompt_words.add("Igris")
+            prompt_words.add("Phoenix")
+
+            # Sort to make deterministic, limit to ~80 unique words so we don't overflow context
+            prompt_list = sorted(list(prompt_words))[:80]
+
+            final_prompt = f"Commands and entities: {', '.join(prompt_list)}."
+            logger.info(f"Generated dynamic STT prompt: {final_prompt}")
+            return final_prompt
+
+        except Exception as e:
+            logger.error(f"Error building dynamic prompt: {e}")
+            return "Commands: Phoenix, Igris, arise, open, weather, time, user."
+
     def transcribe_audio(self, chunk: AudioChunk, timestamp: str = None) -> str:
         """
         Transcribe audio chunk with Faster-Whisper
@@ -196,11 +237,16 @@ class VoiceProcessor:
             # Convert to float32 normalized to [-1.0, 1.0]
             audio_float = chunk.audio_data.astype(np.float32) / 32768.0
 
+            # Compile dynamic prompt if not cached
+            if getattr(self, "_dynamic_prompt", None) is None:
+                self._dynamic_prompt = self._build_dynamic_prompt()
+
             # Transcribe with Faster-Whisper (optimized for speed)
             segments, info = self.whisper_model.transcribe(
                 audio_float,
                 language="en",
                 beam_size=1,  # Faster than beam_size=5, minimal accuracy loss
+                initial_prompt=self._dynamic_prompt,
                 vad_filter=True,
                 vad_parameters=dict(
                     min_silence_duration_ms=int(self.MIN_SILENCE_DURATION * 1000),
@@ -212,12 +258,11 @@ class VoiceProcessor:
             transcription = " ".join([segment.text for segment in segments]).strip()
 
             if transcription:
-                # Show what was heard using TUI with accurate timestamp
-                user_said(transcription, timestamp)
                 logger.info(f"Transcribed: '{transcription}'")
                 self.transcriptions_count += 1
             else:
                 logger.debug("Empty transcription")
+                self._runtime_trace("HEARD", "<empty>")
                 listening()  # Back to listening
 
             return transcription
@@ -244,7 +289,7 @@ class VoiceProcessor:
         """
         try:
             # Skip processing while Phoenix is speaking (self-voice suppression)
-            if is_speaking():
+            if self.queue_manager.is_speaking():
                 logger.debug("Skipping chunk - Phoenix is speaking")
                 self.chunks_processed += 1
                 # Also clear the queue to remove any accumulated audio during speech
@@ -256,15 +301,19 @@ class VoiceProcessor:
                         if cleared > 20:  # Safety limit
                             break
                     if cleared > 0:
-                        logger.debug(f"Cleared {cleared} chunks from queue during speaking")
+                        logger.debug(
+                            f"Cleared {cleared} chunks from queue during speaking"
+                        )
                 except:
                     pass
                 return
-            
+
             logger.debug(f"Processing chunk: {chunk.duration:.2f}s")
-            
+
             # Get timestamp from when audio was captured (for accurate timing)
-            chunk_timestamp = datetime.fromtimestamp(chunk.timestamp).strftime("%H:%M:%S")
+            chunk_timestamp = datetime.fromtimestamp(chunk.timestamp).strftime(
+                "%H:%M:%S"
+            )
 
             # Step 1: Transcribe audio chunk with Whisper
             transcription = self.transcribe_audio(chunk, chunk_timestamp)
@@ -276,26 +325,41 @@ class VoiceProcessor:
                 listening()  # Back to listening
                 return
 
+            # Print to GUI/Console
+            if ":" not in chunk_timestamp:
+                chunk_timestamp = datetime.now().strftime("%H:%M:%S")
+            user_said(transcription, chunk_timestamp)
+
             # Step 2: Wake word logic
             has_wake = self.has_wake_word(transcription)
 
             if has_wake and not self.loop:
                 # Wake word detected, process command
+                self._runtime_trace("HEARD", transcription)
                 logger.info(f"Wake word detected: '{transcription}'")
+                self._runtime_trace("PROCESSING", "wake word detected")
                 result = self.phoenix_assistant.main(transcription)
+                self._runtime_trace(
+                    "INTENT", "matched" if result is not False else "no match"
+                )
                 self.loop = True if result is not False else False
                 listening()  # Back to listening
 
             elif self.loop:
                 # Follow-up mode - process without wake word
+                self._runtime_trace("HEARD", transcription)
                 logger.info(f"Follow-up: '{transcription}'")
+                self._runtime_trace("PROCESSING", "follow-up mode")
                 result = self.phoenix_assistant.main(transcription)
+                self._runtime_trace(
+                    "INTENT", "matched" if result is not False else "no match"
+                )
                 self.loop = True if result is not False else False
                 listening()  # Back to listening
 
             else:
                 # No wake word - ignored
-                logger.debug(f"Ignored (no wake word): '{transcription}'")
+                self._runtime_trace("IGNORED_HEARD", transcription)
                 self.loop = False
                 listening()  # Back to listening
 

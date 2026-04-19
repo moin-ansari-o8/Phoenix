@@ -13,10 +13,10 @@ from rich.theme import Theme
 
 from core.config import AppConfig
 
-from utils.runners.manager import RuntimeConfig, PhoenixRuntimeManager
-from utils.runners.battery_monitor import BatteryMonitorConfig
-from utils.runners.time_monitor import TimeMonitorConfig
-from utils.runners.voice_processor import VoiceProcessorConfig
+from Utils.runners.manager import RuntimeConfig, PhoenixRuntimeManager
+from Utils.runners.battery_monitor import BatteryMonitorConfig
+from Utils.runners.time_monitor import TimeMonitorConfig
+from Utils.runners.voice_processor import VoiceProcessorConfig
 
 
 import pythoncom
@@ -30,11 +30,11 @@ class GlobalSpeechWorker(threading.Thread):
         self._current_speech = ""
 
     def run(self):
-        import utils.services.console_ui
+        import Utils.limbs.console_ui
 
-        utils.services.console_ui.phoenix_said = lambda x: None
+        Utils.limbs.console_ui.phoenix_said = lambda x: None
 
-        from utils.services.assistant_io import SpeechEngine
+        from Utils.limbs.assistant_io import SpeechEngine
 
         try:
             pythoncom.CoInitialize()
@@ -192,18 +192,18 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         # Purely text mode assistant instantiation
         self.text_assistant = None
         if AppConfig.current_mode == "text":
-            from utils.services.action_utilities import (
+            from Utils.limbs.action_utilities import (
                 Utility,
                 OpenAppHandler,
                 CloseAppHandler,
             )
-            from utils.services.time_handlers import (
+            from Utils.limbs.time_handlers import (
                 TimerHandle,
                 AlarmHandle,
                 ReminderHandle,
                 ScheduleHandle,
             )
-            from utils.services.command_processor import PhoenixAssistant
+            from Utils.limbs.command_processor import PhoenixAssistant
 
             # Use the shared speech engine in text mode
             utility = Utility(spk=self.shared_speech_engine, reco=None)

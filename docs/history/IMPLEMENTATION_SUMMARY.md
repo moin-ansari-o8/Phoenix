@@ -96,7 +96,7 @@ You need to:
 ### Rollback Instructions (if needed):
 ```python
 # In bgprogs/time_monitor.pyw, comment these lines:
-# from utils.helpers.personal_manager import PersonalManager
+# from Utils.limbs.personal_manager import PersonalManager
 # personal_manager = PersonalManager()
 # bg_process = HandleBgProcess(time_based_all, personal_manager, asutils)
 # Change back to:
@@ -151,7 +151,7 @@ python bgprogs\time_monitor.pyw
 ### Add Data Manually:
 Edit `data/PersonalManager.json` or use Python:
 ```python
-from utils.helpers.personal_manager import PersonalManager
+from Utils.limbs.personal_manager import PersonalManager
 pm = PersonalManager()
 
 # Add project

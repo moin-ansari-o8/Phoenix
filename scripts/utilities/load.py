@@ -3,8 +3,8 @@ import sys
 import subprocess
 import pyautogui as pg
 from time import sleep
-from utils.services.action_utilities import Utility
-from utils.services.assistant_io import (
+from Utils.limbs.action_utilities import Utility
+from Utils.limbs.assistant_io import (
     VoiceAssistantGUI,
     VoiceRecognition,
     SpeechEngine,
