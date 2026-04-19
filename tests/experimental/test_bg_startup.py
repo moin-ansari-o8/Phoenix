@@ -58,7 +58,7 @@ try:
     print(f"  - Settings: {personal_manager.settings}")
 
     print("\n[5/6] Creating background process handler...")
-    from utils.background.time_monitor import TimeMonitorService
+    from utils.runners.time_monitor import TimeMonitorService
 
     bg_process = TimeMonitorService()
     print("✓ Background process handler created")

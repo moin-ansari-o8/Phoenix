@@ -13,10 +13,10 @@ from rich.theme import Theme
 
 from core.config import AppConfig
 
-from utils.background.manager import RuntimeConfig, PhoenixRuntimeManager
-from utils.background.battery_monitor import BatteryMonitorConfig
-from utils.background.time_monitor import TimeMonitorConfig
-from utils.background.voice_processor import VoiceProcessorConfig
+from utils.runners.manager import RuntimeConfig, PhoenixRuntimeManager
+from utils.runners.battery_monitor import BatteryMonitorConfig
+from utils.runners.time_monitor import TimeMonitorConfig
+from utils.runners.voice_processor import VoiceProcessorConfig
 
 
 import pythoncom
