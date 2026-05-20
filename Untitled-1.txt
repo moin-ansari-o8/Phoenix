@@ -1,0 +1,9 @@
+[✓] after installation app hidden issue solved?
+[✓] forgot password -> verify button text = Verify only?
+[✓] settings page upgrade?
+[✓] analytics page?
+[] responsive?
+[] inventory page?
+[] invoice create/save page?
+[] productid changeable?
+[] make notification component?
