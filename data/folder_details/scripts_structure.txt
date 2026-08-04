@@ -1,5 +1,0 @@
-File Structure of "scripts":
-└── phoenix.bat
-
-File Details of the Root directory:
-    acha aem
