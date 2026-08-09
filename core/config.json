@@ -1,40 +1,88 @@
 {
-  "active_profile": "igris",
-  "modes": ["voice", "text"],
-  "current_mode": "text",
-  "tts_engine": "piper",
+  "profiles": [
+    "[0]Phoenix",
+    "[1]Igris"
+  ],
+  "active_profile": 0,
+  "modes": [
+    "[0]voice",
+    "[1]text"
+  ],
+  "current_mode": 1,
+  "tts_engine": "local",
   "user": {
     "name": "kALY",
-    "tags": ["Sir", "Master", "Boss", "My Liege"]
+    "tags": [
+      "sir",
+      "sire",
+      "master",
+      "boss",
+      "my liege"
+    ]
   },
-  "profiles": {
+  "profile": {
     "phoenix": {
       "name": "Phoenix",
       "voice": "en-IE-EmilyNeural",
       "piper_voice": "en_GB-alba-medium",
-      "wake_words": ["phoenix", "hey phoenix", "ok phoenix"],
+      "wake_words": [
+        "phoenix",
+        "babe",
+        "baby",
+        "yo",
+        "yoi",
+        "hey phoenix",
+        "ok phoenix"
+      ],
       "fallback_voice_index": 1
     },
     "igris": {
       "name": "Igris",
       "voice": "en-CA-LiamNeural",
-      "piper_voice": "en_GB-northern_english_male-medium",
-      "wake_words": ["igris", "hey igris", "arise igris", "arise"],
+      "piper_voice": "en_US-ryan-medium",
+      "wake_words": [
+        "igris",
+        "hey igris",
+        "arise igris",
+        "arise"
+      ],
       "fallback_voice_index": 0
     }
   },
+  "bg_progs": {
+    "battery_check": false,
+    "time_check": false,
+    "todo_check": false,
+    "hydration_reminder": false
+  },
   "ai_manager": {
     "current_mode": "local",
+    "router_mode": "json",
+    "router_model": "llama3.2:latest",
+    "answer_model": "llama3.2:latest",
     "local": {
-      "gemma3:latest": true,
-      "llama3.2:latest": false,
-      "mistral:latest": false,
-      "phi3:latest": false
+      "llama3.2:latest": true,
+      "gemma3:latest": false,
+      "gemma4:e2b": false,
+      "gemma4:latest": false,
+      "mistral:latest": false
     },
     "online": {
       "cohere-command-r-plus": false,
       "gpt-4o-mini": false,
       "claude-3-haiku": false
     }
+  },
+  "memory": {
+    "auto_save": true,
+    "announce_saves": false,
+    "context_turns": 8,
+    "max_remember_entries": 200
+  },
+  "web": {
+    "enabled": true,
+    "max_results": 5,
+    "fetch_timeout_seconds": 8,
+    "max_context_chars": 900
   }
 }

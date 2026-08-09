@@ -53,15 +53,22 @@ class GlobalSpeechWorker(threading.Thread):
 
             text, event, tui = item
 
-            if tui:
-                tui.log_chat("Phoenix", text)
+            # Set callback so text appears when audio starts playing
+            def _on_play(t=text, u=tui):
+                if u:
+                    u.log_chat("Phoenix", t)
+
+            self.engine.on_playback_start = _on_play
 
             try:
                 self._current_speech = text
                 self.engine.speak(text)
             except Exception:
-                pass
+                # If speak fails, still show the text
+                if tui:
+                    tui.log_chat("Phoenix", text)
             finally:
+                self.engine.on_playback_start = None
                 self._current_speech = ""
                 event.set()
                 self.q.task_done()

@@ -435,6 +435,18 @@ Phoenix includes a standalone network speed monitor (`NetMonitor/network_monitor
 - Cross-platform support (Linux, macOS)
 - Plugin system for extending functionality
 
+### J.A.R.V.I.S Custom Voice Integration (Planned)
+**Goal:** Integrate the original J.A.R.V.I.S voice (Paul Bettany) from the Marvel Cinematic Universe using a custom Piper TTS model.
+- **Dataset:** Utilize the [J.A.R.V.I.S Kaggle dataset](https://www.kaggle.com/datasets/fotiemconstant/jarvis-dataset).
+- **Data Preparation:** Extract clean `.wav` audio clips from the dataset and use an AI transcription tool (like OpenAI's Whisper) to generate a paired text-to-audio dataset in LJSpeech format.
+- **Model Training:** Use the Piper TTS training scripts to fine-tune an existing English model on the J.A.R.V.I.S dataset for optimal, offline, lightning-fast local inference.
+- **Integration:** Export the resulting `.onnx` and `.json` files into the `piper_models` directory and add a new "Jarvis" profile directly in `core/config.json`.
+
+### Conversational Interruption (ChatGPT Voice Mode Style) (Planned)
+**Goal:** Allow the user to interrupt Phoenix seamlessly while it is speaking, ending the audio instantly and processing the new prompt.
+- **Asynchronous Audio:** Migrate from blocking TTS engines (like `winmm` `mciSendString`) to asynchronous playback streams that support a mid-sentence `stop()` trigger.
+- **Echo Cancellation / Hotkey:** Keep the microphone "hot" while speaking by using Software Acoustic Echo Cancellation (AEC) or text-matching to ignore self-speech. Alternatively, add a global push-to-interrupt hotkey (e.g., `Spacebar`).
+
 ---
 
 ## Contributing

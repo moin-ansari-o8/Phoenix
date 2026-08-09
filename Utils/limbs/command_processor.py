@@ -7,7 +7,6 @@ import json
 import re
 import random
 import os
-from difflib import SequenceMatcher
 
 
 class PhoenixAssistant:
@@ -56,10 +55,32 @@ class PhoenixAssistant:
         self.cls_print = True
         self.reload = False
         self.last_tag_response = ""
+        
+        from core.config import AppConfig
+        from Utils.ai_manager import AIDecisionMaker
+        from Utils.limbs.intent_router import IntentRouter
+        from Utils.limbs.memory_manager import (
+            ConversationContext,
+            RememberStore,
+            load_soul,
+        )
 
-    def _calculate_similarity(self, str1, str2):
-        """Calculate the similarity ratio between two strings."""
-        return SequenceMatcher(None, str1, str2).ratio()
+        self.ai_manager = AIDecisionMaker()
+        self.soul = load_soul()
+        self.remember_store = RememberStore(
+            max_entries=AppConfig.memory["max_remember_entries"]
+        )
+        self.context = ConversationContext(
+            max_turns=AppConfig.memory["context_turns"]
+        )
+        self.router = IntentRouter(
+            self.intents,
+            self.ai_manager,
+            assistant=self,
+            soul=self.soul,
+            context=self.context,
+            remember_store=self.remember_store,
+        )
 
     def _execute_action(self, tag, query):
         common_tags = {
@@ -68,7 +89,10 @@ class PhoenixAssistant:
                 "afternoon",
                 "evening",
             ),
-            self.utility.handle_whatis_whois: ("whatis", "whois"),
+            # "whatis"/"whois" deliberately NOT mapped here: those are questions
+            # and must be answered in chat by the router, never by opening a
+            # browser tab. handle_whatis_whois remains available for an explicit
+            # "search google for X" intent if one is added later.
             self.utility.move_direction: ("forward", "backward"),
             self.utility.perform_window_action: (
                 "hide",
@@ -204,68 +228,6 @@ class PhoenixAssistant:
                 except:
                     pass
 
-    def _getSentProbability(self, main_query, list_of_strings):
-        """
-        Compares a main string with a list of strings and returns the highest similarity probability.
-        """
-        if not main_query or not list_of_strings:
-            raise ValueError("Both main_query and list_of_strings must be non-empty.")
-        max_probability = 0
-        for string in list_of_strings:
-            probability = self._calculate_similarity(main_query, string) * 100
-            max_probability = max(max_probability, probability)
-        return max_probability
-
-    def _get_best_matching_intent(self, sent):
-        """
-        Find the best matching intent for the given sentence using the tag_to_patterns dictionary.
-        """
-
-        if any(
-            keyword in sent.lower()
-            for keyword in [
-                "made you",
-                "your creator",
-                "your master",
-                "your sir",
-                "made by whom",
-            ]
-        ):
-            response = self._get_response("aboutme")
-            return {"tag": "aboutme", "response": response}
-
-        elif "who is" in sent.lower():
-            response = self._get_response("whois")
-            return {"tag": "whois", "response": response}
-        else:
-            best_tag, highest_probability = max(
-                (
-                    (tag, self._getSentProbability(sent, patterns))
-                    for tag, patterns in self.tag_to_patterns.items()
-                ),
-                key=lambda x: x[1],
-                default=(None, 0),
-            )
-            if (
-                best_tag == "openelse"
-                or best_tag == "playsong"
-                or best_tag == "setTimer"
-                or best_tag == "setAlarm"
-                or best_tag == "setReminder"
-                or best_tag == "aboutme"
-                or best_tag == "phnxrestart"
-                or best_tag == "searchbrowser"
-                or best_tag == "amazon"
-                or best_tag == "flipkart"
-                or best_tag == "knock-knock"
-                or best_tag == "greet-to"
-                or highest_probability > 65
-            ):
-                response = self._get_response(best_tag)
-                return {"tag": best_tag, "response": response}
-
-        return None
-
     def _get_response(self, tag):
         for intent in self.intents:
             if intent["tag"] == tag:
@@ -357,19 +319,26 @@ class PhoenixAssistant:
         match = re.search(r"play (.+?) song", query)
         if match:
             query = re.sub(r"play .+? (song|music)", "play {this} song", query)
-        matched_intent = self._get_best_matching_intent(query)
-        if matched_intent:
-            tag = matched_intent["tag"]
-            self.tag_response = matched_intent["response"]
-            if tag not in no_response_tag:
+        result = self.router.route(query)
+
+        if result.source == "fastpath-grammar":
+            # The grammar already executed the action; the utility speaks itself.
+            pass
+        elif result.source == "fastpath":
+            tag = result.tag
+            self.tag_response = result.spoken or ""
+            if tag not in no_response_tag and self.tag_response:
                 self.speak(self.tag_response)
                 self.last_tag_response = self.tag_response
             self._execute_action(tag, query_main)
-            self.loop = True
-            return True  # Intent matched
-        else:
-            self.loop = False
-            return False  # No match
+            self.context.add(query_main, self.tag_response)
+        elif result.spoken:
+            # AI-composed answer, or a model-unreachable notice.
+            self.speak(result.spoken)
+        # result.source == "tool" means the action already ran and spoke itself.
+
+        self.loop = True
+        return True
 
     def preprocess_patterns(self, intents):
         """

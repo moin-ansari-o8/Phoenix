@@ -53,16 +53,20 @@ class TimeMonitorService:
         self._drain_pending_speech(utility)
 
     def _startup_reminders(self, utility, personal_manager):
+        from core.config import AppConfig
+
         current_time = datetime.datetime.now().strftime("%I:%M %p")
         self._safe_speak(utility, f"{utility.tM()} {current_time}.")
 
-        summary = personal_manager.get_startup_summary()
-        message = personal_manager.format_startup_message(summary)
-        if message:
-            self._safe_speak(utility, message)
+        if AppConfig.bg_progs.get("todo_check", True):
+            summary = personal_manager.get_startup_summary()
+            message = personal_manager.format_startup_message(summary)
+            if message:
+                self._safe_speak(utility, message)
 
-        time.sleep(self.config.startup_water_delay_seconds)
-        self._safe_speak(utility, utility.wtR())
+        if AppConfig.bg_progs.get("hydration_reminder", True):
+            time.sleep(self.config.startup_water_delay_seconds)
+            self._safe_speak(utility, utility.wtR())
 
     def _periodic_checks(
         self,

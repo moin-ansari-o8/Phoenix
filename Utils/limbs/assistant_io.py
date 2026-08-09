@@ -82,13 +82,14 @@ class SpeechEngine:
 
     EDGE_VOICE = AppConfig.voice
     PIPER_VOICE = AppConfig.piper_voice
-    TTS_ENGINE = AppConfig.tts_engine  # "edge" or "piper"
+    TTS_ENGINE = AppConfig.tts_engine  # "edge" or "piper" or "local"
     EDGE_PITCH = "+0Hz"  # Adjust pitch: "+5Hz", "-5Hz", etc.
     EDGE_RATE = "+10%"  # Slightly faster speech
 
     def __init__(self):
         self.lock = threading.Lock()
         self.honorifics = True
+        self.on_playback_start = None  # callback fired when audio begins playing
         self.use_edge_tts = (self.TTS_ENGINE == "edge") and EDGE_TTS_AVAILABLE
         self.use_piper_tts = self.TTS_ENGINE == "piper"
         self._pygame_initialized = False
@@ -123,7 +124,7 @@ class SpeechEngine:
                 self.voice_id = voices[idx].id
             temp_engine.stop()
             del temp_engine
-            if not self.use_edge_tts:
+            if not self.use_edge_tts and not self.use_piper_tts:
                 _console_print("🎤 Voice Engine: pyttsx3 (SAPI5)")
         except Exception:
             pass
@@ -236,6 +237,8 @@ class SpeechEngine:
 
             winmm.mciSendStringW(f"close {alias}", None, 0, None)
             winmm.mciSendStringW(f'open "{abs_path}" alias {alias}', None, 0, None)
+            if self.on_playback_start:
+                self.on_playback_start()
             winmm.mciSendStringW(f"play {alias} wait", None, 0, None)
             winmm.mciSendStringW(f"close {alias}", None, 0, None)
 
@@ -304,6 +307,8 @@ class SpeechEngine:
                 abs_path = os.path.abspath(unique_path)
                 winmm.mciSendStringW(f"close {alias}", None, 0, None)
                 winmm.mciSendStringW(f'open "{abs_path}" alias {alias}', None, 0, None)
+                if self.on_playback_start:
+                    self.on_playback_start()
                 winmm.mciSendStringW(f"play {alias} wait", None, 0, None)
                 winmm.mciSendStringW(f"close {alias}", None, 0, None)
                 try:
@@ -374,7 +379,7 @@ class SpeechEngine:
             speak_success = False
         finally:
             # Resume listener after buffer
-            sleep(2.0)  # Increased buffer
+            sleep(0.3)  # Short buffer to let audio output flush
             if queue_manager:
                 try:
                     queue_manager.set_speaking(False)  # Resume listener
@@ -387,21 +392,34 @@ class SpeechEngine:
     def _speak_pyttsx3(self, audio, speed=174):
         """Fallback speech using pyttsx3"""
         try:
-            engine = pyttsx3.init("sapi5")
-        except Exception:
-            try:
-                engine = pyttsx3.init()
-            except Exception:
-                return False
-
-        try:
-            if self.voice_id:
-                engine.setProperty("voice", self.voice_id)
-            engine.setProperty("rate", speed)
-            engine.setProperty("volume", self.volume)
+            import pythoncom
+            pythoncom.CoInitialize()
         except Exception:
             pass
 
+        try:
+            engine = pyttsx3.init("sapi5")
+        except Exception as e:
+            try:
+                engine = pyttsx3.init()
+            except Exception as e2:
+                return False
+
+        try:
+            from core.config import AppConfig
+            voices = engine.getProperty("voices")
+            if voices and len(voices) > 0:
+                idx = min(AppConfig.fallback_voice_index, len(voices) - 1)
+                voice_id = voices[idx].id
+                engine.setProperty("voice", voice_id)
+                
+            engine.setProperty("rate", speed)
+            engine.setProperty("volume", self.volume)
+        except Exception as e:
+            pass
+
+        if self.on_playback_start:
+            self.on_playback_start()
         engine.say(audio)
         engine.runAndWait()
         engine.stop()
@@ -553,6 +571,117 @@ class VoiceRecognition:
                 _console_print(f"⚠️ Whisper load failed: {e}", force=True)
                 _console_print("⚠️ Using Google Speech (requires internet)", force=True)
 
+    def _get_working_microphone_index(self, audio_instance=None):
+        """Find the best available microphone, skipping busy ones.
+
+        On Windows, shared-mode audio lets multiple apps open the same mic,
+        so a simple 'can I open it?' check isn't enough.  Instead we read
+        ~0.5 s of audio from every candidate mic and measure the RMS energy.
+        A mic that already carries active audio from a call will have
+        noticeably higher energy than an idle mic picking up only ambient
+        room noise.  We prefer the *quietest* openable mic (i.e. the one
+        NOT already in use by another app).
+
+        Parameters
+        ----------
+        audio_instance : pyaudio.PyAudio, optional
+            Reuse an existing PyAudio instance to avoid the Windows bug
+            caused by rapid Pa_Terminate → Pa_Initialize cycles.
+        """
+        own_instance = audio_instance is None
+        p = audio_instance or pyaudio.PyAudio()
+
+        # --- discover default mic ------------------------------------------
+        try:
+            default_mic = p.get_default_input_device_info()['index']
+        except IOError:
+            default_mic = None
+
+        # --- enumerate all input devices -----------------------------------
+        info = p.get_host_api_info_by_index(0)
+        numdevices = info.get('deviceCount')
+
+        mics = []
+        for i in range(numdevices):
+            dev = p.get_device_info_by_host_api_device_index(0, i)
+            if dev.get('maxInputChannels') > 0:
+                mics.append(i)
+
+        # put default mic first so it wins ties
+        if default_mic is not None and default_mic in mics:
+            mics.remove(default_mic)
+            mics.insert(0, default_mic)
+
+        _console_print(f"🎤 Found {len(mics)} microphone(s), checking availability...")
+
+        # --- probe each mic ------------------------------------------------
+        PROBE_RATE = 16000
+        PROBE_CHUNK = 1024
+        PROBE_CHUNKS = 8  # ~0.5 s at 16 kHz / 1024 chunk
+        BUSY_RMS_THRESHOLD = 200  # mics with RMS above this are likely in use
+
+        candidates = []  # list of (mic_index, rms, device_name)
+
+        for mic_index in mics:
+            dev_name = p.get_device_info_by_host_api_device_index(0, mic_index).get('name')
+            try:
+                stream = p.open(
+                    format=pyaudio.paInt16,
+                    channels=1,
+                    rate=PROBE_RATE,
+                    input=True,
+                    input_device_index=mic_index,
+                    frames_per_buffer=PROBE_CHUNK,
+                )
+
+                # read several chunks and compute average RMS
+                total_energy = 0.0
+                for _ in range(PROBE_CHUNKS):
+                    raw = stream.read(PROBE_CHUNK, exception_on_overflow=False)
+                    samples = np.frombuffer(raw, dtype=np.int16).astype(np.float32)
+                    total_energy += np.sqrt(np.mean(samples ** 2))
+
+                avg_rms = total_energy / PROBE_CHUNKS
+
+                stream.stop_stream()
+                stream.close()
+
+                candidates.append((mic_index, avg_rms, dev_name))
+                _console_print(f"   ✅ '{dev_name}' (idx {mic_index}) — avg RMS: {avg_rms:.1f}")
+
+            except Exception as e:
+                _console_print(f"   ❌ '{dev_name}' (idx {mic_index}) — cannot open: {e}")
+
+        if own_instance:
+            p.terminate()
+
+        if not candidates:
+            _console_print("⚠️ No microphones could be opened!")
+            return None
+
+        # --- pick best mic -------------------------------------------------
+        # If only one mic, use it regardless
+        if len(candidates) == 1:
+            chosen = candidates[0]
+        else:
+            # Separate into "idle" (below threshold) and "busy" (above)
+            idle = [c for c in candidates if c[1] < BUSY_RMS_THRESHOLD]
+            busy = [c for c in candidates if c[1] >= BUSY_RMS_THRESHOLD]
+
+            if idle:
+                # prefer the default mic if it's among the idle ones
+                chosen = idle[0]  # already ordered with default first
+                if busy:
+                    busy_names = ", ".join(f"'{b[2]}'" for b in busy)
+                    _console_print(f"🔄 Skipping busy mic(s): {busy_names}")
+            else:
+                # all mics appear busy — fall back to the quietest one
+                chosen = min(candidates, key=lambda c: c[1])
+                _console_print("⚠️ All mics appear busy, using quietest one")
+
+        _console_print(f"🎤 Selected: '{chosen[2]}' (idx {chosen[0]}, RMS {chosen[1]:.1f})")
+        return chosen[0]
+
     def _detect_speech(self, audio_chunk):
         """Detect if audio chunk contains speech using VAD and/or energy"""
         # Energy-based detection
@@ -606,11 +735,13 @@ class VoiceRecognition:
         try:
             # Initialize PyAudio
             audio = pyaudio.PyAudio()
+            mic_index = self._get_working_microphone_index(audio)
             stream = audio.open(
                 format=pyaudio.paInt16,
                 channels=self.CHANNELS,
                 rate=self.SAMPLE_RATE,
                 input=True,
+                input_device_index=mic_index,
                 frames_per_buffer=self.CHUNK_SIZE,
             )
 
@@ -767,7 +898,8 @@ class VoiceRecognition:
 
     def _fallback_listen(self):
         """Fallback to old speech_recognition method"""
-        with sr.Microphone() as source:
+        mic_index = self._get_working_microphone_index()
+        with sr.Microphone(device_index=mic_index) as source:
             self.gui.show_listen_image()
             _console_print(">>>", end="\r")
             self.recognizer.adjust_for_ambient_noise(source)

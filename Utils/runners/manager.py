@@ -230,6 +230,36 @@ class PhoenixRuntimeManager:
 
     def _preload_runtime_dependencies(self):
         """Warm up shared imports once to avoid thread-time partial module init races."""
+        import subprocess
+        try:
+            # Launch ollama serve silently in the background
+            # If it's already running, this will just exit silently.
+            CREATE_NO_WINDOW = 0x08000000
+            subprocess.Popen(
+                ["ollama", "serve"],
+                creationflags=CREATE_NO_WINDOW,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+        except Exception as e:
+            self._on_event(
+                "main", {"type": "error", "message": f"Failed to start ollama: {e}"}
+            )
+
+        # Warm both AI models so the first real query does not pay the cold-load
+        # cost. keep_alive in OllamaHelper.chat then holds them resident.
+        def _warm():
+            try:
+                from Utils.ai_manager import AIDecisionMaker
+
+                ai = AIDecisionMaker()
+                for helper in (ai._get_router(), ai._get_answer()):
+                    helper.chat([{"role": "user", "content": "hi"}], timeout=300)
+            except Exception:
+                pass
+
+        threading.Thread(target=_warm, daemon=True, name="model-warmup").start()
+
         modules = [
             "Utils.limbs.assistant_io",
             "Utils.limbs.action_utilities",
@@ -250,9 +280,13 @@ class PhoenixRuntimeManager:
                 )
 
     def start_all(self):
+        from core.config import AppConfig
+
         self._preload_runtime_dependencies()
-        self._start_thread("battery-monitor-thread", self.battery_service.run)
-        self._start_thread("time-monitor-thread", self.time_service.run)
+        if AppConfig.bg_progs.get("battery_check", True):
+            self._start_thread("battery-monitor-thread", self.battery_service.run)
+        if AppConfig.bg_progs.get("time_check", True):
+            self._start_thread("time-monitor-thread", self.time_service.run)
         if self.voice_service:
             self._start_thread("voice-processor-thread", self.voice_service.run)
 

@@ -45,8 +45,8 @@ def connect_to_queue_server(
     host="127.0.0.1",
     port=50000,
     authkey=b"phoenix_audio_queue",
-    retries=10,
-    retry_delay=0.5,
+    retries=1,
+    retry_delay=0,
 ):
     """Connect to queue server with retries, return (queue, speaking_flag, manager)"""
     import sys

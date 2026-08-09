@@ -925,6 +925,8 @@ class Utility:
             pg.keyDown("alt")
             pg.press("tab")
             self.speak("Which tab should I switch to, sir?")
+            if self.voice_recognition is None:
+                return
             while True:
                 print(">>> Listening for tab switch command...")
                 command = self.take_command().lower()
@@ -1024,6 +1026,9 @@ class Utility:
             self.speak("An error occurred while toggling Bluetooth.")
 
     def calC(self):
+        if self.voice_recognition is None:
+            self.speak("Calculator requires voice mode.")
+            return
         try:
             self.speak("sir, tell me the first number:")
             x = self.take_command()
@@ -1339,6 +1344,9 @@ class Utility:
     def handle_whatis_whois(self, query2):
         srch = query2.replace("what is ", "").replace("who is ", "")
         self.speak(f"Do you want to know about {srch}?")
+        if self.voice_recognition is None:
+            webbrowser.open(f"https://www.google.com/search?q=About {srch}")
+            return
         while True:
             conF = self.take_command().lower()
             if any((x in conF for x in ["yes", "ha", "sure", "play it"])):
@@ -1763,9 +1771,15 @@ class Utility:
                 app = else_query.split(keyword, 1)[1].strip()
                 break
         self.speak(f"Do you want to open {app}?")
-        # while True:
         print("Listening for your confirmation(speak no to get out of the loop)")
-        # u = Utility()
+        if self.voice_recognition is None:
+            self.speak(f"Opening {app}.")
+            pg.press("win")
+            sleep(1)
+            keyboard.write(app)
+            sleep(1)
+            keyboard.press("enter")
+            return
         conf = self.take_command().lower()
         if "no" in conf or "not" in conf:
             self.speak(random.choice(self.OK))
@@ -2060,12 +2074,14 @@ class Utility:
             self.speak("An error occurred while taking the screenshot.")
 
     def flipkart(self):
+        if self.voice_recognition is None:
+            self.speak("Please include the product in your command, like: flipkart headphones.")
+            return
         self.speak("Sir, what product do you want to search?")
         while True:
             print(">>>Listening for Flipkart product")
             prod = self.take_command().lower()
             if prod:
-                # URL-encode the product name
                 encoded_prod = prod.replace(" ", "+")
                 webbrowser.open(
                     f"https://www.flipkart.com/search?q={encoded_prod}&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"
@@ -2076,6 +2092,9 @@ class Utility:
                 continue
 
     def amazon(self):
+        if self.voice_recognition is None:
+            self.speak("Please include the product in your command, like: amazon headphones.")
+            return
         self.speak("Sir, what product you want to search?")
         while True:
             print(">>>Listening for amazon product")
@@ -2090,6 +2109,9 @@ class Utility:
                 continue
 
     def myntra(self):
+        if self.voice_recognition is None:
+            self.speak("Please include the product in your command, like: myntra kurta.")
+            return
         self.speak("Sir, what product you want to search?")
         while True:
             print(">>>Listening for myntra product")
@@ -2102,6 +2124,9 @@ class Utility:
                 continue
 
     def search_browser(self):
+        if self.voice_recognition is None:
+            self.speak("Please include what to search, like: search browser python tutorials.")
+            return
         self.speak("Sir, what do I search on the browser?")
         cm = self.take_command().lower()
         if "amazon" in cm:
@@ -2142,6 +2167,9 @@ class Utility:
         webbrowser.open(f"https://www.instagram.com/{name}")
 
     def search_youtube(self):
+        if self.voice_recognition is None:
+            self.speak("Please include what to search, like: search youtube lofi beats.")
+            return
         try:
             self.speak("What do I search, sir?")
             sng = self.take_command().lower()
@@ -2217,6 +2245,8 @@ class Utility:
         self.speak(self.onL())
 
     def sleep_phnx(self):
+        if self.voice_recognition is None:
+            return
         while True:
             cmnd2 = self.take_command().lower()
             if cmnd2 in [
@@ -2232,6 +2262,9 @@ class Utility:
                 continue
 
     def play_game(self):
+        if self.voice_recognition is None:
+            self.speak("Game selection requires voice mode.")
+            return
         print("System has two games:")
         print("\n1.SpaceJunkies")
         print("2.Valorant")
@@ -2275,6 +2308,10 @@ class Utility:
         if songs:
             song = random.choice(list(songs.values()))
             self.speak(f"How about listening to: {song}?")
+            if self.voice_recognition is None:
+                self.speak(f"Playing {song}.")
+                self.play_song(song)
+                return
             while True:
                 conF = self.take_command().lower()
                 if (

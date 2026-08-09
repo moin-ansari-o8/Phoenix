@@ -18,18 +18,74 @@ class OllamaHelper:
         self.model = model
         self.ollama_url = ollama_url
         self.api_endpoint = f"{ollama_url}/api/generate"
+        self._server_ready = False
+
+    def _wait_for_ready(self, max_wait=90):
+        """Poll /api/tags until Ollama server is alive (up to max_wait seconds)."""
+        import time
+        for _ in range(max_wait):
+            try:
+                r = requests.get(f"{self.ollama_url}/api/tags", timeout=2)
+                if r.status_code == 200:
+                    self._server_ready = True
+                    return True
+            except Exception:
+                pass
+            time.sleep(1)
+        return False
+
+    def chat(self, messages, tools=None, timeout=120, temperature=0.4,
+             num_predict=None):
+        """POST /api/chat. Returns the raw `message` dict, or {'error': ...}.
+
+        The returned dict may contain 'content' (str) and/or 'tool_calls' (list).
+        keep_alive holds the model in RAM so the cold-load cost is paid once
+        per session rather than once per query.
+        """
+        if not self._server_ready:
+            self._wait_for_ready()
+        try:
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "stream": False,
+                "keep_alive": "30m",
+                "options": {"temperature": temperature},
+            }
+            if num_predict:
+                # Generation length is the dominant cost once the model is warm.
+                # Answers are spoken in 1-3 sentences, so capping tokens cuts
+                # latency without truncating anything the user wanted.
+                payload["options"]["num_predict"] = num_predict
+            if tools:
+                payload["tools"] = tools
+
+            response = requests.post(
+                f"{self.ollama_url}/api/chat", json=payload, timeout=timeout
+            )
+            if response.status_code != 200:
+                return {"error": f"Ollama API error: {response.status_code}"}
+            return response.json().get("message", {}) or {}
+
+        except requests.exceptions.RequestException as e:
+            return {"error": f"Connection error: {str(e)}"}
+        except Exception as e:
+            return {"error": f"Unexpected error: {str(e)}"}
 
     def _call_ollama(self, prompt, format_json=True):
         """
         Make API call to Ollama
         Returns parsed JSON or text response
         """
+        if not self._server_ready:
+            self._wait_for_ready()
+
         try:
             payload = {"model": self.model, "prompt": prompt, "stream": False}
             if format_json:
                 payload["format"] = "json"
 
-            response = requests.post(self.api_endpoint, json=payload, timeout=30)
+            response = requests.post(self.api_endpoint, json=payload, timeout=120)
 
             if response.status_code == 200:
                 result = response.json()
