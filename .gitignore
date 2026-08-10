@@ -122,6 +122,5 @@ desktop.ini
 # Specific exclusions
 SortPythonProgram.pyd
 data/ChatLog.json
-chatlog.json
-remember.md
-remember.json
+data/remember.md
+data/remember.json
