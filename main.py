@@ -163,6 +163,19 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             self._current_status = status
             self._render_status()
 
+    def log_route(self, label):
+        """Show which tool handled the query, e.g. '-> search_web population of france'.
+
+        Borrowed from IGRS, whose classifier emitted a visible 'general <query>' /
+        'realtime <query>' prefix. Seeing the decision makes misroutes obvious
+        instead of silent. Toggle with "show_routing" in core/config.json.
+        """
+        with self._ui_lock:
+            sys.stdout.write("\r\033[2K")
+            sys.stdout.flush()
+            self.console.print(Text(f"  -> {label}", style="dim cyan"))
+            self._render_status()
+
     def log_chat(self, speaker, message, is_ignored=False):
         with self._ui_lock:
             # Clear status line
@@ -346,7 +359,29 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             self.stop_all()
 
 
+def _configure_logging():
+    """Send all library logging to a file, never to the chat.
+
+    tool_registry / web_search / ai_manager use logging.info/warning for
+    diagnostics. Without this they print straight into the conversation, e.g.
+    the optional queue server's absence appeared after every reply.
+    """
+    import logging
+
+    root = logging.getLogger()
+    for h in list(root.handlers):
+        root.removeHandler(h)
+    os.makedirs("logs", exist_ok=True)
+    handler = logging.FileHandler(os.path.join("logs", "phoenix.log"), encoding="utf-8")
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
+    root.addHandler(handler)
+    root.setLevel(logging.INFO)
+
+
 def main():
+    _configure_logging()
     manager = AdvancedTUIManager(config=RUNTIME_CONFIG)
     manager.run_forever()
 

@@ -26,6 +26,7 @@ class AppConfig:
     wake_words = ["igris", "hey igris"]
     fallback_voice_index = 1
     tts_engine = "edge"  # default to edge
+    show_routing = True  # print "-> tool arg" for each decision
     bg_progs = {
         "battery_check": False,
         "time_check": False,
@@ -37,6 +38,8 @@ class AppConfig:
         "announce_saves": False,
         "context_turns": 8,
         "max_remember_entries": 200,
+        "persist_chatlog": True,
+        "max_chatlog_entries": 500,
     }
     web = {
         "enabled": True,
@@ -53,6 +56,7 @@ class AppConfig:
                 data = json.load(f)
 
             cls.tts_engine = data.get("tts_engine", cls.tts_engine)
+            cls.show_routing = bool(data.get("show_routing", cls.show_routing))
 
             # Parse modes based on index
             raw_modes = data.get("modes", ["[0]voice", "[1]text"])
@@ -103,6 +107,8 @@ class AppConfig:
                 "announce_saves": mem.get("announce_saves", False),
                 "context_turns": mem.get("context_turns", 8),
                 "max_remember_entries": mem.get("max_remember_entries", 200),
+                "persist_chatlog": mem.get("persist_chatlog", True),
+                "max_chatlog_entries": mem.get("max_chatlog_entries", 500),
             }
 
             web_data = data.get("web", {})

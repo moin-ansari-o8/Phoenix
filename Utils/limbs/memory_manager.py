@@ -1,5 +1,6 @@
-"""Soul loading, conversation context, and long-term memory for Phoenix."""
+"""Soul loading, conversation context, chat log, and long-term memory."""
 
+import json
 import os
 import re
 from collections import deque
@@ -9,6 +10,7 @@ _BASE = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # -> Phoeni
 SOUL_PATH = os.path.join(_BASE, "core", "soul.md")
 INTENT_RULES_PATH = os.path.join(_BASE, "core", "intents.md")
 REMEMBER_PATH = os.path.join(_BASE, "data", "remember.md")
+CHATLOG_PATH = os.path.join(_BASE, "data", "ChatLog.json")
 
 VALID_CATEGORIES = ("People", "Preferences", "Facts", "Projects")
 
@@ -78,14 +80,74 @@ def load_intent_rules(compact: bool = True) -> str:
 
 
 class ConversationContext:
-    """Rolling window of recent turns, rendered into prompts."""
+    """Rolling window of recent turns, rendered into prompts.
 
-    def __init__(self, max_turns: int = 8):
+    Persists to data/ChatLog.json so history survives a restart. Only the last
+    `max_turns` are fed to the model (prompt length is the main latency cost),
+    but the full log is kept on disk up to `max_log_entries`.
+    """
+
+    def __init__(
+        self,
+        max_turns: int = 8,
+        path: str = CHATLOG_PATH,
+        persist: bool = True,
+        max_log_entries: int = 500,
+    ):
         self._turns = deque(maxlen=max_turns)
+        self.path = path
+        self.persist = persist
+        self.max_log_entries = max_log_entries
+        self._log = []
+        if self.persist:
+            self._load()
+
+    # ---- disk -------------------------------------------------------------
+
+    def _load(self):
+        """Read the log and seed the in-memory window with the last turns."""
+        try:
+            with open(self.path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                self._log = [e for e in data if isinstance(e, dict)]
+        except FileNotFoundError:
+            self._log = []
+        except Exception:
+            # A corrupt log must never stop Phoenix from starting.
+            self._log = []
+
+        pending_user = None
+        for entry in self._log:
+            role, msg = entry.get("role"), entry.get("message", "")
+            if role == "user":
+                pending_user = msg
+            elif role == "assistant" and pending_user:
+                self._turns.append((pending_user, msg))
+                pending_user = None
+
+    def _save(self):
+        if not self.persist:
+            return
+        try:
+            if len(self._log) > self.max_log_entries:
+                self._log = self._log[-self.max_log_entries:]
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            with open(self.path, "w", encoding="utf-8") as f:
+                json.dump(self._log, f, ensure_ascii=False, indent=1)
+        except Exception:
+            pass  # never let logging break a reply
+
+    # ---- api --------------------------------------------------------------
 
     def add(self, user_msg: str, assistant_msg: str):
-        if user_msg and assistant_msg:
-            self._turns.append((user_msg, assistant_msg))
+        if not (user_msg and assistant_msg):
+            return
+        self._turns.append((user_msg, assistant_msg))
+        stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self._log.append({"role": "user", "message": user_msg, "at": stamp})
+        self._log.append({"role": "assistant", "message": assistant_msg, "at": stamp})
+        self._save()
 
     def render(self) -> str:
         from core.config import AppConfig
@@ -96,8 +158,29 @@ class ConversationContext:
             f"{AppConfig.user_name}: {u}\n{AppConfig.name}: {a}" for u, a in self._turns
         )
 
+    def search(self, query: str, limit: int = 5) -> str:
+        """Find past exchanges mentioning `query`, for recall across sessions."""
+        words = [w for w in re.findall(r"[a-z]{3,}", (query or "").lower())
+                 if w not in _STOPWORDS]
+        if not words:
+            return ""
+        hits = []
+        for entry in reversed(self._log):
+            msg = entry.get("message", "")
+            low = msg.lower()
+            if any(re.search(rf"\b{re.escape(w)}\b", low) for w in words):
+                hits.append(f"{entry.get('role', '?')}: {msg}")
+                if len(hits) >= limit:
+                    break
+        return "\n".join(reversed(hits))
+
+    def history_size(self) -> int:
+        return len(self._log)
+
     def clear(self):
         self._turns.clear()
+        self._log = []
+        self._save()
 
 
 class RememberStore:
@@ -130,6 +213,51 @@ class RememberStore:
             for ln in self.load().splitlines()
             if ln.startswith("- ")
         ]
+
+    def forget(self, topic: str = "", last: bool = False, all_: bool = False):
+        """Remove stored facts. Returns the list of removed facts.
+
+        `last=True` drops the most recently added entry ("forget that"), and a
+        `topic` removes entries mentioning it ("forget about narendra modi").
+        Without this, "remove what you just remembered" was routed to remember
+        and ADDED an entry instead of deleting one.
+        """
+        lines = self.load().splitlines()
+        fact_idx = [i for i, ln in enumerate(lines) if ln.startswith("- ")]
+        if not fact_idx:
+            return []
+
+        def text_of(i):
+            return re.sub(r"\s*<!--.*?-->\s*$", "", lines[i]).strip()[2:].strip()
+
+        targets = []
+        if all_:
+            targets = list(fact_idx)
+        elif last:
+            targets = [fact_idx[-1]]
+        elif topic:
+            words = [
+                w
+                for w in re.findall(r"[a-z]{3,}", topic.lower())
+                if w not in _STOPWORDS
+            ]
+            if words:
+                for i in fact_idx:
+                    low = text_of(i).lower()
+                    if any(re.search(rf"\b{re.escape(w)}\b", low) for w in words):
+                        targets.append(i)
+        if not targets:
+            return []
+
+        removed = [text_of(i) for i in targets]
+        for i in sorted(targets, reverse=True):
+            del lines[i]
+        try:
+            with open(self.path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        except Exception:
+            return []
+        return removed
 
     def mentions(self, topic: str) -> bool:
         """True if `topic` names something already in memory.
@@ -182,12 +310,45 @@ class RememberStore:
         # needs a subject and at least a few words.
         if len(fact.split()) < 3:
             return False
-        if re.match(r"^(told|said|mentioned|about|this|that)\b", fact.lower()):
+        # A fact needs a SUBJECT. The model returned "is a foreman" for
+        # "munir alam, my father, is a foreman" -- it dropped who. Reject
+        # anything opening with a verb or a bare connective.
+        # Articles are NOT listed here: "The user prefers dark mode" is the
+        # canonical format intents.md asks for, and blacklisting "the" silently
+        # rejected every preference. Bare fragments like "a foreman" are already
+        # caught by the three-word minimum above.
+        if re.match(
+            r"^(told|said|mentioned|about|this|that|is|are|was|were|has|have|"
+            r"had|likes?|liked|prefers?|preferred|works?|worked|lives?|lived|"
+            r"wants?|owns?|uses?|does|did|and|but|so)\b",
+            fact.lower(),
+        ):
             return False
         if not self._is_grounded(fact, source):
             return False
+        # A request is not a fact. "a joke on narendra modi" was stored as
+        # "is a joke on narendra modi".
+        if re.search(
+            r"\b(joke|jokes|story|stories|poem|song|riddle|essay|recipe)\b",
+            fact.lower(),
+        ):
+            return False
+        if re.match(
+            r"^\s*(tell|write|give|make|sing|show|read|explain|teach|find|play)\b",
+            (source or "").lower(),
+        ):
+            return False
         if category not in VALID_CATEGORIES:
             category = "Facts"
+        # Keep the file organised even when the model picks the wrong bucket:
+        # "munir alam is kALY's father" was filed under Facts.
+        if re.search(
+            r"\b(father|mother|dad|mum|mom|brother|sister|friend|wife|husband|"
+            r"son|daughter|cousin|uncle|aunt|colleague|boss|neighbour|neighbor|"
+            r"teacher|partner)\b",
+            fact.lower(),
+        ):
+            category = "People"
 
         existing = self._existing_facts()
         if len(existing) >= self.max_entries:

@@ -72,20 +72,37 @@ class OllamaHelper:
         except Exception as e:
             return {"error": f"Unexpected error: {str(e)}"}
 
-    def _call_ollama(self, prompt, format_json=True):
+    def _call_ollama(self, prompt, format_json=True, temperature=None,
+                     num_predict=None, timeout=120):
         """
         Make API call to Ollama
         Returns parsed JSON or text response
+
+        temperature: pass 0 for classification. Ollama defaults to 0.8, which
+        made routing non-deterministic -- the same query landed on different
+        tools across runs.
         """
         if not self._server_ready:
             self._wait_for_ready()
 
         try:
-            payload = {"model": self.model, "prompt": prompt, "stream": False}
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False,
+                "keep_alive": "30m",
+            }
             if format_json:
                 payload["format"] = "json"
+            options = {}
+            if temperature is not None:
+                options["temperature"] = temperature
+            if num_predict:
+                options["num_predict"] = num_predict
+            if options:
+                payload["options"] = options
 
-            response = requests.post(self.api_endpoint, json=payload, timeout=120)
+            response = requests.post(self.api_endpoint, json=payload, timeout=timeout)
 
             if response.status_code == 200:
                 result = response.json()

@@ -8,8 +8,9 @@
     "[0]voice",
     "[1]text"
   ],
-  "current_mode": 1,
+  "current_mode": 0,
   "tts_engine": "local",
+  "show_routing": true,
   "user": {
     "name": "kALY",
     "tags": [
@@ -77,7 +78,9 @@
     "auto_save": true,
     "announce_saves": false,
     "context_turns": 8,
-    "max_remember_entries": 200
+    "max_remember_entries": 200,
+    "persist_chatlog": true,
+    "max_chatlog_entries": 500
   },
   "web": {
     "enabled": true,

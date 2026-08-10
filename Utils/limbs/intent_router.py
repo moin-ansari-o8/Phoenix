@@ -101,7 +101,54 @@ EXACT_ALIASES = {**DEVICE_ALIASES, **IDENTITY_ALIASES}
 
 _SUBJECT_TO_ACTION = (
     (("brightness", "bright", "screen light", "backlight"), "adjustBrightness"),
-    (("volume", "sound", "audio", "speaker level"), "adjustVolume"),
+    (("volume", "sound", "audio", "music", "speaker level"), "adjustVolume"),
+)
+
+_ACTION_FOR_SUBJECT = {
+    "brightness": "adjustBrightness",
+    "volume": "adjustVolume",
+}
+
+# "decrease it" only means anything if we remember what was last adjusted.
+_PRONOUNS = (r"\bit\b", r"\bthat\b", r"\bthis\b", r"\bthem\b", r"\bagain\b")
+
+# Words that may remain in a query that is otherwise just a bare command,
+# e.g. "decrease by 40%" -> nothing meaningful left once these are removed.
+_FILLER = (
+    "by", "to", "the", "a", "an", "please", "little", "bit", "some", "more",
+    "percent", "pct", "now", "my", "for", "me", "and", "then", "just",
+    "normal", "back", "again",
+)
+
+# "back to normal" means restore the level the session started at.
+# "make it normal" must match too -- requiring the word "to" missed it, and the
+# request fell through to the LLM, which carried on with the previous topic.
+_RESET_PATTERNS = (
+    r"\bback to normal\b", r"\bto normal\b", r"\bnormal again\b",
+    r"\b(make|set|put|bring|get|return|restore)\b[^?]*\bnormal\b",
+    r"^normal$", r"\breset\b", r"\bundo\b", r"\brevert\b", r"\brestore\b",
+    r"\bas (it was|before)\b", r"\boriginal\b", r"\bdefault\b",
+)
+
+# "more" straight after a brightness/volume change means do it again. Only
+# treated as a continuation when the previous turn WAS a device command --
+# otherwise "come again" would adjust the screen instead of repeating an answer.
+_CONTINUE_PATTERNS = (
+    r"^more$", r"^a (bit|little) more$", r"^some more$", r"^even more$",
+    r"^more please$", r"^again$", r"^once more$", r"^keep going$",
+    r"^further$", r"^continue$", r"^and more$", r"^bit more$",
+)
+
+
+def _is_continuation(query: str) -> bool:
+    low = normalize(query)
+    return any(re.search(p, low) for p in _CONTINUE_PATTERNS)
+
+
+# A question about normality is not a reset command: "is this normal?"
+_QUESTION_OPENERS = (
+    "is", "are", "was", "were", "do", "does", "did", "can", "could",
+    "should", "would", "will", "what", "why", "how", "who", "which", "when",
 )
 
 # Verbs that unambiguously name their own subject, so no noun is needed:
@@ -115,50 +162,122 @@ _UP_VERBS = ("increase", "raise", "turn up", "up", "brighten", "boost", "louder"
 _DOWN_VERBS = ("decrease", "reduce", "lower", "turn down", "down", "dim", "quieter", "softer")
 _SET_VERBS = ("set", "change", "make it", "put it")
 
+# Verbs strong enough to justify resolving a pronoun against the last device.
+# Bare "up"/"down" are excluded: "can you look it up" is not a brightness
+# command, and "make it"/"change" are too generic ("make it clear").
+_STRONG_VERBS = (
+    "increase", "decrease", "raise", "lower", "reduce", "boost", "dim",
+    "brighten", "turn up", "turn down", "louder", "quieter", "softer",
+    "higher", "set",
+)
 
-def _match_command_grammar(query: str):
-    """Return (action_tag, canonical_query) or None.
 
-    canonical_query is rewritten into the form the existing Utility parsers
-    already understand ("increase"/"decrease"/"set <n>"), because
-    Utility.adjust_volume only recognises those literal keywords.
+def _residual_is_empty(low: str) -> bool:
+    """True if nothing but verbs, numbers and filler remain.
+
+    Lets "decrease by 40%" resolve to the last-adjusted device, while a query
+    that names something else ("turn down the oven") does not.
+    """
+    words = set(re.findall(r"[a-z]+", low))
+    verbs = set()
+    for group in (_UP_VERBS, _DOWN_VERBS, _SET_VERBS):
+        for v in group:
+            verbs.update(v.split())
+    return not (words - verbs - set(_FILLER))
+
+
+def _match_command_grammar(query: str, last_device=None):
+    """Parse a device-control command.
+
+    Returns None, or a dict:
+      {"action": tag, "subject": "brightness"|"volume",
+       "mode": "increase"|"decrease"|"set"|"reset", "amount": int|None}
+
+    `last_device` resolves pronouns: "decrease it" after adjusting brightness
+    means brightness. Without it, "decrease it" reached the LLM, came back as
+    action="decrease" with no target, and failed with "I didn't catch which
+    setting you wanted me to change."
     """
     low = normalize(query)
 
-    # A definitional question is never a command, even when it contains a
-    # control verb: "what does brighten mean".
+    # A definitional question is never a command: "what does brighten mean".
     if re.search(r"\b(mean|means|meaning|definition|define|defined)\b", low):
         return None
 
-    action = None
+    subject = None
     for needles, tag in _SUBJECT_TO_ACTION:
         if any(n in low for n in needles):
-            action = tag
+            subject = "brightness" if tag == "adjustBrightness" else "volume"
             break
 
-    # Some verbs name their own subject: "dim the screen", "make it louder".
-    # Word-boundary matched, so "dimmer switch" does not read as "dim".
-    if action is None:
+    # Verbs that name their own subject: "dim the screen", "make it louder".
+    if subject is None:
         for needles, tag in _VERB_IMPLIES_SUBJECT:
             if any(re.search(rf"\b{re.escape(n)}\b", low) for n in needles):
-                action = tag
+                subject = "brightness" if tag == "adjustBrightness" else "volume"
                 break
-    if action is None:
+
+    has_verb = any(
+        v in low for group in (_UP_VERBS, _DOWN_VERBS, _SET_VERBS) for v in group
+    )
+    # "is this normal?" asks a question; it does not ask for a restore.
+    looks_asked = low.split()[0] in _QUESTION_OPENERS if low.split() else False
+    is_reset = (not looks_asked) and any(
+        re.search(p, low) for p in _RESET_PATTERNS
+    )
+    has_pronoun = any(re.search(p, low) for p in _PRONOUNS)
+
+    # Resolve "it"/"that", or a bare "decrease by 40%", against the last device.
+    # Requires an unambiguous verb so "can you look it up" stays a question.
+    has_strong_verb = any(
+        re.search(rf"\b{re.escape(v)}\b", low) for v in _STRONG_VERBS
+    )
+    if subject is None and last_device and (is_reset or has_strong_verb):
+        if has_pronoun or _residual_is_empty(low):
+            subject = last_device
+    if subject is None:
         return None
 
-    subject = "brightness" if action == "adjustBrightness" else "volume"
+    action = _ACTION_FOR_SUBJECT[subject]
+
+    if is_reset:
+        return {"action": action, "subject": subject, "mode": "reset", "amount": None}
+    if not has_verb:
+        # A bare noun is a question ("what is brightness"), not a command.
+        if not re.search(r"\b\d{1,3}\b", low):
+            return None
 
     number = re.search(r"\b(\d{1,3})\b", low)
-    if number and any(v in low for v in _SET_VERBS):
-        return action, f"set {subject} {number.group(1)}"
+    amount = int(number.group(1)) if number else None
+    relative = amount is not None and re.search(r"\bby\b", low)
+
+    if amount is not None and any(v in low for v in _SET_VERBS) and not relative:
+        return {"action": action, "subject": subject, "mode": "set", "amount": amount}
     if any(v in low for v in _DOWN_VERBS):
-        return action, f"decrease {subject}"
+        return {
+            "action": action, "subject": subject, "mode": "decrease",
+            "amount": amount if relative else None,
+        }
     if any(v in low for v in _UP_VERBS):
-        return action, f"increase {subject}"
-    if number:
-        # "brightness 40" with no verb still reads as a set.
-        return action, f"set {subject} {number.group(1)}"
+        return {
+            "action": action, "subject": subject, "mode": "increase",
+            "amount": amount if relative else None,
+        }
+    if amount is not None:
+        return {"action": action, "subject": subject, "mode": "set", "amount": amount}
     return None
+
+
+DEFAULT_STEP = 10  # matches Utility.adjust_brightness / adj_volume defaults
+
+
+def build_canonical(subject: str, mode: str, amount) -> str:
+    """Render into the literal keywords Utility.adjust_* already parses."""
+    if mode == "set":
+        return f"set {subject} {amount}"
+    if amount:
+        return f"{mode} {subject} by {amount}"
+    return f"{mode} {subject}"
 
 
 class IntentRouter:
@@ -170,6 +289,7 @@ class IntentRouter:
         soul: str = "",
         context=None,
         remember_store=None,
+        trace=None,
     ):
         self.intents = intents
         self.ai_manager = ai_manager
@@ -177,7 +297,33 @@ class IntentRouter:
         self.soul = soul
         self.context = context
         self.remember_store = remember_store
+        # Optional callable(label: str) used to surface the routing decision,
+        # e.g. "answer_directly  capital of france". Borrowed from IGRS, where
+        # the classifier emits a visible "general <query>" / "realtime <query>"
+        # prefix -- it makes the assistant's reasoning legible at a glance.
+        self.trace = trace
         self._tag_to_responses = {i["tag"]: i.get("responses", []) for i in intents}
+        # Which device was last adjusted, so "decrease it" has a referent, and
+        # the net change applied to each so "back to normal" can undo it.
+        self.last_device = None
+        # Absolute level read from the hardware before our first change, so
+        # "back to normal" restores it even if it was changed outside Phoenix.
+        self.baseline = {"brightness": None, "volume": None}
+        # Fallback when the hardware level cannot be read (some monitors expose
+        # no WMI brightness, pycaw may be missing): undo our own net change.
+        self.net_delta = {"brightness": 0, "volume": 0}
+        # Last device command, so a bare "more" can repeat it.
+        self.last_mode = None
+        self.last_amount = None
+        self.last_was_device = False
+
+    def _emit_trace(self, label: str, detail: str = ""):
+        if not self.trace:
+            return
+        try:
+            self.trace(f"{label} {detail}".strip())
+        except Exception:
+            pass
 
     # ---- helpers -----------------------------------------------------------
 
@@ -193,9 +339,26 @@ class IntentRouter:
     def _context_text(self) -> str:
         return self.context.render() if self.context else ""
 
+    def _recall_text(self, query: str) -> str:
+        """Relevant older exchanges from the persisted chat log.
+
+        The rolling window only holds the last few turns, so without this
+        "you told me about X last week" is unanswerable after a restart.
+        """
+        if not self.context or not hasattr(self.context, "search"):
+            return ""
+        try:
+            return self.context.search(query, limit=4)
+        except Exception:
+            return ""
+
     def _remember(self, query, spoken):
         if self.context:
             self.context.add(query, spoken or "")
+
+    def _clear_device_focus(self):
+        """A non-device turn breaks the "more" chain."""
+        self.last_was_device = False
 
     # ---- stage 0 -----------------------------------------------------------
 
@@ -205,27 +368,145 @@ class IntentRouter:
             return None
         return RouteResult(source="fastpath", tag=tag, spoken=self._response_for(tag))
 
+    def _read_level(self, subject: str):
+        """Current hardware level 0-100, or None if unreadable."""
+        util = getattr(self.assistant, "utility", None)
+        if util is None:
+            return None
+        try:
+            if subject == "brightness":
+                return util.get_brightness()
+            return util.get_volume_percent()
+        except Exception:
+            return None
+
+    def _set_absolute(self, subject: str, value):
+        util = getattr(self.assistant, "utility", None)
+        if util is None:
+            return None
+        try:
+            if subject == "brightness":
+                return util.set_brightness_absolute(value)
+            return util.set_volume_percent(value)
+        except Exception:
+            return None
+
+    def _capture_baseline(self, subject: str):
+        """Record the level before our first change to this device."""
+        if self.baseline.get(subject) is None:
+            level = self._read_level(subject)
+            if level is not None:
+                self.baseline[subject] = level
+
+    def _run_device_command(self, query: str, parsed: dict) -> RouteResult:
+        """Execute a parsed brightness/volume command and update focus state."""
+        subject, mode = parsed["subject"], parsed["mode"]
+        action, amount = parsed["action"], parsed["amount"]
+
+        if mode != "reset":
+            self._capture_baseline(subject)
+
+        if mode == "reset":
+            target = self.baseline.get(subject)
+            if target is not None:
+                # Absolute restore: correct even if the level was changed
+                # outside Phoenix since we took the baseline.
+                self._emit_trace("grammar", f"{subject} restore -> {target}")
+                applied = self._set_absolute(subject, target)
+                self.net_delta[subject] = 0
+                self.last_device = subject
+                spoken = (
+                    f"{subject.capitalize()} is back to {target} percent."
+                    if applied is not None
+                    else f"I could not restore the {subject}."
+                )
+                self._remember(query, spoken)
+                return RouteResult(
+                    source="fastpath-grammar", tag=action, spoken=spoken
+                )
+
+            # No baseline readable: undo our own net change instead.
+            delta = self.net_delta.get(subject, 0)
+            if delta == 0:
+                spoken = f"The {subject} is already back where it started."
+                self._emit_trace("grammar", f"{subject} reset (no change to undo)")
+                self._remember(query, spoken)
+                return RouteResult(
+                    source="fastpath-grammar", tag=action, spoken=spoken
+                )
+            mode = "decrease" if delta > 0 else "increase"
+            amount = abs(delta)
+            self.net_delta[subject] = 0
+        elif mode == "set":
+            # An absolute set discards the baseline we were tracking.
+            self.net_delta[subject] = 0
+        else:
+            step = amount if amount else DEFAULT_STEP
+            self.net_delta[subject] += step if mode == "increase" else -step
+
+        self.last_device = subject
+        self.last_mode = mode
+        self.last_amount = amount
+        self.last_was_device = True
+        canonical = build_canonical(subject, mode, amount)
+        self._emit_trace("grammar", f"{action} <- {canonical}")
+        if self.assistant is not None:
+            self.assistant._execute_action(action, canonical)
+        self._remember(query, "")
+        return RouteResult(source="fastpath-grammar", tag=action)
+
     # ---- entry point -------------------------------------------------------
 
     def route(self, query: str) -> RouteResult:
         hit = self._exact_match(query)
         if hit:
+            self._emit_trace("alias", hit.tag or "")
             return hit
 
+        # "more" right after a device change repeats it. Gated on the previous
+        # turn actually being a device command, so "again" after a Q&A still
+        # means "repeat that answer".
+        if (
+            self.last_was_device
+            and self.last_device
+            and self.last_mode in ("increase", "decrease")
+            and _is_continuation(query)
+        ):
+            return self._run_device_command(
+                query,
+                {
+                    "action": _ACTION_FOR_SUBJECT[self.last_device],
+                    "subject": self.last_device,
+                    "mode": self.last_mode,
+                    "amount": self.last_amount,
+                },
+            )
+
         # Stage 0b: deterministic device-control grammar. 0ms, no model call.
-        grammar = _match_command_grammar(query)
+        grammar = _match_command_grammar(query, last_device=self.last_device)
         if grammar:
-            action, canonical = grammar
-            if self.assistant is not None:
-                self.assistant._execute_action(action, canonical)
-            self._remember(query, "")
-            return RouteResult(source="fastpath-grammar", tag=action)
+            return self._run_device_command(query, grammar)
 
         soul = self.soul
         context = self._context_text()
         memory = self._memory_text()
 
+        self._clear_device_focus()
         choice = self.ai_manager.choose_tool(query, soul, context, memory)
+
+        # IGRS-style visible classification: "search_web population of france".
+        _args = choice.get("args") or {}
+        self._emit_trace(
+            choice.get("name", "?"),
+            str(
+                _args.get("what")
+                or _args.get("action")
+                or _args.get("topic")
+                or _args.get("query")
+                or _args.get("fact")
+                or ""
+            ),
+        )
 
         # Never fall back to fuzzy matching on model failure -- a wrong action
         # is worse than no action.
@@ -234,6 +515,17 @@ class IntentRouter:
                 source="error",
                 spoken="I could not reach my reasoning model just now.",
             )
+
+        # If the model chose a device change but named no target ("decrease it"),
+        # re-parse with the remembered device rather than giving up.
+        if choice["name"] == "control_device" and self.last_device:
+            _act = str((choice.get("args") or {}).get("action", ""))
+            if tool_registry.salvage_action(_act, query) is None:
+                retry = _match_command_grammar(
+                    f"{_act} {query}", last_device=self.last_device
+                )
+                if retry:
+                    return self._run_device_command(query, retry)
 
         result = tool_registry.dispatch(
             choice["name"],
@@ -264,20 +556,24 @@ class IntentRouter:
             from core.config import AppConfig
             import random
 
+            # dispatch only returns kind="memory" when a save actually happened.
             fact = result.get("fact") or ""
-            if result.get("saved"):
-                text = random.choice(
-                    ["Noted.", "Got it, I'll remember that.",
-                     "Noted, I'll keep that in mind.", "Understood."]
-                )
-                if AppConfig.memory["announce_saves"] and fact:
-                    text = f"{text} (remembered: {fact})"
-            else:
-                text = "I already had that noted."
+            text = random.choice(
+                ["Noted.", "Got it, I'll remember that.",
+                 "Noted, I'll keep that in mind.", "Understood."]
+            )
+            if AppConfig.memory["announce_saves"] and fact:
+                text = f"{text} (remembered: {fact})"
             self._remember(query, text)
             return RouteResult(source="tool", spoken=text, tool=choice["name"])
 
         evidence = result.get("evidence") or None
+        # For a direct answer, older matching exchanges are the only way to
+        # recall something said before the rolling window (or before a restart).
+        if evidence is None:
+            recalled = self._recall_text(query)
+            if recalled and recalled not in context:
+                memory = f"{memory}\n\nEarlier exchanges that mention this:\n{recalled}"
         text = self.ai_manager.compose_answer(query, soul, context, memory, evidence)
 
         self._remember(query, text)

@@ -24,22 +24,31 @@ Reply with ONLY JSON: {"tool":"...","arg":"...","extra":"..."}
 Tools:
 - get_device_state - a live reading from THIS pc. arg = time|date|battery|weather|timers|alarms|reminders|songs
 - control_device - change a pc setting. arg = action tag, extra = target
-- lookup_encyclopedia - a famous public person/place/company. arg = subject
-- search_web - news, prices, scores, anything recent. arg = query
 - remember - the user stated a personal fact. arg = fact in third person, extra = People|Preferences|Facts|Projects
-- answer_directly - about ME, about THE USER, their friends/family, the meaning of a word, chit-chat
+- search_web - look it up online. arg = query
+- answer_directly - answer from what you already know
 
-Rules:
-- FIRST: if the user mentions "my friend/sister/brother/mom/dad/wife/colleague"
-  and a name, or says "i prefer/like/hate/work at/am building", the tool is
-  remember. Do NOT look up a person the user calls their own.
-- Judge the SUBJECT, not the phrasing. "what is the time" is a device reading;
-  "tell me the capital of France" is world knowledge.
-- Asking what a word MEANS is answer_directly, never a device reading.
-- Who I am, who made me, who my master is, who the user is, who their friends
-  are: always answer_directly. Never search for these.
-- The user stating a fact instead of asking anything: remember.
-  "i prefer X", "i like X", "my friend Y", "i work at Z" -> remember.
+Rules, in order:
+1. User is TELLING you something personal, not asking: "my friend Moin told
+   me...", "i prefer dark mode", "i work at X" -> remember. If it is a QUESTION
+   ("who is my friend?") use answer_directly instead. Never look up a person the
+   user calls their own. Greetings and pleasantries ("hi", "thanks", "ok") are
+   NOT facts - they are answer_directly. Neither is a REQUEST: "a joke on X",
+   "tell me a story", "write a poem" are answer_directly.
+   Asking you to FORGET something is also remember (it is handled as a delete).
+2. Wants a live reading off this pc (clock, date, battery, local weather, their
+   timers/alarms/reminders/songs) -> get_device_state, even if phrased as a
+   question.
+3. Tells you to change something on the pc -> control_device.
+4. Otherwise it is a knowledge question. **answer_directly is the DEFAULT.**
+   Use search_web ONLY when the answer genuinely changes over time - you need a
+   positive reason. Those reasons are: population, prices, exchange rates,
+   news, sports scores, who currently holds an office, latest software
+   versions, or the words today/now/current/latest/recent appear.
+   Everything else is answer_directly, including capitals, history, geography,
+   definitions, science, maths, who I am, who the user is, their friends, word
+   meanings and chit-chat. "capital of france" is Paris - you know it, do not
+   search. If you cannot decide, use answer_directly.
 <!-- PROMPT:END -->
 
 ---
@@ -172,13 +181,30 @@ Wikipedia article. `arg` is the subject name, cleaned up.
 | who is salman khan | Salman Khan |
 | what is openai / what does open ai do | OpenAI |
 | what is anthropic / what does anthropic do | Anthropic |
-| tell me the capital of france | France |
-| what is the capital of france | France |
 | where is mount everest | Mount Everest |
 | what is isro | ISRO |
 
 **Do NOT use this for:** the user's own friends or family, the user themselves, me,
-or the meaning of a common word.
+the meaning of a common word, or **any fact that never changes** — a capital city,
+a historical date, a scientific constant. Those go to `answer_directly`; looking
+them up wastes 5-10 seconds for an answer the model already has.
+
+## Volatility — the general vs realtime split
+
+The single most useful question: **would this answer be different next year?**
+
+| Message | Tool | Why |
+|---|---|---|
+| what is the capital of france | answer_directly | Paris. Never changes. |
+| what is the population of france | search_web | changes every year |
+| who was mahatma gandhi | answer_directly | history, fixed |
+| who is the current pm of india | search_web | changes with elections |
+| what is python | answer_directly | a definition |
+| what is the latest python version | search_web | changes with releases |
+| how far is the moon | answer_directly | a constant |
+| what is the price of bitcoin | search_web | changes by the minute |
+| who is salman khan | lookup_encyclopedia | stable, but details worth checking |
+| what is 15 percent of 240 | answer_directly | maths, no lookup |
 
 ---
 

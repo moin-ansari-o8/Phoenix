@@ -7,7 +7,7 @@ DEFAULT_ROUTER_MODEL = "llama3.2:latest"
 DEFAULT_ANSWER_MODEL = "gemma4:e2b"
 
 
-def strip_markdown(text: str, max_chars: int = 600) -> str:
+def strip_markdown(text: str, max_chars: int = 900) -> str:
     """Small models leak markdown; output is spoken aloud, so clean it."""
     if not text:
         return ""
@@ -31,6 +31,48 @@ def strip_markdown(text: str, max_chars: int = 600) -> str:
                 return cut[: idx + 1].strip()
         return cut.rstrip() + "..."
     return text
+
+
+_REPEAT_PATTERNS = (
+    r"\bcome again\b",
+    r"\bsay (that|it) again\b",
+    r"\brepeat( that| it| again)?\b",
+    r"\b(that|it|this) again\b",
+    r"\bagain please\b",
+    r"\b(couldn'?t|could not|didn'?t|did not) (hear|catch|get) (that|you|it)\b",
+    r"\bone more time\b",
+    r"\bwhat was that\b",
+    r"\bpardon\b",
+    r"\bcome back to that\b",
+    r"\b\w+ again\b",  # "tell me PCA again", "explain again"
+)
+
+
+def _repeat_target(query: str, context: str) -> Optional[str]:
+    """If the user asked to hear the last answer again, return that answer.
+
+    "come again" used to get "I think we already discussed PCA" -- a deflection.
+    Detecting the request deterministically and handing the model the exact text
+    to restate is more reliable than hoping it infers the intent.
+    """
+    if not query or not context:
+        return None
+    low = query.strip().lower()
+    if len(low.split()) > 10:  # a long message is a new question, not "again"
+        return None
+    if not any(re.search(p, low) for p in _REPEAT_PATTERNS):
+        return None
+
+    for line in reversed(context.strip().splitlines()):
+        if ":" in line:
+            speaker, _, said = line.partition(":")
+            said = said.strip()
+            # Skip the user's own lines and any prior deflection.
+            if speaker.strip().lower() in ("you", "user"):
+                continue
+            if said and len(said) > 25 and "already discussed" not in said.lower():
+                return said
+    return None
 
 
 class AIDecisionMaker:
@@ -118,7 +160,11 @@ class AIDecisionMaker:
         # depends on the CURRENT message only; the answer model still gets the
         # history, which is where it is actually needed for follow-ups.
 
-        raw = self._get_router()._call_ollama(prompt, format_json=True)
+        # temperature=0 makes classification deterministic. Without it Ollama
+        # defaults to 0.8 and the same query routed differently between runs.
+        raw = self._get_router()._call_ollama(
+            prompt, format_json=True, temperature=0, num_predict=60
+        )
 
         if isinstance(raw, dict) and "error" in raw and "tool" not in raw:
             err = str(raw.get("error", ""))
@@ -228,14 +274,18 @@ class AIDecisionMaker:
         # Prompt length is the dominant latency cost here (~1.85ms/char measured
         # on this machine), so keep every piece tight: last turn only, and
         # evidence hard-capped regardless of what the caller passed in.
+        repeat_of = _repeat_target(query, context)
+
         user = ""
         if context:
-            # Labelled as background and explicitly de-prioritised: without this
-            # the model answered the PREVIOUS topic instead of the new message.
+            # Use the history to resolve references, but answer the NEW message.
+            # An earlier version said "background only, do not answer this",
+            # which made "come again" reply "we already discussed that" instead
+            # of repeating -- too strong.
             user += (
-                "Earlier in this conversation (background only, do not answer "
-                "this):\n"
-                + "\n".join(context.strip().splitlines()[-2:])
+                "Recent conversation, for resolving references like 'it', "
+                "'that' or 'again':\n"
+                + "\n".join(context.strip().splitlines()[-4:])
                 + "\n\n"
             )
         if evidence:
@@ -244,19 +294,30 @@ class AIDecisionMaker:
                 "Use only these facts. If they lack the answer, say so.\n\n"
             )
         else:
-            # Without this, "tell me more" about a friend produced invented
-            # biography ("often drops by for gaming sessions, brings snacks").
-            # Fabricating personal details is worse than admitting ignorance.
+            # Narrowed to PERSONAL details, which is the case that actually
+            # fabricated ("often drops by for gaming sessions, brings snacks").
+            # A blanket "say you don't know" made it deflect on ordinary topics.
             user += (
-                "You have no looked-up information for this. Answer only from "
-                "what you genuinely know or were told above. NEVER invent "
-                "details about the user or people they know - if you do not "
-                "know, say so plainly.\n\n"
+                "Answer from your own knowledge. Never invent personal details "
+                "about the user or people they know - for those, say plainly "
+                "that you were not told.\n\n"
             )
-        user += (
-            f"Answer ONLY this message: {query}\n\n"
-            "Answer in 1-2 short spoken sentences."
-        )
+
+        if repeat_of:
+            # Deterministic: the user asked to hear it again. Restating is the
+            # whole request, so never respond that it was already covered.
+            user += (
+                f"The user is asking you to say this again:\n\"{repeat_of}\"\n\n"
+                "Repeat that answer in full, rephrased more clearly. Do NOT say "
+                "you already answered it, and do not shorten it to a summary.\n\n"
+                f"Their exact words: {query}\n\n"
+                "Reply in 1-3 short spoken sentences."
+            )
+        else:
+            user += (
+                f"Answer ONLY this message: {query}\n\n"
+                "Answer in 1-2 short spoken sentences."
+            )
 
         msg = self._get_answer().chat(
             [
@@ -264,7 +325,10 @@ class AIDecisionMaker:
                 {"role": "user", "content": user},
             ],
             temperature=0.4,
-            num_predict=110,
+            # 110 truncated "teach me ..." answers mid-sentence. Capping
+            # generation barely affected latency anyway (that is prompt-bound),
+            # so there is little reason to keep it tight.
+            num_predict=220,
         )
 
         if isinstance(msg, dict) and "error" in msg:

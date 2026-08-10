@@ -863,9 +863,147 @@ class Utility:
 
     def adj_brightness(self, change):
         direction = "increased" if change > 0 else "decreased"
-        cmd = f'powershell -Command "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, ((Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightness).CurrentBrightness + {change}))"'
-        os.system(cmd)
+        current = self.get_brightness()
+
+        if current is not None:
+            target = max(0, min(100, current + change))
+            if target == current:
+                # Already at the rail. Say so instead of reporting a change
+                # that did not happen.
+                edge = "maximum" if change > 0 else "minimum"
+                self.speak(f"Brightness is already at its {edge}, at {current} percent.")
+                return
+            self.set_brightness_absolute(target)
+            applied = target - current
+            if abs(applied) < abs(change):
+                # Clamped part-way: report the truth, not the request.
+                edge = "bright" if change > 0 else "dim"
+                self.speak(
+                    f"Brightness is now {target} percent, as {edge} as it goes."
+                )
+            else:
+                self.speak(f"Brightness has been {direction} by {abs(change)}%")
+            return
+
+        # Level unreadable: fall back to a blind relative change. subprocess with
+        # CREATE_NO_WINDOW, not os.system -- os.system attaches a console, which
+        # reset the terminal and wiped the chat scrollback.
+        script = (
+            "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods)"
+            ".WmiSetBrightness(1, [Math]::Max(0, [Math]::Min(100, "
+            "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightness)"
+            f".CurrentBrightness + ({change}))))"
+        )
+        self._run_hidden(["powershell", "-NoProfile", "-Command", script])
         self.speak(f"Brightness has been {direction} by {abs(change)}%")
+
+    # --- hardware level read/write --------------------------------------
+    # Needed so "back to normal" restores the level the session started at,
+    # even if it was changed outside Phoenix (keyboard keys, another app).
+    # Each returns None when unavailable so callers can degrade gracefully.
+
+    @staticmethod
+    def get_brightness():
+        """Current display brightness 0-100, or None if unsupported."""
+        try:
+            out = subprocess.run(
+                [
+                    "powershell", "-NoProfile", "-Command",
+                    "(Get-WmiObject -Namespace root/wmi "
+                    "-Class WmiMonitorBrightness).CurrentBrightness",
+                ],
+                capture_output=True,
+                text=True,
+                creationflags=0x08000000,
+                timeout=10,
+            )
+            value = (out.stdout or "").strip().splitlines()
+            return int(value[0]) if value and value[0].strip().isdigit() else None
+        except Exception:
+            return None
+
+    def set_brightness_absolute(self, value):
+        """Set display brightness to an absolute 0-100 level."""
+        value = max(0, min(100, int(value)))
+        self._run_hidden(
+            [
+                "powershell", "-NoProfile", "-Command",
+                "(Get-WmiObject -Namespace root/wmi "
+                f"-Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {value})",
+            ]
+        )
+        return value
+
+    # ONE process-wide endpoint, created in COM's multi-threaded apartment.
+    # main.py starts a fresh thread per command, so a per-thread interface got
+    # Released when that short-lived thread died -- comtypes' __del__ then blew
+    # up with "access violation writing 0x...". An MTA singleton held at class
+    # level is thread-agnostic and lives until process exit, so Release never
+    # runs on a dead apartment.
+    _volume_iface = None
+    _volume_lock = threading.Lock()
+
+    @classmethod
+    def _endpoint_volume(cls):
+        if cls._volume_iface is not None:
+            return cls._volume_iface
+
+        with cls._volume_lock:
+            if cls._volume_iface is not None:
+                return cls._volume_iface
+
+            try:
+                import pythoncom
+
+                # MTA: usable from any thread. Already-initialised is fine.
+                pythoncom.CoInitializeEx(pythoncom.COINIT_MULTITHREADED)
+            except Exception:
+                pass
+
+            from ctypes import cast, POINTER
+            from comtypes import CLSCTX_ALL
+            from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+
+            device = AudioUtilities.GetSpeakers()
+            interface = device._dev.Activate(
+                IAudioEndpointVolume._iid_, CLSCTX_ALL, None
+            )
+            cls._volume_iface = cast(interface, POINTER(IAudioEndpointVolume))
+            return cls._volume_iface
+
+    @classmethod
+    def get_volume_percent(cls):
+        """Current system volume 0-100, or None if pycaw is unavailable."""
+        try:
+            return round(cls._endpoint_volume().GetMasterVolumeLevelScalar() * 100)
+        except Exception:
+            return None
+
+    @classmethod
+    def set_volume_percent(cls, value):
+        """Set system volume to an absolute 0-100 level."""
+        value = max(0, min(100, int(value)))
+        try:
+            cls._endpoint_volume().SetMasterVolumeLevelScalar(value / 100.0, None)
+            return value
+        except Exception:
+            return None
+
+    @staticmethod
+    def _run_hidden(args):
+        """Run a console command without attaching or flashing a window."""
+        try:
+            CREATE_NO_WINDOW = 0x08000000
+            subprocess.run(
+                args,
+                creationflags=CREATE_NO_WINDOW,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=15,
+                check=False,
+            )
+        except Exception as e:
+            print(f"[ERROR] command failed: {e}")
 
     def adj_volume(self, string, x=None):
         """
@@ -873,17 +1011,62 @@ class Utility:
         :param string: 'increase', 'decrease', or 'set'.
         :param x: Value to set the volume (0-100) if 'set' is specified.
         """
-        if string == "increase":
-            os.system("nircmd.exe changesysvolume 4000")
+        if string == "change":
+            # Relative percentage change, honest about hitting the rails.
+            if x is None:
+                self.speak("No volume percentage specified.")
+                return
+            direction = "increased" if x > 0 else "decreased"
+            current = self.get_volume_percent()
+            if current is not None:
+                target = max(0, min(100, current + int(x)))
+                if target == current:
+                    edge = "maximum" if x > 0 else "minimum"
+                    self.speak(
+                        f"Volume is already at its {edge}, at {current} percent."
+                    )
+                    return
+                self.set_volume_percent(target)
+                if abs(target - current) < abs(int(x)):
+                    edge = "loud" if x > 0 else "quiet"
+                    self.speak(
+                        f"Volume is now {target} percent, as {edge} as it goes."
+                    )
+                else:
+                    self.speak(f"Volume has been {direction} by {abs(int(x))}%")
+                return
+            self._run_hidden(["nircmd.exe", "changesysvolume", str(int(x * 655.35))])
+            self.speak(f"Volume has been {direction} by {abs(int(x))}%")
+        elif string == "increase":
+            current = self.get_volume_percent()
+            if current is not None and current >= 100:
+                self.speak("Volume is already at its maximum.")
+                return
+            self._run_hidden(["nircmd.exe", "changesysvolume", "4000"])
             self.speak("Volume has been increased.")
         elif string == "decrease":
-            os.system("nircmd.exe changesysvolume -4000")
+            current = self.get_volume_percent()
+            if current is not None and current <= 0:
+                self.speak("Volume is already all the way down.")
+                return
+            self._run_hidden(["nircmd.exe", "changesysvolume", "-4000"])
             self.speak("Volume has been decreased.")
         elif string == "set":
             if x is not None:
-                volume = int(x * 655.35)
-                os.system(f"nircmd.exe setsysvolume {volume}")
-                self.speak(f"Volume has been set to {x} percent.")
+                requested = int(x)
+                clamped = max(0, min(100, requested))
+                # Prefer pycaw: a direct API call, no external nircmd.exe needed.
+                applied = self.set_volume_percent(clamped)
+                if applied is None:
+                    self._run_hidden(
+                        ["nircmd.exe", "setsysvolume", str(int(clamped * 655.35))]
+                    )
+                    applied = clamped
+                if applied != requested:
+                    edge = "highest" if requested > 100 else "lowest"
+                    self.speak(f"Volume set to {applied} percent, the {edge} it goes.")
+                else:
+                    self.speak(f"Volume has been set to {applied} percent.")
             else:
                 self.speak("No volume percentage specified.")
         else:
@@ -893,6 +1076,19 @@ class Utility:
         inc_bright_keywords = ["increase", "increased"]
         dec_bright_keywords = ["decrease", "decreased"]
         pattern = "\\b\\d+%?"
+        # "set brightness 40" had no branch here at all and silently did nothing.
+        if "set" in query and "by" not in query:
+            match = re.search(pattern, query)
+            if match:
+                requested = int(match.group().rstrip("%"))
+                applied = self.set_brightness_absolute(requested)
+                if applied is not None and applied != requested:
+                    self.speak(f"Brightness set to {applied} percent, its limit.")
+                else:
+                    self.speak(f"Brightness has been set to {requested} percent.")
+            else:
+                self.speak("No brightness percentage specified.")
+            return
         if "by" in query:
             match = re.search(pattern, query)
             if match:
@@ -915,6 +1111,20 @@ class Utility:
             if match:
                 value = int(re.sub("\\D", "", match.group()))
                 self.adj_volume("set", value)
+        elif "by" in query:
+            # Relative change, matching adjust_brightness: "decrease volume by 40".
+            match = re.search(pattern, query)
+            if match:
+                value = int(match.group().rstrip("%"))
+                if any((word in query for word in inc_vol_keywords)):
+                    self.adj_volume("change", value)
+                elif any((word in query for word in dec_vol_keywords)):
+                    self.adj_volume("change", -value)
+                return
+            if any((word in query for word in inc_vol_keywords)):
+                self.adj_volume("increase", None)
+            elif any((word in query for word in dec_vol_keywords)):
+                self.adj_volume("decrease", None)
         elif any((word in query for word in inc_vol_keywords)):
             self.adj_volume("increase", None)
         elif any((word in query for word in dec_vol_keywords)):

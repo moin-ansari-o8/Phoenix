@@ -27,21 +27,28 @@ CASES = [
     ("decrease the brightness", "control_device"),
     ("turn up the volume", "control_device"),
     ("dim the screen", "control_device"),
-    ("who is open ai", "lookup_encyclopedia"),
-    ("what is open ai", "lookup_encyclopedia"),
-    ("what is anthropic do", "lookup_encyclopedia"),
-    ("who is salman khan", "lookup_encyclopedia"),
-    # Either is defensible: Wikipedia has good articles for these, and the model
-    # also knows them cold. Both avoid a wrong ACTION, which is what matters.
-    ("what is the capital of france", ("lookup_encyclopedia", "answer_directly")),
+    # Volatility split: settled facts must NOT trigger a lookup, changing ones must.
+    ("what is the capital of france", "answer_directly"),
+    ("who was mahatma gandhi", "answer_directly"),
+    ("what is 15 percent of 240", "answer_directly"),
+    ("how far is the moon", "answer_directly"),
+    ("what is the population of france", "search_web"),
+    ("who is the current prime minister of india", "search_web"),
+    ("what is the latest python version", "search_web"),
+    ("who is open ai", ("search_web", "answer_directly")),
+    ("what is open ai", ("search_web", "answer_directly")),
+    ("what is anthropic do", ("search_web", "answer_directly")),
+    # Either is fine: the model knows him, and there is no volatility marker, so
+    # answering directly is correct AND faster. A lookup is also acceptable.
+    ("who is salman khan", ("search_web", "answer_directly")),
     # Regression guards: "tell me the ..." phrasings must not read device state.
-    ("tell me the capital of france", ("lookup_encyclopedia", "answer_directly")),
-    ("tell me about salman khan", ("lookup_encyclopedia", "answer_directly")),
+    ("tell me the capital of france", "answer_directly"),
+    ("tell me about salman khan", ("search_web", "answer_directly")),
     ("tell me a joke", ("answer_directly", "control_device")),
-    ("capital of france", ("lookup_encyclopedia", "answer_directly")),
+    ("capital of france", "answer_directly"),
     ("latest news about isro", "search_web"),
     ("what is the price of bitcoin", "search_web"),
-    ("what is artificial intelligence", ("answer_directly", "lookup_encyclopedia")),
+    ("what is artificial intelligence", "answer_directly"),
     ("who are you", "answer_directly"),
     ("who is your master", "answer_directly"),
     ("who am i", "answer_directly"),
@@ -90,6 +97,15 @@ def main():
         got, args = choice.get("name"), choice.get("args", {})
 
         detail = ""
+        # dispatch() upgrades answer_directly -> search_web on volatility
+        # markers, so measure the EFFECTIVE tool, not just the router's pick.
+        # Reporting the router in isolation under-counts real behaviour.
+        if got == "answer_directly":
+            from Utils.limbs.tool_registry import needs_fresh_data
+
+            if needs_fresh_data(utterance):
+                got = "search_web"
+                detail = " (upgraded by needs_fresh_data)"
         ok = got in accepted
         # For control_device, the tool name alone is not enough -- a bad action
         # argument means the command fails at dispatch. Verify it maps.

@@ -18,6 +18,10 @@ if not logger.handlers:
     handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
+# File-only: without this the records also reach the root logger and print into
+# the chat on every single speak() call. The queue server is optional, so its
+# absence must be silent.
+logger.propagate = False
 
 
 @dataclass

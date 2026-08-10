@@ -71,7 +71,9 @@ class PhoenixAssistant:
             max_entries=AppConfig.memory["max_remember_entries"]
         )
         self.context = ConversationContext(
-            max_turns=AppConfig.memory["context_turns"]
+            max_turns=AppConfig.memory["context_turns"],
+            persist=AppConfig.memory["persist_chatlog"],
+            max_log_entries=AppConfig.memory["max_chatlog_entries"],
         )
         self.router = IntentRouter(
             self.intents,
@@ -80,7 +82,18 @@ class PhoenixAssistant:
             soul=self.soul,
             context=self.context,
             remember_store=self.remember_store,
+            trace=self._trace_route,
         )
+
+    def _trace_route(self, label: str):
+        """Surface the routing decision, IGRS-style, if the TUI supports it."""
+        from core.config import AppConfig
+
+        if not getattr(AppConfig, "show_routing", False):
+            return
+        tui = getattr(getattr(self.utility, "speech_engine", None), "tui", None)
+        if tui is not None and hasattr(tui, "log_route"):
+            tui.log_route(label)
 
     def _execute_action(self, tag, query):
         common_tags = {
