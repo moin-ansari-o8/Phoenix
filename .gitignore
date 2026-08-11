@@ -1,126 +1,72 @@
+# NOTE: gitignore has NO inline comment syntax.
+# `*.wav  # temp audio` matches a file literally named `*.wav  # temp audio`.
+# Keep every comment on its own line.
+
 # Python
 __pycache__/
 *.py[cod]
-*.pyc
 *.pyo
 
-# Virtual Environments
+# Virtual environments
 .venv/
 .venv_new/
 venv/
 
-# IDE
+# IDE / OS
 .DS_Store
-*.swp
-.vscode/
-.idea/
-
-# Environment
-.env
-secret_config.json
-
-# Dependencies
-node_modules/
-package-lock.json
-
-# Logs (all log files and logs folder)
-*.log
-logs/
-*.log.*
-
-# Temporary files (all temp files and temp folder)
-*.tmp
-*.bak
-temp/
-*.wav  # Temporary audio outputs
-*.mp3  # Temporary audio outputs
-test_*_output.*  # Test output files
-
-# Data backups
-data/*.json.bak
-data/*.bak
-
-# Trials and experimental
-trials/
-*.zip
-
-# Models (large files - download separately)
-models/piper_voices/*.onnx
-models/whisper/*.pt
-models/**/*.bin
-
-# TTS / Audio Voices
-voice/
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
-# Python
-__pycache__/
-*.py[cod]
-*.pyc
-*.pyo
-
-# Virtual Environments
-.venv/
-.venv_new/
-venv/
-
-# IDE
-.DS_Store
-*.swp
-.vscode/
-.idea/
-
-# Environment
-.env
-secret_config.json
-
-# Dependencies
-node_modules/
-package-lock.json
-
-# Logs (all log files and logs folder)
-*.log
-logs/
-*.log.*
-
-# Temporary files (all temp files and temp folder)
-*.tmp
-*.bak
-temp/
-*.wav  # Temporary audio outputs
-*.mp3  # Temporary audio outputs
-test_*_output.*  # Test output files
-
-# Data backups
-data/*.json.bak
-data/*.bak
-
-# Trials and experimental
-trials/
-*.zip
-
-# Models (large files - download separately)
-models/piper_voices/*.onnx
-models/whisper/*.pt
-models/**/*.bin
-
-# TTS / Audio Voices
-voice/
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
-
-# OS specific
 Thumbs.db
 desktop.ini
+*.swp
+.vscode/
+.idea/
 
-# Specific exclusions
+# Secrets
+.env
+secret_config.json
+
+# Node
+node_modules/
+package-lock.json
+
+# Logs
+*.log
+*.log.*
+logs/
+
+# Temp and build artifacts
+*.tmp
+*.bak
+temp/
+dist/
+build/
+*.egg-info/
 SortPythonProgram.pyd
+
+# Generated audio.
+# TTS writes uniquely-named temp files into data/; they are never source.
+*.wav
+*.mp3
+data/phoenix_speech_*.mp3
+data/piper_speech_*.wav
+test_*_output.*
+
+# Assets are audio too, but they ARE source - keep them tracked.
+!assets/sound/*.wav
+!assets/sound/*.mp3
+
+# Large models - download separately, never commit.
+# See scripts/utilities/download_piper_voices.py
+*.onnx
+voice/
+models/
+
+# Runtime state / private data
+data/*.json.bak
+data/*.bak
 data/ChatLog.json
 data/remember.md
 data/remember.json
+
+# Experiments
+trials/
+*.zip

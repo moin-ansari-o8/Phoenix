@@ -1200,6 +1200,54 @@ class Utility:
             ]
         )
 
+    def set_echo_mode(self, mode: str):
+        """
+        Switch listening between speakers and headphones.
+
+        "gate" (speakers): the mic is muted for the listener while Phoenix
+        talks, so it cannot transcribe its own voice. Barge-in is off, because
+        interrupting on self-voice would cut Phoenix off constantly.
+
+        "open" (headphones): the mic never hears Phoenix, so listening is fully
+        duplex and talking over Phoenix interrupts it.
+
+        Written to config for next launch AND pushed into shared state so the
+        running listener picks it up immediately.
+        """
+        import logging
+
+        from core.config import AppConfig
+
+        mode = "open" if str(mode).lower() in ("open", "headphone", "headphones") else "gate"
+        AppConfig.audio["echo_mode"] = mode
+
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "core",
+            "config.json",
+        )
+        try:
+            with open(config_path, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+            data.setdefault("audio", {})["echo_mode"] = mode
+            with open(config_path, "w", encoding="utf-8") as handle:
+                json.dump(data, handle, indent=2)
+        except Exception as exc:
+            logging.getLogger("Utility").warning(f"Could not persist echo mode: {exc}")
+
+        queue_manager = None
+        getter = getattr(self.spk, "_get_queue_manager", None)
+        if callable(getter):
+            queue_manager = getter()
+        if queue_manager is not None:
+            queue_manager.set_echo_open(mode == "open")
+
+        if mode == "open":
+            self.speak("Headphone mode. I'll keep listening while I talk, so you can cut me off.")
+        else:
+            self.speak("Speaker mode. I'll stop listening while I talk so I don't hear myself.")
+        return True
+
     def battery_check(self):
         battery = psutil.sensors_battery()
         battery_percentage = int(battery.percent)
