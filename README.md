@@ -285,7 +285,6 @@ Phoenix/
 │   │   ├── time_monitor.py     hydration/startup/project reminders
 │   │   ├── voice_processor.py  spawns + supervises core/launch_phoenix.py
 │   │   └── voice_command_processor.py  STT → filters → brain → TTS  (the busy one)
-│   └── plugins/                ⚠ DEAD CODE. ~3,800 lines, imported by nothing.
 ├── data/
 │   ├── intents.json            144 intents / 807 patterns (canned responses + fastpath tags)
 │   ├── remember.md             long-term memory  (gitignored)
@@ -388,10 +387,10 @@ See **`.github/temp-todo-beast-mode.md`** for the full flaw register and roadmap
 phase 5 partially done).
 
 Headline items:
-- `Utils/plugins/` (~3,800 lines) and `helpers/` are dead code
-- `utils/` (lowercase) is a **case-duplicate** of `Utils/` in git history — repo will not
-  clone correctly on Linux/macOS
+- ~~`Utils/plugins/` and `helpers/` are dead code~~ — **resolved 2026-08-11**, both deleted
+- ~~`utils/` (lowercase) is a case-duplicate of `Utils/`~~ — **resolved 2026-08-11**, the 32
+  stale lowercase paths are out of the git index; the repo clones correctly on Linux/macOS
+- ~~~38 stray scripts and stale fix-notes at repo root~~ — **resolved 2026-08-11**
 - `core/main_assistant.py` is a superseded duplicate of `command_processor.py`
-- ~38 stray scripts and stale fix-notes at repo root
 - `tts_engine: "local"` silently means SAPI5, not Piper
 - Wake-word matching is naive substring (`"yo" in "you"` → true)

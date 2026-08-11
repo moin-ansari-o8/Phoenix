@@ -225,20 +225,36 @@ worker thread + blocking `speak()`), but only for the TUI process. `manager.py:_
 constructs a *second* `SpeechEngine`, and the processor a *third*. Under C1 this collapses
 naturally; if C1 is deferred, at minimum make `SpeechEngine` a module-level singleton.
 
-### [todo-C3] Split `action_utilities.py` (3,556 lines, 189 methods)
-This is the last unrefactored monolith and the highest-risk file in the repo. It already
-has a natural seam: `Utils/plugins/normal/{apps,browser,desktop,input,media,personal,
-system,windows}.py` is a **complete, well-structured decomposition of exactly this
-functionality that nobody ever wired up**.
+### [todo-C3] Split `action_utilities.py` (3,556 lines, 190 methods)
+This is the last unrefactored monolith and the highest-risk file in the repo.
 
-Decide one way or the other:
-- **(a)** Adopt the plugin tree: make `Utility` a thin facade that delegates to the plugin
-  modules. ~3,800 lines of already-written code stops being dead.
-- **(b)** Delete `Utils/plugins/` entirely and split `action_utilities.py` by hand.
+**DECIDED 2026-08-11: option (b). `Utils/plugins/` has been deleted** (commit removing
+14 files / 3,917 lines). Do not plan around adopting it — the code no longer exists.
 
-Do **not** leave both. Recommend (a) — but audit the plugin code first; it uses
-`shell=True` liberally (`plugins/base.py:163`, `plugins/normal/apps.py:189,283`), which
-`action_utilities.py` has mostly moved away from.
+The original note recommended (a), adopting the plugin tree as a ready-made
+decomposition, on the grounds that it was "complete, well-structured ... that nobody
+ever wired up". That recommendation was audited before deleting and no longer held:
+
+| | `action_utilities.py` | `Utils/plugins/` (deleted) |
+|---|---|---|
+| methods | 190 | 187 |
+| last real change | 2026-08-11 | 2026-04-20 |
+| `shell=True` sites | 1 | 4 |
+| ever executed | yes, in production | no, imported by nothing |
+
+Since the plugin tree was last touched, `action_utilities.py` took 3 commits and
++306/−11 lines, including `set_echo_mode` (which the listener's echo-mode switching
+depends on) with no plugin equivalent. Its only commit since April was a mechanical
+`Utils` capitalisation pass. So (a) was not "wire up 3,800 finished lines" — it was
+port 4 months of drift, remove 4 `shell=True` call sites, and re-test 187 methods that
+had never run once, to arrive where the live code already was. The gap would only widen
+with each further change to `action_utilities.py`.
+
+**The split itself still stands as a task** — a 3,556-line file with 190 methods is
+worth decomposing. Do it by hand from the live code, keeping the same seam the plugin
+tree used (apps / browser / desktop / information / input / media / personal / system /
+windows). Recover the deleted tree from git history if it is useful as a layout
+reference, but treat it as a sketch, not a source.
 
 ### [todo-C4] The `action_map` should be data, not a 100-line dict duplicated in two files
 `command_processor._execute_action` has a 100-entry dict of lambdas, and
@@ -346,10 +362,10 @@ cannot tell which is live.
 tree despite `*.log` being ignored — they were committed before the rule).
 
 ### [todo-E2] Dead trees to delete
-- `Utils/plugins/` — 3,800 lines, imported only by itself (see C3 for the alternative)
-- `helpers/` — `ConsoleUI.py`, `ConsoleUI_new.py`, `HelperPHNX.py`, `QueueManagerPHNX.py`,
-  all pre-reorganisation copies
-- `bgprogs/BgVoiceProcessorPHNX.pyw`
+- ~~`Utils/plugins/`~~ — **DONE 2026-08-11**, 14 files / 3,917 lines deleted (see C3)
+- ~~`helpers/`~~ — **DONE**, removed in the repo-clean commit (`ConsoleUI.py`,
+  `ConsoleUI_new.py`, `HelperPHNX.py`, `QueueManagerPHNX.py`)
+- ~~`bgprogs/BgVoiceProcessorPHNX.pyw`~~ — **DONE**, removed in the repo-clean commit
 - `trials/` (already gitignored, 400+ lines of old experiments)
 - `tests/*.wav` (~20 files), `tests/piper_models/`, `tests/coqui_output/`
 
@@ -422,8 +438,8 @@ which is not fully trusted, and the action layer executes shell commands.
 |---|---|---|---|
 | G1 | `subprocess.Popen(details["launch"], shell=True)` with a value from a data file | `action_utilities.py:3239` | med |
 | G2 | `subprocess.Popen(app_name)` where `app_name` derives from a transcript | `action_utilities.py:176` | med |
-| G3 | `os.system("shutdown /s")`, `taskkill /F /IM python.exe` reachable from a voice command with **no confirmation** | `action_utilities.py:2422`, `plugins/normal/system.py:240` | high (destructive, not exploitable) |
-| G4 | `plugins/base.py:163` generic `run_async(command, shell=True)` | dead code, but it is a shell-injection primitive sitting in the tree | med |
+| G3 | `os.system("shutdown /s")`, `taskkill /F /IM python.exe` reachable from a voice command with **no confirmation** | `action_utilities.py:2422` | high (destructive, not exploitable) |
+| ~~G4~~ | ~~`plugins/base.py:163` generic `run_async(command, shell=True)`~~ | **RESOLVED 2026-08-11** — `Utils/plugins/` deleted, taking all 4 of its `shell=True` sites with it | — |
 | G5 | `launch_phoenix.py:111` builds a PowerShell command via string interpolation and `shell=True` | `_cleanup_stale_processes` | low |
 | G6 | `type_text` / `press_key` drive the keyboard from transcribed audio | `action_utilities.py` | med |
 | G7 | Named-pipe authkey `b"phoenix_audio_queue"` is a hardcoded constant in two files | `queue_server.py`, `queue_manager.py` | low (local pipe, but any local process can connect and inject audio chunks / force `speaking_until` high to deafen the mic) |
