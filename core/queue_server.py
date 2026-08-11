@@ -29,10 +29,11 @@ _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT_DIR not in sys.path:
     sys.path.insert(0, _ROOT_DIR)
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger("QueueServer")
+# basicConfig with no handler wrote to stderr, which the launcher captures -
+# so queue-server chatter could surface in the TUI feed.
+from core.logging_setup import setup_logging
+
+logger = setup_logging("queue_server")
 
 # Layout of the shared speech-state array
 SPEAKING_SINCE = 0

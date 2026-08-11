@@ -90,7 +90,7 @@ class PhoenixRuntimeManager:
                 self._print_feed(line)
 
     def _render_status(self):
-        status = self._live_status or "🎧 Listening..."
+        status = self._live_status or "Listening..."
         sys.stdout.write(f"\r\033[2K{status}")
         sys.stdout.flush()
 
@@ -109,15 +109,19 @@ class PhoenixRuntimeManager:
             self._render_status()
 
     def _is_banner_or_noise(self, line: str) -> bool:
+        # Startup chatter from the child processes. These used to be matched by
+        # their emoji prefix; assistant_io now emits [INFO]/[WARN] per the
+        # project's no-emoji-in-console rule, so match the text instead - an
+        # emoji match here silently stopped filtering the moment that changed.
         if not line:
             return True
         if line.startswith("[DEBUG]"):
             return True
-        if line.startswith("🎤 Voice Engine"):
+        if "Voice engine:" in line:
             return True
-        if line.startswith("💻 Loading Whisper"):
+        if "Loading Whisper" in line:
             return True
-        if line.startswith("✅ Speech recognition ready"):
+        if "Speech recognition ready" in line:
             return True
         if line.startswith("+") and "---" in line:
             return True
@@ -141,65 +145,70 @@ class PhoenixRuntimeManager:
         if clean.startswith("[VOICE_STATE]"):
             state = clean.removeprefix("[VOICE_STATE]").strip().lower()
             if state == "listening":
-                self._set_status("🎧 Listening...")
+                self._set_status("Listening...")
                 return
             if state == "detected":
-                self._set_status("🎙️  Voice detected...")
+                self._set_status("Voice detected...")
                 return
             if state == "processing":
-                self._set_status("🧠 Processing...")
+                self._set_status("Processing...")
                 return
             if state == "awake":
-                self._set_status("🎧 Listening (follow-up)...")
+                self._set_status("Listening (follow-up)...")
                 return
             if state == "dormant":
-                self._set_status("🎧 Listening - say the wake word...")
+                self._set_status("Listening - say the wake word...")
                 return
 
         if clean.startswith("[HEARD]"):
             heard = clean.removeprefix("[HEARD]").strip()
             if heard and heard != "<empty>":
-                self._print_feed(f"👤 You: {heard}")
-            self._set_status("🎧 Listening...")
+                self._print_feed(f"You: {heard}")
+            self._set_status("Listening...")
             return
 
         if clean.startswith("[IGNORED_HEARD]"):
             heard = clean.removeprefix("[IGNORED_HEARD]").strip()
             if heard and heard != "<empty>":
-                self._print_feed(f"👤 [Ignored]: {heard}")
-            self._set_status("🎧 Listening...")
+                self._print_feed(f"heard: {heard}")
+            self._set_status("Listening...")
             return
 
         if clean.startswith("[PROCESSING]"):
-            self._set_status("🧠 Processing...")
+            self._set_status("Processing...")
             return
 
         if clean.startswith("[IGNORED]"):
-            self._set_status("🎧 Listening...")
+            self._set_status("Listening...")
             return
 
         if clean.startswith("[INTENT]"):
-            self._set_status("🎧 Listening...")
+            self._set_status("Listening...")
             return
 
-        if "🎙️  Voice detected" in clean:
-            self._set_status("🎙️  Voice detected...")
+        # console_ui.py's own output, reaching us over the child's stdout.
+        # These used to match on its emoji prefixes; console_ui now emits plain
+        # text per the project's no-emoji rule, and an emoji matcher would have
+        # silently stopped matching the moment that changed - with no failure,
+        # just a status line that quietly stopped updating.
+        if "Voice detected" in clean:
+            self._set_status("Voice detected...")
             return
 
-        if "🧠 Processing" in clean:
-            self._set_status("🧠 Processing...")
+        if clean.startswith("Processing"):
+            self._set_status("Processing...")
             return
 
-        if "🎧 Listening" in clean:
-            self._set_status("🎧 Listening...")
+        if clean.startswith("Listening"):
+            self._set_status("Listening...")
             return
 
-        if clean.startswith("👤 You "):
+        if clean.startswith("You ["):
             return
 
-        if clean.startswith("🔊 Phoenix "):
+        if clean.startswith("Phoenix ["):
             self._print_feed(clean)
-            self._set_status("🎧 Listening...")
+            self._set_status("Listening...")
             return
 
         if clean.startswith("Playing:") or clean.startswith("Playing a random song:"):
@@ -322,7 +331,7 @@ class PhoenixRuntimeManager:
     def run_forever(self):
         self._print_startup_logo()
         self.start_all()
-        self._set_status("🎧 Listening...")
+        self._set_status("Listening...")
         try:
             while not self.stop_event.is_set():
                 try:
@@ -349,7 +358,7 @@ class PhoenixRuntimeManager:
 
                         if status_message == "running":
                             if source == "voice_processor":
-                                self._set_status("🎧 Listening...")
+                                self._set_status("Listening...")
                             continue
 
                         if status_message == "exited":

@@ -10,13 +10,18 @@ authors = [
 ]
 
 dependencies = [
-    # Core dependencies
+    # Pruned 2026-08-12 against a real import audit (see .github/temp-todo-beast-mode
+    # E3). 25 declared-but-never-imported packages were removed and 4 packages that
+    # action_utilities imports at MODULE level - so a fresh install crashed on
+    # import - were added. Everything here is imported by live code; anything that
+    # only arrives as a transitive dependency (tokenizers, huggingface-hub,
+    # markdown-it-py, Pygments, lxml) is left to the package that requires it.
+
+    # Speech in
     "pyaudio>=0.2.11",
-    "pyttsx3>=2.90",
-    "SpeechRecognition>=3.10.0",
-    "keyboard>=0.13.5",
     "faster-whisper>=1.0.0",
     "webrtcvad>=2.0.10",
+    "SpeechRecognition>=3.10.0",
     "numpy>=1.26.0",
     # Phonetic matching for the Hinglish/song lexicon (Utils/limbs/lexicon.py)
     "rapidfuzz>=3.0.0",
@@ -26,63 +31,37 @@ dependencies = [
     # shadows the standard library on Python 3.10+ and breaks unrelated imports.
     # Uninstall it right after: `pip uninstall -y typing`.
     "resemblyzer>=0.1.4",
-    
-    # GUI and System
-    "PyQt5==5.15.11",
-    "tkinter-tooltip>=2.1.0",
-    "pillow>=11.0.0",
-    "plyer>=2.1.0",
+
+    # Speech out. SAPI5 via pyttsx3 is the default engine; edge-tts and pygame
+    # serve the opt-in cloud path only (tts_engine: "edge").
+    "pyttsx3>=2.90",
+    "edge-tts>=7.0.0",
+    "pygame>=2.6.0",
+
+    # Windows control surface
     "pywin32>=310",
+    "PyAutoGUI>=0.9.54",
+    "keyboard>=0.13.5",
     "psutil>=7.0.0",
     "pyvda",
-    
-    # Automation
-    "PyAutoGUI>=0.9.54",
-    "pyperclip>=1.9.0",
-    "selenium>=4.33.0",
-    "webdriver-manager>=4.0.2",
-    
-    # Web and HTTP
+    "pygetwindow>=0.0.9",
+    "comtypes>=1.4.0",
+    "pycaw>=20240210",
+    "plyer>=2.1.0",
+    "pillow>=11.0.0",
+
+    # Web lookup (search_web only; gated by web.enabled + offline_mode)
     "requests>=2.32.0",
-    "aiohttp>=3.12.0",
-    "httpx>=0.28.0",
     "beautifulsoup4>=4.13.0",
-    "bs4>=0.0.2",
-    "websockets>=10.0",
     "ddgs>=9.0.0",
     "trafilatura>=2.0.0",
-    "lxml>=5.0.0",
-    
-    # AI and NLP
-    "cohere>=5.15.0",
-    "groq>=0.28.0",
-    "huggingface-hub>=0.33.0",
-    "tokenizers>=0.21.0",
-    
-    # Text Processing
-    "markdown-it-py>=3.0.0",
-    "Pygments>=2.19.0",
-    "rich>=14.0.0",
-    "mtranslate>=1.8",
-    
-    # Data and Files
-    "PyYAML>=6.0.0",
-    "python-dotenv>=1.1.0",
-    "tabulate>=0.9.0",
-    
-    # Media
-    "pygame>=2.6.0",
-    "edge-tts>=7.0.0",
-    "pywhatkit>=5.4",
-    
-    # Utilities
-    "appopener>=1.7",
-    "googlesearch-python>=1.3.0",
     "wikipedia>=1.4.0",
-    "Flask>=3.1.0",
-    "click>=8.2.0",
+    "pytube>=15.0.0",
+
+    # TUI
+    "rich>=14.0.0",
     "colorama>=0.4.6",
-    "tqdm>=4.67.0",
+    "tabulate>=0.9.0",
 ]
 
 [project.optional-dependencies]
@@ -90,6 +69,9 @@ dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+    # tests/test_listener_pipeline.py and tests/listen.py only
+    "scipy>=1.11.0",
+    "sounddevice>=0.4.6",
 ]
 
 [build-system]
@@ -101,6 +83,9 @@ dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+    # tests/test_listener_pipeline.py and tests/listen.py only
+    "scipy>=1.11.0",
+    "sounddevice>=0.4.6",
 ]
 
 [tool.ruff]
@@ -110,3 +95,15 @@ target-version = "py310"
 [tool.black]
 line-length = 88
 target-version = ['py310']
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Only files that pytest should collect. The standalone suites are driven
+# through tests/test_suites.py as subprocesses, not collected directly - see
+# that module for why sharing an interpreter between them is unsafe.
+python_files = ["test_suites.py", "test_units.py", "test_theme.py"]
+markers = [
+    "slow: needs a live Ollama server (deselect with '-m \"not slow\"')",
+]
+addopts = "-m 'not slow' --strict-markers -q"

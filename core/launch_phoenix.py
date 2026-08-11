@@ -13,12 +13,9 @@ from datetime import datetime
 import psutil
 
 # Setup logging (file only - console has clean TUI output)
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("phoenix_launcher.log")],
-)
-logger = logging.getLogger("PhoenixLauncher")
+from core.logging_setup import setup_logging
+
+logger = setup_logging("launcher")
 
 
 class PhoenixLauncher:

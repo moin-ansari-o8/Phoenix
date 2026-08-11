@@ -14,6 +14,9 @@
   "confirm_destructive": true,
   "confirm_timeout_seconds": 30,
   "show_routing": true,
+  "ui": {
+    "theme": "auto"
+  },
   "user": {
     "name": "kALY",
     "tags": [

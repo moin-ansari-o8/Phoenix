@@ -143,8 +143,19 @@ class AIDecisionMaker:
         # name silently falls back to the DEFAULT_* constants below. That is a
         # silent 10x latency regression, not a crash, so nothing would surface it.
         self.config_path = config_path or os.path.join(_BASE, "core", "config.json")
-        self.config = self._read_config()
-        self.ai_settings = self.config.get("ai_manager", {})
+
+        if config_path is None:
+            # Normal path: reuse AppConfig, which has already parsed and
+            # validated this file. Re-parsing it here made two independent
+            # readers of one file that could silently disagree.
+            from core.config import AppConfig
+
+            self.ai_settings = dict(AppConfig.ai_manager)
+            self.config = {"ai_manager": self.ai_settings}
+        else:
+            # An explicit path is only passed by tests pointing at a fixture.
+            self.config = self._read_config()
+            self.ai_settings = self.config.get("ai_manager", {})
 
         self.router_model = self.ai_settings.get("router_model", DEFAULT_ROUTER_MODEL)
         self.answer_model = self.ai_settings.get("answer_model", DEFAULT_ANSWER_MODEL)

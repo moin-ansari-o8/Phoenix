@@ -21,15 +21,13 @@ _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
-# Setup logging (file only, console has clean output)
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(os.path.join(_root_dir, "bg_voice_processor.log")),
-    ],
-)
-logger = logging.getLogger("BgVoiceProcessor")
+# Setup logging (file only, console has clean output). Was basicConfig at DEBUG
+# writing bg_voice_processor.log into the repo root - which is how that file
+# reached 2.2 MB of comtypes COM refcount chatter with the real tracebacks
+# buried in it. Set PHOENIX_LOG_LEVEL=DEBUG for a noisy run.
+from core.logging_setup import setup_logging
+
+logger = setup_logging("processor")
 
 
 # Import handlers and helpers

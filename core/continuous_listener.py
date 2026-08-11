@@ -30,13 +30,11 @@ from Utils.limbs.audio_capture import (
 )
 from Utils.limbs.queue_manager import QueueManager, create_audio_chunk
 
-# Setup logging (file only - the TUI owns the console)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("phoenix_listener.log")],
-)
-logger = logging.getLogger("PhoenixListener")
+# Setup logging (file only - the TUI owns the console). The path used to be
+# relative, so the file landed wherever the process was launched from.
+from core.logging_setup import setup_logging
+
+logger = setup_logging("listener")
 
 for _handler in list(logging.getLogger().handlers):
     if isinstance(_handler, logging.StreamHandler) and _handler.stream in (

@@ -11,17 +11,17 @@ import logging
 from typing import List, Optional, Dict, Tuple
 from dataclasses import dataclass
 
-# File-only logging
+# File-only logging. This is a LIBRARY, imported into three different processes,
+# so it must not own a log file of its own - it writes into whichever file the
+# host process configured via core.logging_setup. It previously opened
+# phoenix_queue.log at a relative path from every one of them.
 logger = logging.getLogger("QueueManager")
-if not logger.handlers:
-    handler = logging.FileHandler("phoenix_queue.log")
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
-# File-only: without this the records also reach the root logger and print into
-# the chat on every single speak() call. The queue server is optional, so its
-# absence must be silent.
-logger.propagate = False
+# propagate stays ON now. It was forced off because the root logger could still
+# carry a console handler, so "queue server unavailable" printed into the chat
+# after every speak(). core.logging_setup installs a FILE-ONLY root handler in
+# every process, so propagating now reaches the log file and nothing else -
+# which is what was wanted all along. Leaving it off would silence this module
+# completely, since it no longer owns a handler.
 
 # Indices into the shared speech-state array (must match core/queue_server.py)
 SPEAKING_SINCE = 0

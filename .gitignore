@@ -47,7 +47,6 @@ SortPythonProgram.pyd
 *.wav
 *.mp3
 data/phoenix_speech_*.mp3
-data/piper_speech_*.wav
 test_*_output.*
 
 # Assets are audio too, but they ARE source - keep them tracked.
@@ -55,7 +54,8 @@ test_*_output.*
 !assets/sound/*.mp3
 
 # Large models - download separately, never commit.
-# See scripts/utilities/download_piper_voices.py
+# voice/ held Piper .onnx voices. Piper was dropped 2026-08-12 in favour of
+# SAPI5; the directory is unused and can be deleted to reclaim ~121 MB.
 *.onnx
 voice/
 models/

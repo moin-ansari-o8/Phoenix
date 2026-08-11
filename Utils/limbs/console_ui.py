@@ -135,20 +135,20 @@ class ConsoleUI:
     def user_said(self, text: str, timestamp: str = None):
         """Print what the user said"""
         ts = timestamp or self.get_timestamp()
-        self.print_block(f'👤 You [{ts}]: "{text}"')
+        self.print_block(f'You [{ts}]: "{text}"')
 
     def phoenix_said(self, text: str):
         """Print what Phoenix said"""
         ts = self.get_timestamp()
-        self.print_block(f"🔊 Phoenix [{ts}]: {text}")
+        self.print_block(f"Phoenix [{ts}]: {text}")
 
     def info(self, text: str):
         """Print info message"""
-        self.print_block(f"ℹ️  {text}")
+        self.print_block(f"[INFO] {text}")
 
     def error(self, text: str):
         """Print error message"""
-        self.print_block(f"⚠️  {text}")
+        self.print_block(f"[ERROR] {text}")
 
     def startup_banner(self):
         """Print startup banner"""

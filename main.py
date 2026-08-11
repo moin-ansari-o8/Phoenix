@@ -115,13 +115,13 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
 
     def __init__(self, config):
         super().__init__(config=config)
-        self.theme = Theme(
-            {
-                "phoenix": "bold bright_blue",
-                "user": "bold red",
-                "time": "dim bright_black",
-            }
-        )
+        # Every style the TUI uses is named in core/theme.py. Nothing here
+        # writes a colour inline - a style that is not in the palette is, by
+        # definition, outside it, which is how the old six-hue rainbow grew.
+        from core.theme import build_theme, get_setting, resolve_mode
+
+        self.theme_mode = resolve_mode(get_setting())
+        self.theme = build_theme(get_setting())
         self.console = Console(theme=self.theme)
 
         # Mirrors the processor's wake gate, updated from [VOICE_STATE] traces.
@@ -182,7 +182,7 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         with self._ui_lock:
             sys.stdout.write("\r\033[2K")
             sys.stdout.flush()
-            self.console.print(Text(f"  -> {label}", style="dim cyan"))
+            self.console.print(Text(f"  -> {label}", style="route"))
             self._render_status()
 
     def log_fatal(self, detail):
@@ -191,10 +191,10 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             sys.stdout.write("\r\033[2K")
             sys.stdout.flush()
             self.console.print(
-                Text(f"  [!] Voice processor stopped: {detail}", style="bold red")
+                Text(f"  [!] Voice processor stopped: {detail}", style="error")
             )
             self.console.print(
-                Text("      Details in bg_voice_processor.log", style="dim")
+                Text("      Details in logs/phoenix_processor.log", style="hint")
             )
             self._current_status = "Voice processor stopped - restart Phoenix"
             self._render_status()
@@ -209,15 +209,17 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             time_txt = Text(f"[{timestamp}] ", style="time")
 
             if is_ignored:
-                speaker_txt = Text("[Heard noise/speech]: ", style="yellow")
-                msg_txt = Text(message, style="yellow")
+                # Same quiet grey as other secondary text. Yellow made every
+                # cough and passing conversation look like a warning.
+                speaker_txt = Text("heard: ", style="ignored_label")
+                msg_txt = Text(message, style="ignored")
             elif speaker == "You":
                 user_name = getattr(AppConfig, "user_name", "User")
                 speaker_txt = Text(f"{user_name}: ", style="user")
-                msg_txt = Text(message, style="white")
+                msg_txt = Text(message, style="said")
             else:
                 speaker_txt = Text(AppConfig.name + ": ", style="phoenix")
-                msg_txt = Text(message, style="bright_white")
+                msg_txt = Text(message, style="reply")
 
             final_text = time_txt + speaker_txt + msg_txt
             self.console.print(final_text)
@@ -263,15 +265,28 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         # Give UI empty space
         os.system("cls" if os.name == "nt" else "clear")
 
-        self.console.print(
-            "\n[bold dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]"
+        # Header. The name in the accent, everything else on the grey ramp,
+        # and one hairline rule instead of two heavy bars: the old block of
+        # bold-magenta heavy bar was the loudest thing on screen and carried no
+        # information. What replaces it is information - which engines are
+        # actually loaded, which is the thing you want to know at a glance.
+        from core.theme import safe_chars
+
+        glyph = safe_chars()
+        width = min(self.console.width, 72)
+        self.console.print()
+        header = Text()
+        header.append(AppConfig.name, style="banner")
+        header.append(f"   {AppConfig.user_name}", style="muted")
+        header.append(
+            f"   {AppConfig.stt['model']} {glyph['sep']} "
+            f"{AppConfig.ai_manager['answer_model'].split(':')[0]} {glyph['sep']} "
+            f"{AppConfig.tts_engine}",
+            style="hint",
         )
-        self.console.print(
-            f" [bold magenta]{AppConfig.name} AI Assistant[/]  [dim]v2.0[/]"
-        )
-        self.console.print(
-            "[bold dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n"
-        )
+        self.console.print(header)
+        self.console.print(Text(glyph["rule"] * width, style="rule"))
+        self.console.print()
 
         self._set_idle_status()
 
@@ -447,19 +462,25 @@ def _configure_logging():
     tool_registry / web_search / ai_manager use logging.info/warning for
     diagnostics. Without this they print straight into the conversation, e.g.
     the optional queue server's absence appeared after every reply.
-    """
-    import logging
 
-    root = logging.getLogger()
-    for h in list(root.handlers):
-        root.removeHandler(h)
-    os.makedirs("logs", exist_ok=True)
-    handler = logging.FileHandler(os.path.join("logs", "phoenix.log"), encoding="utf-8")
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-    )
-    root.addHandler(handler)
-    root.setLevel(logging.INFO)
+    Delegates to core.logging_setup so every Phoenix process shares one
+    format, one directory and one level. See that module for what the five
+    competing configurations used to do.
+    """
+    from core.logging_setup import setup_logging
+
+    setup_logging("tui")
+
+    # A Windows console still on cp1252 raises UnicodeEncodeError on any glyph
+    # outside it - box drawing in the header, and every Hindi/Gujarati word the
+    # lexicon repairs. That exception kills the printing thread rather than
+    # showing a wrong character, so force UTF-8 and degrade to "?" if a
+    # character truly cannot be represented.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
 
 
 def main():

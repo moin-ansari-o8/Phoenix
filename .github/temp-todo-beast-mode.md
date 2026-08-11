@@ -272,7 +272,10 @@ which monkeypatch the network helpers to raise if touched).
 **Fix:** enforce `web.enabled` at the top of the `search_web` branch and in
 `needs_fresh_data()`'s upgrade path; delete `memory.auto_save` or wire it.
 
-### [todo-A9] Two `PhoenixAssistant` classes, one obsolete
+### ~~[todo-A9]~~ Two `PhoenixAssistant` classes — **DONE 2026-08-12**
+`core/main_assistant.py` deleted. Verified first that `main_assistant` appears nowhere as
+an import - only as a window-title string in `get_window("main_assistant.py")` calls,
+which were already stale since the entry point became `main.py`.
 `core/main_assistant.py` (703 lines) and `Utils/limbs/command_processor.py` (382 lines)
 both define `PhoenixAssistant` with a ~100-entry `action_map` that is **copy-pasted
 between them**. Only `command_processor.py` is live (it has the `IntentRouter`);
@@ -443,7 +446,45 @@ different* copy of the same parser including emoji matching. Any `print()` anywh
 **Fix:** emit one JSON object per line on a dedicated fd (or just `stdout` with a
 `@@PHX@@` prefix), parse with `json.loads`. Delete the duplicate parser in `manager.py`.
 
-### [todo-C7] TUI redesign — one restrained palette, light + dark (NEW, per D-5)
+### ~~[todo-C7]~~ TUI redesign — **DONE 2026-08-12**
+
+`core/theme.py`. One accent hue (blue) plus a grey ramp, light + dark, selected by
+`ui.theme` in config.json (`"auto"` reads the Windows apps-light-theme registry value).
+
+**Measured, not eyeballed.** Every text colour is >= WCAG AA (4.5:1) against its
+background in both themes; `tests/test_theme.py` computes the ratios. The natural next
+step down the dark ramp (`#6e7681`) came out at 4.12:1, so the ramp bends there - that
+colour carries timestamps and ignored speech, which are quiet but not optional.
+
+**What actually changed on screen:**
+- the header: name in the accent, then user and `stt / llm / tts`, then one hairline
+  rule. The old two heavy bold-magenta bars were the loudest thing on screen and carried
+  no information; what replaced them carries which engines are actually loaded.
+- ignored speech moved from **yellow to the same quiet grey as other secondary text**.
+  Yellow made every cough and passing conversation look like a warning.
+- every inline style in `main.py` is gone; all six hardcoded hues are now semantic names.
+- emoji removed from `manager.py` and `console_ui.py` per the project's own no-emoji rule.
+
+**Two guards keep it from drifting back**, because the rainbow was never a decision -
+it grew one defensible inline colour at a time:
+- `test_no_inline_colours` fails if a colour literal reappears in `main.py`
+- `test_every_used_style_is_defined` fails if a style name is used but never named
+- and ANSI colour names are banned outright: every terminal remaps `bright_blue`, so a
+  palette built on them cannot be verified across machines
+
+**Bug found while testing:** `U+2500` and `U+00B7` raise `UnicodeEncodeError` on a
+cp1252 console, which kills the printing thread rather than showing a wrong glyph. Fixed
+two ways - `main.py` reconfigures stdout to UTF-8 at startup, and `theme.safe_chars()`
+degrades to ASCII if it still cannot encode. **This also affected the parallel
+voice-upgrade work**: every Hindi/Gujarati word the lexicon repairs would have hit the
+same crash.
+
+**Also closed A7's second half:** `AIDecisionMaker` now reads `AppConfig.ai_manager`
+instead of re-parsing `config.json`, so there is one reader of that file, not two.
+
+Original brief below.
+
+### (original brief) [todo-C7] TUI redesign — one restrained palette, light + dark (NEW, per D-5)
 
 **Brief (user's words):** *futuristic, modern, yet peaceful — not attention-grabbing, but
 beautiful and well contrasted. Consistency in colour matters. No rainbow colours.*
@@ -558,6 +599,40 @@ pipeline is `token → sentence → speak` with no startup cost between sentence
 substitutes from a fixed list. Pre-synthesise the common ones to `.wav` at first use and
 key a cache on `hash(text + voice)`. "Yes boss", "Done", "Noted." should be instant.
 
+### Model bake-off — **MEASURED 2026-08-12** (asked: "gemma3 seems faster")
+
+Three candidates, same harness, same box (GTX 1650, 4 GB VRAM).
+
+**As router** (27 routed cases):
+
+| model | on-GPU | accuracy | median | mean | worst |
+|---|---|---|---|---|---|
+| `llama3.2:latest` 3.1 GB | 90% | 25/27 (92%) | **1.82 s** | **1.66 s** | 2.84 s |
+| `gemma3:latest` 4.4 GB | **55%** | 25/27 (92%) | 2.00 s | 2.86 s | 23.80 s |
+| `llama3.2:1b` 1.7 GB | 100% | 16/27 (59%) | 3.57 s | 5.65 s | 50.58 s |
+
+**As answer model** (5 prompts, `num_predict=220`):
+
+| model | median | mean | worst | throughput |
+|---|---|---|---|---|
+| `llama3.2:latest` | **3.00 s** | **2.90 s** | 5.67 s | ~170 char/s |
+| `gemma3:latest` | 11.47 s | 7.92 s | 11.71 s | ~32 char/s |
+
+**Root cause is VRAM, and it is physical, not tunable.** `ollama ps`:
+```
+llama3.2:latest   3.1 GB   10%/90% CPU/GPU
+gemma3:latest     4.4 GB   45%/55% CPU/GPU     <- does not fit in 4 GB
+```
+gemma3 runs 45% of its layers on the CPU, so it is ~5x slower per token. No prompt or
+config change fixes that; only more VRAM would.
+
+**Why gemma3 can feel faster:** its first two answers in the bake-off were genuinely
+quick (2.06 s, 2.85 s) before settling at ~11.5 s once the GPU cache filled. A two-question
+spot check lands entirely inside the fast window. The steady state is 4x slower.
+
+**Decision: `llama3.2:latest` for both roles.** The real perceived-latency win is
+[todo-D3] (stream the first sentence into TTS), not a different model.
+
 ### ~~[todo-D5]~~ Try `llama3.2:1b` as the router — **MEASURED 2026-08-12, REJECTED**
 Same 27 routed cases, same harness, model swapped in-process:
 
@@ -585,7 +660,12 @@ whether accuracy holds, and it would free ~700 MB of VRAM.
 
 ## SECTION E — Repo hygiene
 
-### [todo-E1] Root directory has 38 stray files
+### ~~[todo-E1]~~ Stray root files — **DONE 2026-08-12**
+Root is now `README.md` + `main.py` only. `ok.py` (a learning scratch file) and
+`core/main_assistant.py` (703 lines, superseded, closes A9) deleted; `clean_empty_files.py`
+and `validate_structure.py` moved to `scripts/utilities/`. Also removed 893 lines of dead
+utilities there: both `download_piper_voices*.py` (Piper dropped), `apply_queue_fix.py`
+(a one-off migration already applied) and `load.py` (the pre-`main.py` launcher).
 `ListenerPHNX.py`, `queue_server.py`, `launch_phoenix.py`, `main_assistant`-era scripts,
 `dummy.py`, `fix.py`, `scratch_test.py`, `test_init.py`, `test_init2.py`, `test_voice.py`,
 `test_voice2.py`, `clean_empty_files.py`, `reorganize_phoenix.py`, `validate_structure.py`,
@@ -608,7 +688,22 @@ tree despite `*.log` being ignored — they were committed before the rule).
 - `trials/` (already gitignored, 400+ lines of old experiments)
 - `tests/*.wav` (~20 files), `tests/piper_models/`, `tests/coqui_output/`
 
-### [todo-E3] Two dependency manifests that disagree
+### ~~[todo-E3]~~ Dependency manifests — **DONE 2026-08-12**
+Audited by AST-walking every import in `Utils/`, `core/`, `tests/`, `scripts/`, `main.py`
+and diffing against the declared list. **60 deps -> 29.** Removed 25 never-imported
+packages (Flask, PyQt5, cohere, groq, selenium, webdriver-manager, pywhatkit, mtranslate,
+googlesearch-python, appopener, websockets, aiohttp, ...). Left transitive deps to the
+packages that require them (tokenizers/huggingface-hub -> faster-whisper, Pygments/
+markdown-it-py -> rich, lxml -> trafilatura).
+
+**Found a real install-breaking bug:** `pytube` and `pygetwindow` are imported at MODULE
+level in `action_utilities.py` - which every process imports - but were never declared, so
+a fresh `uv sync` produced a repo that crashed on import. Added, with `comtypes` and
+`pycaw`. `scipy`/`sounddevice` moved to the dev extra. `torch` deliberately NOT declared:
+its only use is a `try/except ImportError` CUDA probe in the unused `VoiceRecognition`
+GPU path, and CUDA is unavailable anyway (see D1) - dropping it saves ~2 GB per install.
+
+`Requirements.txt` deleted (it was also a case-duplicate with `requirements.txt`).
 `pyproject.toml` (60 deps) and `Requirements.txt` (25 deps) list different things.
 `pyproject.toml` includes `cohere`, `groq`, `selenium`, `Flask`, `PyQt5`, `pywhatkit`,
 `googlesearch-python`, `mtranslate` — **none of which are imported anywhere in `Utils/`
@@ -628,7 +723,22 @@ casualties. Confirm the venv actually resolved on 3.14, and pin a tested floor/c
 ### [todo-E5] License mismatch
 `pyproject.toml` → `MIT`. `LICENSE` file → Apache 2.0. Pick one.
 
-### [todo-E6] Logging is configured three different ways
+### ~~[todo-E6]~~ Logging configured five different ways — **DONE 2026-08-12**
+New `core/logging_setup.py`; every process calls `setup_logging(name)`. All output now
+goes to `logs/phoenix_<name>.log`, rotating at 2 MB x 3, level from `PHOENIX_LOG_LEVEL`
+(default INFO).
+
+Three things this fixes beyond tidiness:
+- **the processor ran at DEBUG in production**, which is why `bg_voice_processor.log`
+  reached 2.2 MB of comtypes COM refcount chatter with the real traceback buried in it
+- paths were **relative**, so files landed wherever a process was started from
+- `basicConfig` is a **no-op when the root logger already has handlers**, so whichever
+  module imported first silently won and the rest were ignored
+
+`queue_manager.py` no longer owns a log file - it is a library imported into three
+processes, so it logs to whichever file the host configured. Its `propagate = False` is
+removed: that existed because the root logger might carry a console handler and print
+into the chat, and `setup_logging` now guarantees a file-only root.
 - `main.py:_configure_logging()` strips root handlers, writes `logs/phoenix.log`
 - `continuous_listener.py:33` `basicConfig` → `phoenix_listener.log` (**repo root**, not `logs/`)
 - `voice_command_processor.py:23` `basicConfig(level=DEBUG)` → `bg_voice_processor.log` (**repo root**)
@@ -646,11 +756,37 @@ this collapses; short of that, one `setup_logging(name)` helper used everywhere.
 only real tests, and neither runs under a test runner (`pytest` is declared as a dev dep
 but not installed).
 
-### [todo-F1] Make the suite runnable
+### ~~[todo-F1]~~ Make the suite runnable — **DONE 2026-08-12**
+pytest installed (it was declared as a dev dep but never actually present). Config added
+to `pyproject.toml` with a `slow` marker for the Ollama-dependent suite.
+
+```
+.venv/Scripts/python.exe -m pytest tests -q      # 47 tests
+.venv/Scripts/python.exe -m pytest tests -m slow # routing, needs Ollama
+```
+
+`tests/test_suites.py` drives the standalone suites **as subprocesses**, deliberately:
+several mutate `AppConfig` and one replaces functions in `web_search` with tripwires, so
+sharing an interpreter would leak state between suites and make failures depend on
+collection order.
 `uv sync --extra dev`, convert `test_routing.py`'s `main()` into a pytest test marked
 `@pytest.mark.slow` (it needs Ollama), and add `pytest.ini` with markers.
 
-### [todo-F2] Missing coverage, in priority order
+### ~~[todo-F2]~~ Missing coverage — **DONE 2026-08-12**
+`tests/test_units.py`, 39 pytest-native tests over the three most intricate untested pure
+functions: `_match_command_grammar`, `RememberStore._is_grounded`/`add_fact`, and
+`tool_registry.needs_fresh_data`/`_forget_request`.
+
+Two of my first-draft assertions failed and **the code was right both times** - worth
+recording, since both are contracts rather than accidents:
+- `"turn it up"` resolves to volume with no antecedent. It is not an ambiguous pronoun;
+  in English it carries its own subject. The genuinely ambiguous case is `"decrease it"`,
+  which correctly returns None.
+- `_is_grounded("", src)` returns True. Empty/short/subjectless facts are `add_fact`'s
+  responsibility; `_is_grounded` answers exactly one question - did every content word
+  come from the user. Asserting more there tests the wrong layer.
+
+Original priority table below.
 | Target | Why it matters |
 |---|---|
 | `RememberStore.add_fact` / `.forget` | every rejection rule in it exists because of a real fabricated memory. Zero tests. |
@@ -703,8 +839,8 @@ A3, A1+A2, A4, A7, A5, A6, A8 all done. 163 checks passing across 4 suites.
 B1 (with auto-detect, D-3) → G3 → then measure D1 and D5 with `tests/test_routing.py`
 *(B2 cancelled — see D-1.)*
 
-**Phase 3 — hygiene (one day, mostly deletion)**
-E1 → E2 → E3 → A9 → E6 → F1/F2
+**Phase 3 — hygiene** — ✅ **COMPLETE 2026-08-12**
+E1, E2, E3, A9, E6, F1, F2 all done.
 
 **Phase 4 — architecture (multi-day, do only after Phases 1-3 land and tests exist)**
 C1 (4 processes → 2) → C2 → **C6 + C7 together** (structured events + the themed renderer

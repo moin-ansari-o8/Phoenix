@@ -114,6 +114,18 @@ class AppConfig:
     # encoder cost barely depends on how long the utterance actually is.
     # Measured on this machine for a 3s command: base.en 0.74s vs small.en
     # 2.36s, for identical output on the test phrase.
+    # Mirrors the ai_manager block of config.json. AIDecisionMaker used to open
+    # and parse config.json itself, making two independent readers of the same
+    # file that could disagree - and its path was relative, so it sometimes read
+    # nothing at all and fell back to a model that does not fit in 4 GB.
+    ai_manager = {
+        "current_mode": "local",
+        "router_mode": "json",
+        "router_model": "llama3.2:latest",
+        "answer_model": "llama3.2:latest",
+    }
+    # TUI appearance. "dark" | "light" | "auto" (follows Windows). See core/theme.py.
+    ui = {"theme": "auto"}
     stt = {
         "model": "base.en",
         "device": "auto",  # "auto" | "cpu" | "cuda"
@@ -243,6 +255,9 @@ class AppConfig:
 
             stt_data = data.get("stt", {})
             cls.stt = {**cls.stt, **stt_data}
+
+            cls.ai_manager = {**cls.ai_manager, **data.get("ai_manager", {})}
+            cls.ui = {**cls.ui, **data.get("ui", {})}
 
             # Merged one level deep so config.json can override a single key
             # (say, just the threshold) without having to restate the block.
