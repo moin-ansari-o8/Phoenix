@@ -92,7 +92,7 @@
     "device": "auto",
     "beam_size": 1,
     "max_no_speech_prob": 0.6,
-    "min_avg_logprob": -1.0
+    "min_avg_logprob": -1.2
   },
   "memory": {
     "auto_save": true,
