@@ -151,6 +151,8 @@ class PhoenixAssistant:
             "closebgpy": self.utility.close_bg_py,
             "closetab": self.utility.close_tab,
             "dateday": self.utility.date_day,
+            "echoModeGate": lambda: self.utility.set_echo_mode("gate"),
+            "echoModeOpen": lambda: self.utility.set_echo_mode("open"),
             "dltsong": self.utility.delete_song,
             "fullscreen": self.utility.toggle_fullscreen,
             "hide": self.utility.hide_window,

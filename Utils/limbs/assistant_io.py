@@ -94,6 +94,14 @@ class SpeechEngine:
         self.use_piper_tts = self.TTS_ENGINE == "piper"
         self._pygame_initialized = False
 
+        # One queue-server connection for the lifetime of the engine. This used
+        # to be re-established on every single utterance, which meant a fresh
+        # named-pipe handshake before Phoenix could say anything at all.
+        self._queue_manager = None
+        self._queue_unavailable = False
+        self._speaking_stop = None
+        self._interrupted = False
+
         # Temp file for TTS audio
         self._temp_audio_dir = os.path.join(
             os.path.dirname(__file__), "..", "..", "data"
@@ -163,6 +171,96 @@ class SpeechEngine:
                     audio = audio.replace(f"sir{punctuation}", "")
         return audio
 
+    # -- shared speech state -------------------------------------------------
+
+    def _get_queue_manager(self):
+        """
+        Connect to the queue server once and reuse it.
+
+        Returns None when there is no server (text mode, or the speech engine
+        running standalone), in which case self-voice gating and barge-in are
+        simply inactive rather than fatal.
+        """
+        if self._queue_manager is not None or self._queue_unavailable:
+            return self._queue_manager
+        try:
+            from Utils.limbs.queue_manager import QueueManager
+
+            self._queue_manager = QueueManager()
+        except Exception as exc:
+            self._queue_unavailable = True
+            from core.config import AppConfig
+
+            if AppConfig.current_mode != "text":
+                _console_print(f"[WARN] Speech state unavailable: {exc}", force=True)
+        return self._queue_manager
+
+    def _heartbeat_speaking(self, queue_manager, stop_event):
+        """
+        Hold the speaking window open while audio plays.
+
+        The window is extended in small steps rather than being opened for an
+        estimated duration, so if this process dies mid-sentence the window
+        lapses on its own and the microphone reopens. A plain "speaking = True"
+        flag would leave the mic gated shut forever.
+        """
+        while not stop_event.wait(0.2):
+            queue_manager.heartbeat_speaking()
+
+    def _should_interrupt(self):
+        queue_manager = self._get_queue_manager()
+        if queue_manager is None:
+            return False
+        try:
+            return queue_manager.interrupt_requested()
+        except Exception:
+            return False
+
+    def _mci(self, command: str, want_result: bool = False):
+        """Send an MCI command; optionally return its reply string."""
+        import ctypes
+
+        winmm = ctypes.windll.winmm
+        if not want_result:
+            return winmm.mciSendStringW(command, None, 0, None)
+        buffer = ctypes.create_unicode_buffer(128)
+        winmm.mciSendStringW(command, buffer, 128, None)
+        return buffer.value
+
+    def _play_file_interruptible(self, path: str, alias: str) -> bool:
+        """
+        Play an audio file via MCI without blocking on it.
+
+        The old code used `play {alias} wait`, which parks inside winmm until
+        the clip finishes -- there is no moment at which an interrupt could be
+        noticed. Polling the transport instead is what makes barge-in possible.
+        """
+        abs_path = os.path.abspath(path)
+        self._mci(f"close {alias}")
+        self._mci(f'open "{abs_path}" alias {alias}')
+
+        if self.on_playback_start:
+            self.on_playback_start()
+
+        self._mci(f"play {alias}")
+        interrupted = False
+        try:
+            while True:
+                mode = self._mci(f"status {alias} mode", want_result=True)
+                if mode != "playing":
+                    break
+                if self._should_interrupt():
+                    self._mci(f"stop {alias}")
+                    interrupted = True
+                    _console_print("[INFO] Playback interrupted by user")
+                    break
+                time.sleep(0.05)
+        finally:
+            self._mci(f"close {alias}")
+
+        self._interrupted = interrupted
+        return True
+
     def _init_pygame(self):
         """Initialize pygame mixer if not already done"""
         if not self._pygame_initialized:
@@ -230,17 +328,9 @@ class SpeechEngine:
                         return False
                     time.sleep(0.5)
 
-            # Play with Windows MCI
-            winmm = ctypes.windll.winmm
+            # Play with Windows MCI (polled, so barge-in can stop it)
             alias = f"phoenix_piper_{uuid.uuid4().hex[:8]}"
-            abs_path = os.path.abspath(unique_path)
-
-            winmm.mciSendStringW(f"close {alias}", None, 0, None)
-            winmm.mciSendStringW(f'open "{abs_path}" alias {alias}', None, 0, None)
-            if self.on_playback_start:
-                self.on_playback_start()
-            winmm.mciSendStringW(f"play {alias} wait", None, 0, None)
-            winmm.mciSendStringW(f"close {alias}", None, 0, None)
+            self._play_file_interruptible(unique_path, alias)
 
             try:
                 os.remove(unique_path)
@@ -300,17 +390,8 @@ class SpeechEngine:
             finally:
                 loop.close()
             if success and os.path.exists(unique_path):
-                import ctypes
-
-                winmm = ctypes.windll.winmm
                 alias = f"phoenix_{uuid.uuid4().hex[:8]}"
-                abs_path = os.path.abspath(unique_path)
-                winmm.mciSendStringW(f"close {alias}", None, 0, None)
-                winmm.mciSendStringW(f'open "{abs_path}" alias {alias}', None, 0, None)
-                if self.on_playback_start:
-                    self.on_playback_start()
-                winmm.mciSendStringW(f"play {alias} wait", None, 0, None)
-                winmm.mciSendStringW(f"close {alias}", None, 0, None)
+                self._play_file_interruptible(unique_path, alias)
                 try:
                     os.remove(unique_path)
                 except:
@@ -324,33 +405,46 @@ class SpeechEngine:
 
     def speak(self, audio, speed=174):
         """
-        Thread-safe method to handle text-to-speech.
-        Uses Edge TTS (neural voice) with pyttsx3 fallback.
-        Sets speaking flag to pause listener (prevents self-listening).
+        Thread-safe text-to-speech.
+
+        Around the actual playback this maintains the shared speaking window
+        that the listener uses to recognise Phoenix's own voice, and publishes
+        the spoken text so the processor can reject any of it that leaks into a
+        transcript anyway.
         """
         # Import here to avoid circular imports
         from Utils.limbs.console_ui import phoenix_said
-        from Utils.limbs.queue_manager import QueueManager
 
-        queue_manager = None
+        queue_manager = self._get_queue_manager()
         speak_success = False
+        heartbeat = None
+        self._interrupted = False
 
         try:
-            # Connect to queue and set speaking flag FIRST
-            try:
-                queue_manager = QueueManager()
-                queue_manager.set_speaking(True)  # Pause listener
-                queue_manager.clear()  # Clear any queued audio
-            except Exception as e:
-                from core.config import AppConfig
-
-                if AppConfig.current_mode != "text":
-                    _console_print(f"[WARN] Could not pause listener: {e}", force=True)
-
             with self.lock:
-                # Apply personality (honorifics replacement)
+                # Apply personality (honorifics replacement) BEFORE publishing,
+                # so the echo filter compares against what was actually spoken
+                # rather than the pre-substitution text.
                 audio = self._apply_honorifics(audio)
                 phoenix_said(audio)  # TUI output
+
+                if queue_manager is not None:
+                    try:
+                        queue_manager.remember_tts(audio)
+                        queue_manager.clear_interrupt()
+                        queue_manager.begin_speaking()
+                        self._speaking_stop = threading.Event()
+                        heartbeat = threading.Thread(
+                            target=self._heartbeat_speaking,
+                            args=(queue_manager, self._speaking_stop),
+                            daemon=True,
+                            name="speaking-window-heartbeat",
+                        )
+                        heartbeat.start()
+                    except Exception as e:
+                        _console_print(
+                            f"[WARN] Could not open speaking window: {e}", force=True
+                        )
 
                 if self.use_piper_tts:
                     if self._generate_and_play_piper_tts(audio):
@@ -360,7 +454,6 @@ class SpeechEngine:
                             "[WARN] Piper TTS failed, using fallback...", force=True
                         )
 
-                # Try Edge TTS first (natural voice)
                 elif self.use_edge_tts:
                     if self._generate_and_play_edge_tts(audio):
                         speak_success = True
@@ -371,23 +464,33 @@ class SpeechEngine:
                         )
 
                 if not speak_success:
-                    # Fallback to pyttsx3
                     speak_success = self._speak_pyttsx3(audio, speed)
 
         except Exception as e:
             _console_print(f"[ERROR] Speech error: {e}", force=True)
             speak_success = False
         finally:
-            # Resume listener after buffer
-            sleep(0.3)  # Short buffer to let audio output flush
-            if queue_manager:
+            if self._speaking_stop is not None:
+                self._speaking_stop.set()
+                self._speaking_stop = None
+            if heartbeat is not None:
+                heartbeat.join(timeout=0.5)
+            if queue_manager is not None:
                 try:
-                    queue_manager.set_speaking(False)  # Resume listener
+                    # A short tail covers the speaker's decay and room reverb;
+                    # the listener's echo gate adds its own margin on top.
+                    queue_manager.end_speaking(tail=0.15)
+                    queue_manager.clear_interrupt()
                 except Exception as e:
                     _console_print(
-                        f"[WARN] Error clearing speaking flag: {e}", force=True
+                        f"[WARN] Error closing speaking window: {e}", force=True
                     )
         return speak_success
+
+    @property
+    def was_interrupted(self) -> bool:
+        """True if the last utterance was cut short by the user talking over it."""
+        return self._interrupted
 
     def _speak_pyttsx3(self, audio, speed=174):
         """Fallback speech using pyttsx3"""
@@ -420,8 +523,35 @@ class SpeechEngine:
 
         if self.on_playback_start:
             self.on_playback_start()
-        engine.say(audio)
-        engine.runAndWait()
+
+        # runAndWait() blocks, so barge-in needs a watcher thread to call
+        # stop() on the engine from outside. This is the active path whenever
+        # tts_engine is "local".
+        watcher_stop = threading.Event()
+
+        def _watch_for_interrupt():
+            while not watcher_stop.wait(0.05):
+                if self._should_interrupt():
+                    self._interrupted = True
+                    try:
+                        engine.stop()
+                    except Exception:
+                        pass
+                    _console_print("[INFO] Playback interrupted by user")
+                    return
+
+        watcher = threading.Thread(
+            target=_watch_for_interrupt, daemon=True, name="pyttsx3-interrupt-watcher"
+        )
+        watcher.start()
+
+        try:
+            engine.say(audio)
+            engine.runAndWait()
+        finally:
+            watcher_stop.set()
+            watcher.join(timeout=0.3)
+
         engine.stop()
         del engine
         sleep(0.2)

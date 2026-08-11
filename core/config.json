@@ -74,6 +74,26 @@
       "claude-3-haiku": false
     }
   },
+  "audio": {
+    "echo_mode": "gate",
+    "vad_threshold": 0.5,
+    "hangover_ms": 600,
+    "min_voiced_ms": 400,
+    "max_utterance_ms": 12000,
+    "pre_roll_ms": 300,
+    "noise_multiplier": 3.0,
+    "noise_absolute_min": 120.0,
+    "barge_in": true,
+    "input_device": null,
+    "mic_silence_timeout_seconds": 20
+  },
+  "stt": {
+    "model": "base.en",
+    "device": "auto",
+    "beam_size": 1,
+    "max_no_speech_prob": 0.6,
+    "min_avg_logprob": -1.0
+  },
   "memory": {
     "auto_save": true,
     "announce_saves": false,

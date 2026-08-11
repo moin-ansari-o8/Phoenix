@@ -311,8 +311,45 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                                 self._set_idle_status()
                             elif state == "processing":
                                 self._set_status("Processing...")
+                            elif state == "interrupt":
+                                self._set_status("Interrupted - listening...")
                             elif state == "detected":
                                 pass
+                            continue
+
+                        # Audio the listener captured but deliberately did not
+                        # act on. Shown so silence stays visibly silent instead
+                        # of the old behaviour where Whisper's invented
+                        # "Thank you." looked like real user input.
+                        if clean.startswith("[DISCARDED]") or clean.startswith(
+                            "[SELF_ECHO]"
+                        ):
+                            if AppConfig.show_routing:
+                                label = (
+                                    "self-voice ignored"
+                                    if clean.startswith("[SELF_ECHO]")
+                                    else "discarded"
+                                )
+                                detail = clean.split("]", 1)[1].strip()
+                                self.log_route(f"{label}: {detail}")
+                            self._set_idle_status()
+                            continue
+
+                        if clean.startswith("[STT]"):
+                            if AppConfig.show_routing:
+                                self.log_route(clean.removeprefix("[STT]").strip())
+                            continue
+
+                        # The listener goes back to "listening" the moment it
+                        # hands off an utterance -- which is now literally true,
+                        # the mic never stops. These two mark the separate
+                        # window where the processor is still working on it.
+                        if clean.startswith("[PROCESSING]"):
+                            self._set_status("Thinking...")
+                            continue
+
+                        if clean.startswith("[INTENT]"):
+                            self._set_idle_status()
                             continue
 
                         if clean.startswith("[HEARD]"):

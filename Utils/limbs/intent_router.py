@@ -72,6 +72,14 @@ DEVICE_ALIASES = {
     "my timers": "viewTimer",
     "my reminders": "viewReminder",
     "my songs": "viewsongs",
+    "headphone mode": "echoModeOpen",
+    "headphones mode": "echoModeOpen",
+    "im on headphones": "echoModeOpen",
+    "i am on headphones": "echoModeOpen",
+    "speaker mode": "echoModeGate",
+    "speakers mode": "echoModeGate",
+    "im on speakers": "echoModeGate",
+    "i am on speakers": "echoModeGate",
 }
 
 # Identity questions never reach the internet -- they resolve from the canned

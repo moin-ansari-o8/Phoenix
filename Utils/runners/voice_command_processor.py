@@ -31,7 +31,14 @@ logger = logging.getLogger("BgVoiceProcessor")
 
 
 # Import handlers and helpers
+from core.config import AppConfig
+from Utils.limbs.audio_capture import SAMPLE_RATE
 from Utils.limbs.queue_manager import QueueManager, AudioChunk
+from Utils.limbs.speech_filters import (
+    HallucinationFilter,
+    SelfEchoFilter,
+    TranscriptionCandidate,
+)
 from Utils.limbs.assistant_io import VoiceAssistantGUI, SpeechEngine
 from Utils.limbs.action_utilities import Utility, OpenAppHandler, CloseAppHandler
 from Utils.limbs.command_processor import PhoenixAssistant
@@ -96,43 +103,30 @@ class VoiceProcessor:
         # Initialize utilities (without VoiceRecognition - we handle transcription here)
         self.utility = Utility(spk=self.speech_engine, reco=None)
 
-        # Initialize Faster-Whisper for transcription (CUDA/GPU for speed!)
+        # Initialize Faster-Whisper for transcription
         self.whisper_model = None
-        self.MIN_SILENCE_DURATION = 0.6  # Seconds (optimized for faster response)
+        self.MIN_SILENCE_DURATION = 0.6
 
-        if WHISPER_AVAILABLE:
-            try:
-                # Try CUDA (GPU) first for maximum speed
-                try:
-                    import torch
-
-                    cuda_available = torch.cuda.is_available()
-                except ImportError:
-                    cuda_available = False
-
-                if cuda_available:
-                    logger.info("Loading Faster-Whisper (small model) on CUDA/GPU...")
-                    self.whisper_model = WhisperModel(
-                        "small", device="cuda", compute_type="float16"
-                    )
-                    logger.info(
-                        "Faster-Whisper loaded on GPU - Ultra-fast transcription!"
-                    )
-                else:
-                    logger.info("CUDA not available, loading Faster-Whisper on CPU...")
-                    self.whisper_model = WhisperModel(
-                        "small", device="cpu", compute_type="int8"
-                    )
-                    logger.info(
-                        "Faster-Whisper loaded on CPU - Ready for transcription!"
-                    )
-            except Exception as e:
-                logger.error(f"Failed to load Whisper: {e}")
-                raise RuntimeError("Whisper is required for voice processor!")
-        else:
+        if not WHISPER_AVAILABLE:
             raise RuntimeError(
                 "faster-whisper not available! Install with: pip install faster-whisper"
             )
+
+        try:
+            self._load_whisper()
+        except Exception as e:
+            logger.error(f"Failed to load Whisper: {e}")
+            raise RuntimeError("Whisper is required for voice processor!")
+
+        # Transcript-level defences (see Utils/limbs/speech_filters)
+        stt_cfg = AppConfig.stt
+        self.hallucination_filter = HallucinationFilter(
+            max_no_speech_prob=float(stt_cfg.get("max_no_speech_prob", 0.6)),
+            min_avg_logprob=float(stt_cfg.get("min_avg_logprob", -1.0)),
+            min_voiced_ms=float(AppConfig.audio.get("min_voiced_ms", 400)),
+            wake_words=list(self.WAKE_WORDS),
+        )
+        self.echo_filter = SelfEchoFilter()
 
         logger.info("Initializing Phoenix handlers...")
 
@@ -156,6 +150,82 @@ class VoiceProcessor:
         )
 
         logger.info("VoiceProcessor initialized successfully")
+
+    def _resolve_device(self, requested: str):
+        """
+        Pick the Whisper device.
+
+        The old code asked `torch.cuda.is_available()`, but torch here is a
+        CPU-only build while CTranslate2 -- the library that actually runs the
+        model -- can see the GPU perfectly well. So the probe answered "no GPU"
+        for the wrong reason and pinned STT to the CPU permanently.  We now ask
+        CTranslate2 directly.
+
+        The default stays CPU regardless: this box has 4 GB of VRAM and Ollama
+        already occupies most of it, so borrowing VRAM for STT would slow the
+        LLM down by more than it speeds up transcription.
+        """
+        if requested in ("cpu", "cuda"):
+            device = requested
+        else:
+            device = "cpu"  # "auto" - see docstring
+
+        if device == "cuda":
+            try:
+                import ctranslate2
+
+                if ctranslate2.get_cuda_device_count() < 1:
+                    logger.warning("CUDA requested but no device visible; using CPU")
+                    device = "cpu"
+            except Exception as exc:
+                logger.warning(f"CUDA probe failed ({exc}); using CPU")
+                device = "cpu"
+
+        compute_type = "int8" if device == "cpu" else "int8_float16"
+        return device, compute_type
+
+    def _load_whisper(self):
+        stt_cfg = AppConfig.stt
+        model_name = stt_cfg.get("model", "base.en")
+        device, compute_type = self._resolve_device(stt_cfg.get("device", "auto"))
+
+        for attempt_device, attempt_compute in ((device, compute_type), ("cpu", "int8")):
+            logger.info(
+                f"Loading Faster-Whisper '{model_name}' on {attempt_device} "
+                f"({attempt_compute})..."
+            )
+            kwargs = {"device": attempt_device, "compute_type": attempt_compute}
+            if attempt_device == "cpu":
+                # 6 physical cores here; more threads than that buys ~2%.
+                kwargs["cpu_threads"] = 6
+
+            try:
+                model = WhisperModel(model_name, **kwargs)
+
+                # Warm up on the real code path. A cold model costs a couple of
+                # seconds on its first call, and this is also where a broken
+                # CUDA install surfaces: the model loads fine and only fails at
+                # encode time with a missing cublas DLL, so warming up on GPU is
+                # the only way to find out before the user's first command does.
+                warm_start = time.time()
+                list(
+                    model.transcribe(
+                        np.zeros(SAMPLE_RATE, dtype=np.float32),
+                        language="en",
+                        beam_size=1,
+                    )[0]
+                )
+                self.whisper_model = model
+                self.stt_device = attempt_device
+                logger.info(
+                    f"Whisper ready on {attempt_device} "
+                    f"(warm-up {time.time() - warm_start:.2f}s)"
+                )
+                return
+            except Exception as exc:
+                if attempt_device == "cpu":
+                    raise
+                logger.warning(f"Whisper on {attempt_device} unusable ({exc}); using CPU")
 
     def has_wake_word(self, text: str) -> bool:
         """Check if text contains any wake word"""
@@ -218,119 +288,120 @@ class VoiceProcessor:
             logger.error(f"Error building dynamic prompt: {e}")
             return "Commands: Phoenix, Igris, arise, open, weather, time, user."
 
-    def transcribe_audio(self, chunk: AudioChunk, timestamp: str = None) -> str:
+    def transcribe_audio(self, chunk: AudioChunk) -> TranscriptionCandidate:
         """
-        Transcribe audio chunk with Faster-Whisper
+        Transcribe an utterance with Faster-Whisper.
 
-        Args:
-            chunk: AudioChunk to transcribe
-            timestamp: Optional timestamp string for when audio was captured
+        Returns a TranscriptionCandidate carrying the text plus the two
+        confidence signals Whisper exposes, which the hallucination filter needs
+        to tell "the user said thank you" from "the model invented thank you
+        because it was fed silence".
 
-        Returns:
-            Transcribed text (empty string if failed)
+        `vad_filter` is deliberately off: the listener already ran Silero over
+        this audio frame by frame, and re-running it here would be pure
+        duplicated work on the critical path.
         """
         try:
-            logger.debug(
-                f"Transcribing audio (shape: {chunk.audio_data.shape}, dtype: {chunk.audio_data.dtype})"
-            )
-
-            # Convert to float32 normalized to [-1.0, 1.0]
             audio_float = chunk.audio_data.astype(np.float32) / 32768.0
 
-            # Compile dynamic prompt if not cached
             if getattr(self, "_dynamic_prompt", None) is None:
                 self._dynamic_prompt = self._build_dynamic_prompt()
 
-            # Transcribe with Faster-Whisper (optimized for speed)
+            started = time.time()
             segments, info = self.whisper_model.transcribe(
                 audio_float,
                 language="en",
-                beam_size=1,  # Faster than beam_size=5, minimal accuracy loss
+                beam_size=int(AppConfig.stt.get("beam_size", 1)),
                 initial_prompt=self._dynamic_prompt,
-                vad_filter=True,
-                vad_parameters=dict(
-                    min_silence_duration_ms=int(self.MIN_SILENCE_DURATION * 1000),
-                    threshold=0.3,
-                ),
+                condition_on_previous_text=False,  # stops hallucination loops
+                vad_filter=False,
+                word_timestamps=False,
             )
 
-            # Combine all segments
-            transcription = " ".join([segment.text for segment in segments]).strip()
+            texts = []
+            no_speech_prob = 0.0
+            avg_logprob = 0.0
+            for segment in segments:
+                texts.append(segment.text)
+                no_speech_prob = max(no_speech_prob, getattr(segment, "no_speech_prob", 0.0))
+                avg_logprob = min(avg_logprob, getattr(segment, "avg_logprob", 0.0))
 
-            if transcription:
-                logger.info(f"Transcribed: '{transcription}'")
+            elapsed = time.time() - started
+            text = " ".join(texts).strip()
+
+            self._runtime_trace(
+                "STT",
+                f"utt={chunk.duration:.1f}s voiced={chunk.voiced_ms/1000:.1f}s "
+                f"stt={elapsed:.2f}s rtf={elapsed / max(chunk.duration, 0.01):.2f}",
+            )
+
+            if text:
                 self.transcriptions_count += 1
-            else:
-                logger.debug("Empty transcription")
-                self._runtime_trace("HEARD", "<empty>")
-                listening()  # Back to listening
+                logger.info(
+                    "Transcribed in %.2fs: '%s' (no_speech=%.2f, logprob=%.2f)",
+                    elapsed,
+                    text,
+                    no_speech_prob,
+                    avg_logprob,
+                )
 
-            return transcription
+            return TranscriptionCandidate(
+                text=text,
+                duration=chunk.duration,
+                voiced_ms=chunk.voiced_ms,
+                no_speech_prob=no_speech_prob,
+                avg_logprob=avg_logprob,
+            )
 
         except Exception as e:
             logger.error(f"Whisper transcription failed: {e}", exc_info=True)
-            print_block("⚠️  Transcription error")
-            listening()
-            return ""
+            return TranscriptionCandidate(text="")
 
     def process_audio_chunk(self, chunk: AudioChunk):
         """
-        Process a single audio chunk with wake word logic.
+        Process one complete utterance.
 
         Flow:
-        0. If Phoenix is speaking → Skip (avoid self-listening)
-        1. If wake word detected AND loop=False → Process, enable follow-up mode
-        2. If loop=True (follow-up mode) → Process without wake word
-        3. If no wake word AND loop=False → Ignore
-        4. Empty transcription → Reset loop
-
-        Args:
-            chunk: AudioChunk to process
+        1. Transcribe
+        2. Reject Whisper hallucinations (silence artefacts)
+        3. Reject / trim Phoenix's own voice
+        4. Wake word gives one command; a matched command opens follow-up mode
         """
         try:
-            # Skip processing while Phoenix is speaking (self-voice suppression)
-            if self.queue_manager.is_speaking():
-                logger.debug("Skipping chunk - Phoenix is speaking")
-                self.chunks_processed += 1
-                # Also clear the queue to remove any accumulated audio during speech
-                try:
-                    cleared = 0
-                    while not self.queue_manager.is_empty():
-                        self.queue_manager.receive_chunk(timeout=0.01)
-                        cleared += 1
-                        if cleared > 20:  # Safety limit
-                            break
-                    if cleared > 0:
-                        logger.debug(
-                            f"Cleared {cleared} chunks from queue during speaking"
-                        )
-                except:
-                    pass
-                return
-
-            logger.debug(f"Processing chunk: {chunk.duration:.2f}s")
-
-            # Get timestamp from when audio was captured (for accurate timing)
+            logger.debug(f"Processing utterance: {chunk.duration:.2f}s")
             chunk_timestamp = datetime.fromtimestamp(chunk.timestamp).strftime(
                 "%H:%M:%S"
             )
 
-            # Step 1: Transcribe audio chunk with Whisper
-            transcription = self.transcribe_audio(chunk, chunk_timestamp)
+            candidate = self.transcribe_audio(chunk)
 
-            # Empty transcription = reset follow-up mode
-            if not transcription:
-                self.loop = False
+            # Step 2: is this something Whisper invented?
+            reason = self.hallucination_filter.rejection_reason(candidate)
+            if reason:
+                logger.info(f"Discarded '{candidate.text}': {reason}")
+                self._runtime_trace("DISCARDED", f"{candidate.text or '<empty>'} ({reason})")
                 self.chunks_processed += 1
-                listening()  # Back to listening
                 return
 
-            # Print to GUI/Console
-            if ":" not in chunk_timestamp:
-                chunk_timestamp = datetime.now().strftime("%H:%M:%S")
+            # Step 3: is this Phoenix hearing itself? The acoustic gate in the
+            # listener is the first line of defence; this is the second, and it
+            # also catches speech from other Phoenix processes (battery/time
+            # announcements are spoken by the TUI process, not this one).
+            self.echo_filter.set_history(self.queue_manager.recent_tts())
+            verdict = self.echo_filter.check(candidate.text)
+            if verdict.rejected:
+                logger.info(f"Self-echo rejected '{candidate.text}': {verdict.reason}")
+                self._runtime_trace("SELF_ECHO", candidate.text)
+                self.chunks_processed += 1
+                return
+
+            transcription = verdict.text
+            if verdict.action == "trim":
+                logger.info(f"Self-echo trimmed: {verdict.reason} -> '{transcription}'")
+
             user_said(transcription, chunk_timestamp)
 
-            # Step 2: Wake word logic
+            # Step 4: Wake word logic
             has_wake = self.has_wake_word(transcription)
 
             if has_wake and not self.loop:

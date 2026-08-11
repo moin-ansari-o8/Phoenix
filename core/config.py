@@ -47,6 +47,39 @@ class AppConfig:
         "fetch_timeout_seconds": 8,
         "max_context_chars": 3000,
     }
+    # Listening pipeline. echo_mode is the one you actually change day to day:
+    #   "gate" - speakers. The mic is gated while Phoenix talks so it cannot
+    #            hear itself. Barge-in is off, because it would trigger on
+    #            Phoenix's own voice.
+    #   "open" - headphones. The mic never hears Phoenix, so the gate is off,
+    #            listening is truly full-duplex and barge-in is enabled.
+    audio = {
+        "echo_mode": "gate",
+        "vad_threshold": 0.5,
+        "hangover_ms": 600,
+        "min_voiced_ms": 400,
+        "max_utterance_ms": 12000,
+        "pre_roll_ms": 300,
+        "noise_multiplier": 3.0,
+        "noise_absolute_min": 120.0,
+        "barge_in": True,
+        # null = auto-select a mic that is actually delivering audio, and move
+        # to another one if the current mic goes dead (a call taking it over).
+        # Set an integer device index to pin one and disable switching.
+        "input_device": None,
+        "mic_silence_timeout_seconds": 20,
+    }
+    # base.en, not small.en: Whisper pads every input to a 30s mel window, so
+    # encoder cost barely depends on how long the utterance actually is.
+    # Measured on this machine for a 3s command: base.en 0.74s vs small.en
+    # 2.36s, for identical output on the test phrase.
+    stt = {
+        "model": "base.en",
+        "device": "auto",  # "auto" | "cpu" | "cuda"
+        "beam_size": 1,
+        "max_no_speech_prob": 0.6,
+        "min_avg_logprob": -1.0,
+    }
 
     @classmethod
     def load(cls):
@@ -110,6 +143,14 @@ class AppConfig:
                 "persist_chatlog": mem.get("persist_chatlog", True),
                 "max_chatlog_entries": mem.get("max_chatlog_entries", 500),
             }
+
+            audio_data = data.get("audio", {})
+            cls.audio = {**cls.audio, **audio_data}
+            if cls.audio.get("echo_mode") not in ("gate", "open"):
+                cls.audio["echo_mode"] = "gate"
+
+            stt_data = data.get("stt", {})
+            cls.stt = {**cls.stt, **stt_data}
 
             web_data = data.get("web", {})
             cls.web = {
