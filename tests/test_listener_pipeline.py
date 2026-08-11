@@ -418,6 +418,152 @@ def test_pipeline_on_real_audio():
 
 
 # --------------------------------------------------------------------------
+# 5b. Continuation stitching (the slow-speaker fix)
+# --------------------------------------------------------------------------
+
+
+def _stitch_pipeline(stitch_ms, utterances, max_utterance_ms=20000.0):
+    """A pipeline wired for stitching, with VAD replaced by an explicit script."""
+    from Utils.limbs.audio_capture import CapturePipeline, EndpointerConfig
+
+    pipeline = CapturePipeline(
+        on_utterance=utterances.append,
+        endpointer_config=EndpointerConfig(
+            pre_roll_ms=0.0,
+            hangover_ms=300.0,
+            min_voiced_ms=200.0,
+            max_utterance_ms=max_utterance_ms,
+        ),
+        stitch_window_ms=stitch_ms,
+    )
+
+    # Drive voicing from a script instead of Silero, so these tests exercise the
+    # stitching arithmetic rather than re-testing the VAD.
+    class ScriptedDetector:
+        def __init__(self):
+            self.script = []
+
+        def is_voiced(self, frame, noise_floor):
+            return (self.script.pop(0) if self.script else False), 1.0
+
+        def reset(self):
+            pass
+
+    pipeline.detector = ScriptedDetector()
+    return pipeline
+
+
+def _speak(pipeline, pattern, start_index):
+    """Feed a voiced/silent pattern; returns the next frame index."""
+    index = start_index
+    for voiced in pattern:
+        pipeline.detector.script = [voiced]
+        pipeline.process_frame(make_frame(index))
+        index += 1
+    return index
+
+
+def test_continuation_stitching():
+    section("Continuation stitching")
+
+    voiced_frames = 20  # 640ms, comfortably over min_voiced_ms
+    short_pause = [False] * 12  # 384ms - closes the endpointer (hangover 300ms)
+    long_pause = [False] * 60  # 1.92s - past any stitch window
+
+    # A mid-sentence pause must NOT produce two commands.
+    utterances = []
+    pipeline = _stitch_pipeline(900.0, utterances)
+    index = _speak(pipeline, [True] * voiced_frames, 0)
+    index = _speak(pipeline, short_pause, index)
+    check("first half is parked, not dispatched", not utterances, f"got {len(utterances)}")
+
+    index = _speak(pipeline, [True] * voiced_frames, index)
+    index = _speak(pipeline, long_pause, index)
+    check(
+        "a 384ms mid-sentence pause yields ONE utterance",
+        len(utterances) == 1,
+        f"got {len(utterances)}",
+    )
+    if utterances:
+        check(
+            "stitched utterance carries both halves' voiced time",
+            utterances[0].voiced_ms >= 2 * voiced_frames * FRAME_MS * 0.9,
+            f"{utterances[0].voiced_ms:.0f}ms",
+        )
+        check("stitch was counted", pipeline.stats.stitched_utterances == 1)
+        check(
+            "stats count dispatched utterances, not closed ones",
+            pipeline.stats.utterances == 1,
+            f"stats={pipeline.stats.utterances}",
+        )
+
+    # A genuinely finished command must still go out on its own.
+    utterances = []
+    pipeline = _stitch_pipeline(900.0, utterances)
+    index = _speak(pipeline, [True] * voiced_frames, 0)
+    index = _speak(pipeline, long_pause, index)
+    check("a finished command is dispatched alone", len(utterances) == 1, f"got {len(utterances)}")
+
+    # Disabled stitching must behave exactly as before.
+    utterances = []
+    pipeline = _stitch_pipeline(0.0, utterances)
+    index = _speak(pipeline, [True] * voiced_frames, 0)
+    index = _speak(pipeline, short_pause, index)
+    check("stitch_window_ms=0 dispatches immediately", len(utterances) == 1)
+
+    # The dangerous interaction: parked audio must never survive the echo gate
+    # closing, or a fragment from before Phoenix spoke gets glued to the next
+    # command. This is the defect the whole listener rewrite existed to kill.
+    utterances = []
+    pipeline = _stitch_pipeline(900.0, utterances)
+    index = _speak(pipeline, [True] * voiced_frames, 0)
+    index = _speak(pipeline, short_pause, index)
+    check("something is parked before the gate closes", pipeline._pending is not None)
+
+    class ClosingGate:
+        """Passes audio, and reports a close edge exactly once."""
+
+        def __init__(self):
+            self._fired = False
+
+        def should_drop(self, timestamp):
+            return False
+
+        def consume_close_edge(self):
+            if self._fired:
+                return False
+            self._fired = True
+            return True
+
+    pipeline.echo_gate = ClosingGate()
+    index = _speak(pipeline, [False], index)
+    check("echo gate close drops the parked utterance", pipeline._pending is None)
+    check("the dropped fragment was never dispatched", not utterances, f"got {len(utterances)}")
+
+    # A merge that would exceed the hard cap flushes instead of truncating.
+    utterances = []
+    pipeline = _stitch_pipeline(900.0, utterances, max_utterance_ms=1000.0)
+    index = _speak(pipeline, [True] * voiced_frames, 0)
+    index = _speak(pipeline, short_pause, index)
+    index = _speak(pipeline, [True] * voiced_frames, index)
+    index = _speak(pipeline, long_pause, index)
+    check(
+        "an over-cap stitch flushes both halves rather than dropping one",
+        len(utterances) == 2,
+        f"got {len(utterances)}",
+    )
+
+    # A starved mic (no frames at all) must release parked audio rather than
+    # holding it forever.
+    utterances = []
+    pipeline = _stitch_pipeline(900.0, utterances)
+    index = _speak(pipeline, [True] * voiced_frames, 0)
+    index = _speak(pipeline, short_pause, index)
+    pipeline._maybe_flush_pending(None)
+    check("a starved mic releases the parked utterance", len(utterances) == 1)
+
+
+# --------------------------------------------------------------------------
 # 6. Input device selection
 # --------------------------------------------------------------------------
 
@@ -510,6 +656,7 @@ if __name__ == "__main__":
     test_hallucination_filter()
     test_self_echo_filter()
     test_pipeline_on_real_audio()
+    test_continuation_stitching()
     test_device_selection()
 
     passed = sum(1 for _, ok, _ in _RESULTS if ok)

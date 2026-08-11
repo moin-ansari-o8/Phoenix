@@ -27,9 +27,59 @@ The problems are in three other places:
 
 ---
 
+## LOCKED DECISIONS — 2026-08-12 (user review of this plan)
+
+These override anything written below them. Where a todo contradicts this block, this
+block wins.
+
+### D-1. TTS: SAPI5 (Zira) is the engine. **Piper is dropped.**
+Piper was evaluated on the real machine and rejected: per-utterance `.wav` generation via
+subprocess round-trip is too slow, and output was intermittently glitchy. SAPI5 `Zira` is
+fast, always resident, and judged good enough. Consequences:
+- `tts_engine: "local"` stops being a silent fallback and becomes the **documented,
+  validated, default** value meaning SAPI5. See revised [todo-A5].
+- ~~[todo-B2] "make Piper the default and prove it"~~ — **CANCELLED.** Inverted into
+  "delete the Piper path".
+- `voice/*.onnx` (~121 MB) and `piper_voice` config keys become dead weight — remove.
+- The **latency argument for Piper is gone, but the streaming argument is not** — see D-4.
+
+### D-2. Wake word: dormant-by-default with a config-driven wake gate
+Exact behaviour the user asked for:
+- Phoenix boots **dormant**. It transcribes continuously but **does not respond**.
+- If a wake word appears **anywhere in a sentence**, it wakes **and answers that same
+  sentence** (wake word stripped, remainder routed). Not "wake, then wait for a command".
+- After answering it stays **awake** — no wake word needed for follow-ups.
+- **30 s of silence → back to dormant.** Timer refreshes on every answered turn.
+- Wake words are read from `core/config.json → profile.<active>.wake_words`.
+  **Nothing hardcoded**, so switching to the `igris` profile switches the wake words.
+
+### D-3. Offline mode is **auto-detected**, not just a manual switch
+`offline_mode: "auto" | true | false`. In `"auto"` Phoenix probes reachability at startup
+and on each web-tool attempt, and transparently behaves as fully offline when there is no
+connection — rather than hanging on a DNS timeout. See revised [todo-B1].
+
+### D-4. Streaming answer → speech: **keep, retargeted to SAPI5**
+[todo-D3] survives the Piper cancellation. Speaking sentence 1 while sentence 3 is still
+generating is engine-independent; it feeds `GlobalSpeechWorker`'s queue instead of Piper.
+This is the single biggest perceived-latency win left.
+
+### D-5. TUI: one restrained palette, light + dark, toggled from config
+New task [todo-C7]. Design brief in the user's words: *futuristic, modern, yet peaceful —
+not attention-grabbing, but beautiful and well contrasted.* **No rainbow colours.**
+Consistency matters more than variety. Light/dark selectable from `core/config.json`.
+
+### D-6. Confirmed as-is
+- [todo-D5] try `llama3.2:1b` as the router — wanted, "2× faster possibly".
+- [todo-B3] offline Wikipedia via ZIM — wanted ("loved phase 6").
+- [todo-A3] case-duplicate `utils/` — **DONE**, `git ls-files` duplicates now 0.
+
+---
+
 ## SECTION A — Correctness bugs (fix these first)
 
-### [todo-A1] Wake-word matching is naive substring → Phoenix wakes on the word "you"
+### ~~[todo-A1]~~ Wake-word matching is naive substring — **DONE 2026-08-12**
+Implemented in `Utils/limbs/wake_gate.py` together with A2 (they are one state machine).
+70 checks in `tests/test_wake_gate.py`, all passing. Notes below kept for the rationale.
 **File:** `Utils/runners/voice_command_processor.py:215-218`
 ```python
 return any(word in text_lower for word in self.WAKE_WORDS)
@@ -38,12 +88,40 @@ Configured wake words include `"yo"` and `"baby"`. `"yo" in "you"` → **True**.
 `"yo" in "your"` → **True**. So *any* sentence containing "you" or "your" — which is
 most sentences — passes the wake gate. The `IGNORED_HEARD` branch is close to unreachable.
 
-**Fix:** word-boundary regex over the normalised transcript, built once at init:
-`re.compile(r"\b(" + "|".join(map(re.escape, sorted(WAKE_WORDS, key=len, reverse=True))) + r")\b")`.
-Additionally: only accept a wake word in the **first N words** of the utterance, and drop
-`"yo"` from the profile (2 letters is not a viable wake word for Whisper output).
+**Fix (revised per D-2):** word-boundary regex over the normalised transcript, compiled
+once at init from `AppConfig.wake_words` — longest-first so `"hey phoenix"` wins over
+`"phoenix"`:
+```python
+self._wake_re = re.compile(
+    r"\b(" + "|".join(re.escape(w) for w in
+                      sorted(self.WAKE_WORDS, key=len, reverse=True)) + r")\b"
+)
+```
+Word-boundary matching alone kills the reported bug: `\byo\b` no longer matches "you" or
+"your". So `"yo"`/`"yoi"` may stay in the profile — but they remain the weakest entries
+(Whisper renders a lot of filler as "yo"), and dropping them costs nothing.
 
-### [todo-A2] Follow-up mode latches on forever — no idle timeout
+**Do NOT restrict the wake word to the first N words** — the original note suggested that,
+but D-2 explicitly wants "when I say that word *in a sentence*". Match anywhere; strip the
+matched span; route the remainder.
+
+**Edge case that must be handled:** if the remainder after stripping is empty (the user
+said just "phoenix"), do **not** route an empty query — acknowledge and go awake, so the
+next sentence is answered without a wake word.
+
+### ~~[todo-A2]~~ Follow-up mode latches on forever — **DONE 2026-08-12**
+Shipped with A1 in `Utils/limbs/wake_gate.py`. `self.loop` is gone from the processor;
+`_awake_until` is a deadline. Config key `audio.followup_window_seconds: 30` added to
+both `core/config.py` and `core/config.json`.
+
+**Also fixed while in there (not in the original register):**
+`command_processor.remove_phoenix_except_folder` was broken twice — its alias list was
+hardcoded to "phoenix" (so under the `igris` profile the wake word was never stripped and
+got routed as part of the query), and its word-boundary guards were written `(?<!\\w)`
+inside a **raw** f-string, which compiles to a lookbehind for a literal backslash followed
+by `w` — a condition that is essentially always true, so no boundary was ever enforced.
+It now delegates to `WakeGate.strip_wake`.
+
 **File:** `Utils/runners/voice_command_processor.py:392-420`
 ```python
 self.loop = True if result is not False else False
@@ -53,11 +131,32 @@ early `return True` on open/close). So `result is not False` is always true, `se
 is set once and never cleared except on an exception. After one wake word Phoenix
 responds to every utterance in the room, forever.
 
-**Fix:** two changes.
-- `main()` must return a meaningful result (`RouteResult`, or at minimum `False` when the
-  router produced `source == "error"` or an empty answer).
-- Follow-up mode must expire: `self._loop_until = time.time() + FOLLOWUP_WINDOW_S` (20–30 s),
-  refreshed on each successful turn. Config key `audio.followup_window_seconds`.
+**Fix (revised per D-2):** A1 and A2 are one feature — a two-state machine. Implement them
+together.
+
+```
+            wake word matched (anywhere in sentence)
+   DORMANT ─────────────────────────────────────────► AWAKE
+      ▲     answers THAT sentence (wake word stripped)   │
+      │                                                  │
+      └──────────────────────────────────────────────────┘
+              awake_until < now()   (30 s idle)
+```
+
+- `AWAKE` is a **deadline, not a boolean**: `self._awake_until: float`.
+  `is_awake` is a property → `time.time() < self._awake_until`. A boolean is exactly what
+  latched forever; a deadline cannot latch. (Same reasoning as `speaking_since/until` in
+  `queue_server.py` — see README §2.)
+- Refresh `self._awake_until = time.time() + AppConfig.followup_window_seconds` on **every
+  answered turn**, whether it was wake-word-triggered or a follow-up.
+- New config key `audio.followup_window_seconds: 30` (D-2 specifies 30).
+- `main()` must still return a meaningful result so an errored turn does not refresh the
+  window — return `False` when the router produced `source == "error"` or an empty answer.
+- **In DORMANT, transcription still runs** (it must, to detect the wake word) but nothing
+  is routed, nothing is spoken, and the TUI shows it as `[IGNORED_HEARD]` — which finally
+  makes that existing branch reachable.
+- Log the transition both ways so the user can see state in the TUI: `[VOICE_STATE] awake`
+  / `[VOICE_STATE] dormant`.
 
 ### [todo-A3] `utils/` and `Utils/` are both tracked — repo is broken on case-sensitive filesystems
 **Evidence:** `git ls-files | tr A-Z a-z | sort | uniq -d` returns **32 duplicated paths**.
@@ -69,7 +168,10 @@ produces two divergent packages and imports resolve unpredictably.
 survives, then `git config core.ignorecase false` locally to stop it recurring.
 **Do this before any other commit** — every commit meanwhile doubles the damage.
 
-### [todo-A4] `.gitignore` inline comments disable the rules they annotate
+### ~~[todo-A4]~~ `.gitignore` inline comments — **DONE 2026-08-12**
+File rewritten (comments on their own lines, de-duplicated) and the 4 remaining
+tracked-but-ignored files (`voice/*.onnx`, 121 MB) untracked with `git rm --cached`.
+`git ls-files -i -c --exclude-standard` now returns 0. Files remain on disk.
 **File:** `.gitignore`
 ```
 *.wav  # Temporary audio outputs
@@ -85,22 +187,47 @@ Also: the entire file content is **duplicated verbatim** (lines 1-50 repeat as 5
 **Fix:** move comments to their own lines, dedupe the file, then
 `git rm --cached` the audio artefacts already committed.
 
-### [todo-A5] `tts_engine: "local"` silently means SAPI5, not Piper
+### [todo-A5] `tts_engine: "local"` matches nothing and falls through — right engine, by accident
 **Files:** `core/config.json:12`, `Utils/limbs/assistant_io.py:93-94`
 ```python
 self.use_edge_tts  = (self.TTS_ENGINE == "edge") and EDGE_TTS_AVAILABLE
 self.use_piper_tts = (self.TTS_ENGINE == "piper")
 ```
-`"local"` matches neither, so it falls through to pyttsx3/SAPI5 — the robotic Windows
-voice — even though **14 Piper .onnx voices are installed** (10 in `voice/`, 4 in
-`models/piper_voices/`) and `piper.exe` is present in `.venv/Scripts/`.
+`"local"` matches neither branch, so it falls through to pyttsx3/SAPI5. The bug is not
+*which* engine you end up on — per D-1 that turned out to be the desired one — it is that
+the config value is **unvalidated and undocumented**, so the engine in use is an accident
+of control flow rather than a choice. Any typo in `tts_engine` produces the same silent
+fallthrough with no warning.
 
-**Fix:** validate the value at load time in `core/config.py` against
-`{"piper", "edge", "sapi5"}`, map `"local"` → `"piper"`, and **log a warning** on an
-unknown value instead of silently degrading. Also reconcile the two voice directories
-(`_piper_models_dir` points at `voice/`; `models/piper_voices/` is orphaned).
+**Fix (revised per D-1 — the conclusion inverts, the bug does not):**
+The user tested both and **chose SAPI5/Zira**. So `"local"` is the *right* engine — it was
+just arriving there by accident, through a fallthrough, which is why nobody knew which
+voice they were getting or could change it deliberately.
 
-### [todo-A6] `SpeechEngine` reads config into **class attributes** at import time
+Make it explicit:
+1. Validate `tts_engine` at load time in `core/config.py` against `{"sapi5", "edge"}`,
+   accepting `"local"` as an alias for `"sapi5"`. **Warn** on an unknown value instead of
+   silently degrading.
+2. **Select the voice by name, not index.** `fallback_voice_index: 1` is machine-dependent
+   — SAPI voice ordering is a registry enumeration and differs per install, so this silently
+   picks a different voice on any other PC. Add `sapi_voice: "Zira"` to the profile and
+   match case-insensitively against `voice.name`, falling back to the index only if no
+   name matches.
+3. `_speak_pyttsx3` calls `pyttsx3.init("sapi5")` **on every utterance**
+   (`assistant_io.py:504`) — a COM init per sentence. Build the engine once. This is
+   probably a meaningful chunk of the "TTS first audio" budget in the Section D table.
+
+**Delete the Piper path** (D-1):
+- remove `use_piper_tts`, `_piper_models_dir`, the `.onnx` lookup and the subprocess call
+- remove `piper_voice` from both profiles in `core/config.json`
+- delete `voice/` (~121 MB, already gitignored — and already excluded from history by the
+  pending filter-repo run)
+- drop `piper-tts` / `piper-phonemize` from `pyproject.toml` (folds into [todo-E3])
+
+Keep the **Edge TTS** path — it is the only thing `offline_mode: false` would buy back, and
+it is already gated. It just must never be the default.
+
+### ~~[todo-A6]~~ `SpeechEngine` class-attribute config — **DONE 2026-08-12** (with A5)
 **File:** `Utils/limbs/assistant_io.py:81-87`
 ```python
 class SpeechEngine:
@@ -115,7 +242,11 @@ the three processes that each construct a `SpeechEngine` can disagree.
 
 **Fix:** read from `AppConfig` inside `__init__` (instance attributes).
 
-### [todo-A7] `AIDecisionMaker` opens config with a **relative** path
+### ~~[todo-A7]~~ `AIDecisionMaker` relative config path — **DONE 2026-08-12**
+Resolved against `__file__` via `_BASE`. Verified by constructing it from `C:/`.
+`DEFAULT_ANSWER_MODEL` also changed `gemma4:e2b` (7.2 GB, cannot fit) ->
+`llama3.2:latest`, and a missing config now warns on stdout instead of silently
+swapping the brain.
 **File:** `Utils/ai_manager.py:88`  → `config_path: str = "core/config.json"`
 Correct only when cwd is the repo root. The processor and listener subprocesses are
 launched with an inherited cwd that happens to be right today; `_read_config()` swallows
@@ -128,7 +259,12 @@ regression.
 read `AppConfig` rather than re-parsing the JSON at all — there are currently **two
 independent readers** of `config.json`.
 
-### [todo-A8] Dead config keys
+### ~~[todo-A8]~~ Dead config keys — **DONE 2026-08-12**
+`web.enabled` enforced at all three network call sites (`search_web`,
+`lookup_encyclopedia`, and the `answer_directly -> search_web` upgrade) via
+`tool_registry.web_allowed()`. `memory.auto_save` deleted - `persist_chatlog`
+already governed that behaviour. Covered by `tests/test_web_gate.py` (11 checks,
+which monkeypatch the network helpers to raise if touched).
 - `memory.auto_save` — parsed in `core/config.py:132`, read nowhere.
 - `web.enabled` — parsed, but `tool_registry.dispatch("search_web")` never checks it.
   **This matters for the offline goal**: setting `web.enabled: false` does nothing.
@@ -158,24 +294,42 @@ Right now Phoenix is **"local-first"**, not offline. Four leaks:
 | B3 | `weather` action | `action_utilities.py` |
 | B4 | Ollama `:cloud` models are one config typo away | `ollama list` shows 5 of them |
 
-### [todo-B1] Add a hard `offline_mode` switch
-New top-level config key `offline_mode: true|false`. When true:
-- `search_web` returns `_result("direct")` immediately with a spoken "I can't look that
-  up while I'm offline" — **never** silently answers from stale training data pretending
-  it looked it up
+### ~~[todo-B1]~~ `offline_mode` with auto-detection — **DONE 2026-08-12**
+`Utils/limbs/connectivity.py`. 1 s TCP connect to 1.1.1.1:53 / 8.8.8.8:53, cached 30 s
+when up and 5 s when down. Measured 0.06 s on this machine. `:cloud` model names now warn
+at config load. Covered by `tests/test_offline_mode.py`. Original spec kept below.
+New top-level config key `offline_mode: "auto" | true | false`, default `"auto"`.
+
+**Resolution:**
+- `true`  → always offline, never probe
+- `false` → always allow network (today's behaviour)
+- `"auto"` → a `ConnectivityMonitor` decides. Probe = a **1-second TCP connect to
+  `1.1.1.1:53`**, not an HTTP GET — no DNS dependency, no payload, fails fast. Result
+  cached ~30 s so a turn never pays for it twice. Re-probed on demand before any web tool
+  runs, so unplugging the cable takes effect on the next command, not the next restart.
+
+**When resolved-offline:**
+- `search_web` returns `_result("direct")` immediately with a spoken "I can't look that up
+  while I'm offline" — it must **never** silently answer from stale training data while
+  pretending it searched. This is the whole point of the switch.
 - `needs_fresh_data()` upgrade path is disabled
-- `tts_engine: "edge"` is refused at config-load with a warning, forced to `piper`
-- `AIDecisionMaker` refuses any model name containing `:cloud`
+- `tts_engine: "edge"` falls back to `sapi5` with a warning (per D-1, `sapi5` is already
+  the default, so this is only a guard)
+- `AIDecisionMaker` refuses any model name containing `:cloud` — `ollama list` currently
+  shows 5 of them, one config typo away from a silent network dependency
+- the TUI shows an **offline indicator** (ties into [todo-C7])
 
-This is one boolean that makes the offline claim *auditable* instead of aspirational.
+**Why auto beats a manual boolean here:** the failure the user actually hits is not
+"I forgot to flip the flag", it is *Phoenix hanging for 8 seconds on a socket timeout when
+the wifi is down.* `fetch_timeout_seconds: 8` plus DuckDuckGo plus Wikipedia is a
+potential ~20 s stall on a single question. Auto-detect turns that into an instant,
+honest answer.
 
-### [todo-B2] Make Piper the default and prove it
-Piper is fully offline neural TTS and is already installed. Switch `tts_engine` to
-`"piper"`, pick a voice, and delete the Edge path from the default config (keep the code
-behind `offline_mode: false`).
-Measure: Piper generation is a subprocess round-trip per utterance — benchmark it against
-SAPI5 and consider the `piper` **Python API** (`piper-tts` package) to avoid the process
-spawn on every sentence.
+### ~~[todo-B2] Make Piper the default~~ — **CANCELLED 2026-08-12 (D-1)**
+Inverted. Piper is being **deleted**, not promoted; SAPI5/Zira is the chosen engine after
+real-machine testing (too slow, occasionally glitchy). The removal work now lives in the
+revised [todo-A5]. Nothing else in this plan depends on Piper except [todo-D3], which was
+retargeted rather than cancelled (D-4).
 
 ### [todo-B3] Local knowledge fallback instead of a web search
 For the offline case, the honest answer to "what is the population of France" is "I don't
@@ -289,6 +443,48 @@ different* copy of the same parser including emoji matching. Any `print()` anywh
 **Fix:** emit one JSON object per line on a dedicated fd (or just `stdout` with a
 `@@PHX@@` prefix), parse with `json.loads`. Delete the duplicate parser in `manager.py`.
 
+### [todo-C7] TUI redesign — one restrained palette, light + dark (NEW, per D-5)
+
+**Brief (user's words):** *futuristic, modern, yet peaceful — not attention-grabbing, but
+beautiful and well contrasted. Consistency in colour matters. No rainbow colours.*
+
+**Current state.** `main.py:118` defines a 3-entry `rich.Theme`
+(`phoenix: bold bright_blue`, `user: bold red`, `time: dim bright_black`) — but the rest of
+the file bypasses it and hardcodes styles inline: `dim cyan` (line 176), `yellow` twice
+(189-190), `white` (194), `bright_white` (197), `bold magenta` (247), plus a 51-character
+`━` rule. So there are **six** colours in play with no relationship to each other, and
+`manager.py` has its own separate emoji-bearing formatter. That is the rainbow.
+
+**Design rules to hold to:**
+- **One accent hue, two neutrals.** Everything is the accent, or a step on a grey ramp.
+  Semantic colour (warn/error) is the *only* exception and must be rare enough to mean
+  something. Blue-cyan reads "calm technical" and is already the Phoenix identity colour —
+  keep it; drop red/magenta/yellow as decoration.
+- **Hierarchy comes from weight and dimming, not from hue.** `dim` / normal / `bold` on
+  one colour separates timestamp, speaker and body better than three different colours do,
+  and stays legible in both themes.
+- **Contrast is a requirement, not a preference.** Target WCAG AA (4.5:1) for body text
+  against the terminal background in *both* themes. `bright_black` on a light background
+  is the classic failure — it is unreadable, and it is in the theme today.
+- Truecolor hex, not the 16 ANSI names. ANSI names are remapped by the user's terminal
+  profile, so "bright_blue" is a different colour in every terminal and neither theme can
+  be verified. `rich` supports `#rrggbb` directly.
+
+**Implementation:**
+- `core/theme.py` — two `dict[str, str]` palettes (`LIGHT`, `DARK`) → one `build_theme()`
+  returning a `rich.Theme`. Every style used anywhere gets a **semantic name**
+  (`phoenix`, `user`, `time`, `muted`, `accent`, `warn`, `error`, `rule`, `status`).
+- New config key `ui.theme: "dark" | "light" | "auto"`. `"auto"` can read the Windows
+  apps-light-theme registry value (`HKCU:\...\Themes\Personalize\AppsUseLightTheme`).
+- **Delete every inline style string in `main.py`** — a style name that is not in the theme
+  should not exist. That is what makes the palette enforceable rather than aspirational.
+- Fold `manager.py:_handle_voice_log`'s separate formatter into the same theme (it
+  overlaps with [todo-C6]; do C6 and C7 together — C6 gives structured events, C7 gives
+  them one consistent rendering).
+- Add the dormant/awake state indicator from [todo-A2] and the offline indicator from
+  [todo-B1] to the status line, styled as `muted` — visible when looked for, not
+  attention-grabbing.
+
 ---
 
 ## SECTION D — Latency (the "beast" part)
@@ -303,7 +499,19 @@ Current per-turn budget, from the code's own measurements and log traces:
 | answer LLM | 1–3 s | 0.5–1.5 s | see D3 |
 | TTS first audio | ~0.5–1.5 s | ~0.2 s | see D4 |
 
-### [todo-D1] Revisit the CPU-only STT decision
+### ~~[todo-D1]~~ CPU-only STT — **MEASURED 2026-08-12, keeping CPU**
+```
+cpu/int8       load 1.15s | median 0.973s for 7.42s audio | rtf 0.131
+cuda/int8_f16  RuntimeError: Library cublas64_12.dll is not found or cannot be loaded
+```
+**CUDA is not merely unwise here, it is unavailable** - the CUDA 12 runtime is not
+installed, so `_resolve_device`'s existing GPU warm-up correctly falls back. Installing
+`nvidia-cublas-cu12` + `nvidia-cudnn-cu12` (~500 MB) would change that, but the numbers
+say do not bother: at rtf 0.131 a typical 3 s command costs ~0.4 s of STT against a
+1.8 s router call and a 1-3 s answer call. STT is ~10% of the turn. **The bottleneck is
+the LLM, not Whisper.** Note the docstring in `_resolve_device` gives VRAM contention as
+the reason for the CPU default; the real current reason is the missing runtime.
+Superseded rationale below.
 `_resolve_device` defaults to CPU *by design* ("borrowing VRAM for STT would slow the LLM
 down by more than it speeds up transcription"). That reasoning was sound when the answer
 model was 4.4 GB. With `llama3.2:latest` at 2.0 GB there is now ~1.5 GB of headroom on a
@@ -322,19 +530,50 @@ into Stage 0/0b saves **1.5–3 seconds**. Cheap additions:
 - a normalised-utterance → last-decision cache with a small TTL, so repeated commands
   skip the router entirely
 
-### [todo-D3] Stream the answer model into TTS
+### [todo-D3] Stream the answer model into TTS (retargeted to SAPI5 per D-4)
 Today: `compose_answer` waits for the full completion (`stream: False`), *then* TTS runs,
-*then* audio plays. Sentence-level streaming — take the first sentence off the token
-stream and start Piper on it while the rest generates — cuts perceived latency roughly in
-half. `OllamaHelper.chat` already has the shape for it; needs `stream: True` plus a
-sentence splitter feeding the speech queue.
+*then* audio plays. Sentence-level streaming — take the first sentence off the token stream
+and **start speaking it while the rest is still generating** — cuts perceived latency
+roughly in half.
+
+**This survives the Piper cancellation.** The win is engine-independent: it is about
+overlapping generation with speech, not about which synthesiser runs. If anything SAPI5
+suits it *better* — a resident COM engine has no per-sentence process spawn, so the
+pipeline is `token → sentence → speak` with no startup cost between sentences.
+
+**Shape:**
+- `OllamaHelper.chat` gains `stream: True` (it already has the request shape for it)
+- a sentence splitter accumulates tokens and emits on `[.!?]` + whitespace, with a
+  ~120-char forced flush so a model that forgets punctuation cannot stall the audio
+- each sentence is pushed to `GlobalSpeechWorker`'s existing queue — which already
+  serialises speech and is already the right abstraction ([todo-C2])
+- **barge-in must drain the queue, not just stop the current sentence** — otherwise
+  interrupting Phoenix mid-answer leaves 3 queued sentences that still play. This is a new
+  failure mode that streaming introduces; handle it in the same change.
+- first-sentence latency becomes `time-to-first-sentence` (~300-500 ms) instead of
+  `time-to-full-completion` (1-3 s).
 
 ### [todo-D4] Cache TTS for canned responses
 `data/intents.json` has 144 intents with fixed `responses`, and `_apply_honorifics`
 substitutes from a fixed list. Pre-synthesise the common ones to `.wav` at first use and
 key a cache on `hash(text + voice)`. "Yes boss", "Done", "Noted." should be instant.
 
-### [todo-D5] Two models are loaded but they are the same model
+### ~~[todo-D5]~~ Try `llama3.2:1b` as the router — **MEASURED 2026-08-12, REJECTED**
+Same 27 routed cases, same harness, model swapped in-process:
+
+| router | accuracy | median | mean | slowest |
+|---|---|---|---|---|
+| `llama3.2:latest` (3.1 GB) | **25/27 (92%)** | **1.82 s** | **1.66 s** | 2.84 s |
+| `llama3.2:1b` (1.7 GB) | 16/27 (59%) | 3.57 s | 5.65 s | 50.58 s |
+
+The 1b is worse on **both** axes, which was not the expected outcome. It is not VRAM:
+`ollama ps` shows the 1b resident at **100% GPU** while the 3B sits at 90%. The cause is
+token count - the 1b does not follow the JSON contract, rambles, and runs into
+`num_predict=60` on nearly every call, where the 3B emits short valid JSON and stops
+early. Latency here is dominated by tokens generated, not by parameter count.
+
+**Decision: keep `llama3.2:latest` for both roles.** The 'tiny fast router' idea is
+refuted for this model family on this box. Original note below.
 `router_model` and `answer_model` are both `llama3.2:latest`, yet `ai_manager` keeps two
 separate `OllamaHelper` instances and `manager.py:_warm()` warms both. Harmless today
 (Ollama dedupes by model name) but it means the *design* intent — a tiny fast router
@@ -457,30 +696,41 @@ which is not fully trusted, and the action layer executes shell commands.
 
 ## Recommended order of work
 
-**Phase 1 — stop the bleeding (half a day, no architecture risk)**
-A3 (case-duplicate git tree — do this first, alone, in its own commit) → A4 → A1 → A2 →
-A7 → A5 → A8
+**Phase 1 — stop the bleeding** — ✅ **COMPLETE 2026-08-12**
+A3, A1+A2, A4, A7, A5, A6, A8 all done. 163 checks passing across 4 suites.
 
 **Phase 2 — make "offline" true (one day)**
-B1 → B2 → G3 → then measure D1 and D5 with `tests/test_routing.py`
+B1 (with auto-detect, D-3) → G3 → then measure D1 and D5 with `tests/test_routing.py`
+*(B2 cancelled — see D-1.)*
 
 **Phase 3 — hygiene (one day, mostly deletion)**
 E1 → E2 → E3 → A9 → E6 → F1/F2
 
 **Phase 4 — architecture (multi-day, do only after Phases 1-3 land and tests exist)**
-C1 (4 processes → 2) → C2 → C6 → C4 → C3
+C1 (4 processes → 2) → C2 → **C6 + C7 together** (structured events + the themed renderer
+that consumes them — doing C7 before C6 means restyling a stdout regex parser you are
+about to delete) → C4 → C3
 
 **Phase 5 — speed**
-D3 (streaming TTS) → D2 (grow zero-cost path) → D4 (TTS cache)
+D3 (streaming into SAPI5, D-4) → D2 (grow zero-cost path) → D4 (TTS cache)
 
 **Phase 6 — offline knowledge**
 B3 (Kiwix/ZIM Wikipedia)
+
+**Sequencing note:** A1+A2 has no dependencies and is the change the user will feel most
+(today Phoenix answers every sentence in the room). It is a good first commit. C7 is
+tempting to do early because it is visible, but it should wait for C6 — see above.
 
 ---
 
 ## Progress Notes
 - 2026-08-10: audit complete, nothing implemented. `README.md` rewritten as the
   project map so future sessions do not need to re-read the source.
+- 2026-08-11: A3 done (32 case-duplicate paths untracked). E2/G4 resolved by deleting
+  `Utils/plugins/`. C3 decided: delete rather than adopt.
+- 2026-08-12: user reviewed the plan. Decisions recorded in **LOCKED DECISIONS** at the
+  top — Piper dropped for SAPI5/Zira, wake-gate behaviour specified exactly, offline mode
+  becomes auto-detecting, TUI theming added as C7, D3/D5/B3 confirmed wanted.
 - Deliberately NOT recommending: real acoustic echo cancellation (see the note at the
   bottom of `temp-todo-listener-rewrite.md`), and a rewrite of the routing brain — that
   layer is the strongest part of the codebase and should be left alone.

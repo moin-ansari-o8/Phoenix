@@ -10,6 +10,9 @@
   ],
   "current_mode": 0,
   "tts_engine": "local",
+  "offline_mode": "auto",
+  "confirm_destructive": true,
+  "confirm_timeout_seconds": 30,
   "show_routing": true,
   "user": {
     "name": "kALY",
@@ -25,7 +28,7 @@
     "phoenix": {
       "name": "Phoenix",
       "voice": "en-IE-EmilyNeural",
-      "piper_voice": "en_GB-alba-medium",
+      "sapi_voice": "Zira",
       "wake_words": [
         "phoenix",
         "babe",
@@ -40,7 +43,7 @@
     "igris": {
       "name": "Igris",
       "voice": "en-CA-LiamNeural",
-      "piper_voice": "en_US-ryan-medium",
+      "sapi_voice": "David",
       "wake_words": [
         "igris",
         "hey igris",
@@ -77,15 +80,17 @@
   "audio": {
     "echo_mode": "gate",
     "vad_threshold": 0.5,
-    "hangover_ms": 600,
+    "hangover_ms": 800,
+    "stitch_window_ms": 900,
     "min_voiced_ms": 400,
-    "max_utterance_ms": 12000,
+    "max_utterance_ms": 20000,
     "pre_roll_ms": 300,
     "noise_multiplier": 3.0,
     "noise_absolute_min": 120.0,
     "barge_in": true,
     "input_device": null,
-    "mic_silence_timeout_seconds": 20
+    "mic_silence_timeout_seconds": 20,
+    "followup_window_seconds": 30
   },
   "stt": {
     "model": "base.en",
@@ -94,8 +99,15 @@
     "max_no_speech_prob": 0.6,
     "min_avg_logprob": -1.2
   },
+  "security": {
+    "speaker_verification": {
+      "enabled": true,
+      "mode": "log",
+      "threshold": 0.72,
+      "min_duration_s": 0.8
+    }
+  },
   "memory": {
-    "auto_save": true,
     "announce_saves": false,
     "context_turns": 8,
     "max_remember_entries": 200,

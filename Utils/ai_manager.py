@@ -1,10 +1,19 @@
 import json
 import logging
+import os
 import re
 from typing import Optional, Dict
 
+# Repo root, so config lookup does not depend on the cwd of whichever
+# subprocess constructed this. See AIDecisionMaker.__init__.
+_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Fallbacks used only when config.json is unreadable. They must be models that
+# actually FIT: this box has 4 GB of VRAM, and the previous answer-model default
+# ("gemma4:e2b", 7.2 GB) could not be resident, so the failure mode of a missing
+# config was an 8-16 s per-turn CPU fallback rather than a visible error.
 DEFAULT_ROUTER_MODEL = "llama3.2:latest"
-DEFAULT_ANSWER_MODEL = "gemma4:e2b"
+DEFAULT_ANSWER_MODEL = "llama3.2:latest"
 
 
 def strip_markdown(text: str, max_chars: int = 900) -> str:
@@ -75,6 +84,46 @@ def _repeat_target(query: str, context: str) -> Optional[str]:
     return None
 
 
+# The answer model's escape hatch. It is a bare sentinel rather than a phrase so
+# it can be detected exactly: any instruction of the form "say you don't know"
+# produces a different sentence every time, and half of those sentences are a
+# hedge wrapped around a guess. A token either appears or it does not.
+UNKNOWN_SENTINEL = "UNKNOWN"
+
+_UNKNOWN_RE = re.compile(r"^\W*unknown\b\W*$", re.IGNORECASE)
+
+# Phrases that reliably precede a fabricated answer. A model that genuinely
+# knows something states it; these are the tells of one talking its way toward a
+# guess. Treated exactly like the sentinel, because a hedged answer IS a
+# non-answer -- the hedge is the model telling us so in its own words.
+_HEDGE_PATTERNS = (
+    r"\bas of my (last |latest )?(update|training|knowledge)",
+    r"\bmy (training|knowledge) (data |cut-?off )?(only )?(goes|extends|includes)",
+    r"\bi (don'?t|do not) have (access to|real-?time|current|up-?to-?date)",
+    r"\bi (can'?t|cannot) (browse|access the internet|look that up)",
+    r"\bi'?m not (entirely |completely |totally )?(sure|certain)\b",
+    r"\bi (may|might|could) be (wrong|mistaken|inaccurate)",
+    r"\bi (don'?t|do not) have (that|this|any) (information|data|details)",
+    r"\bwithout more (context|information)",
+)
+_HEDGE_RE = re.compile("|".join(_HEDGE_PATTERNS), re.IGNORECASE)
+
+
+def is_unknown(text: str) -> bool:
+    """True when the answer model declined, explicitly or by hedging."""
+    if not text:
+        return True
+    stripped = text.strip()
+    if _UNKNOWN_RE.match(stripped):
+        return True
+    # The sentinel leading a longer reply still counts: small models like to
+    # emit "UNKNOWN. But I think it might be..." which is exactly the guess the
+    # sentinel exists to suppress.
+    if stripped.upper().startswith(UNKNOWN_SENTINEL):
+        return True
+    return bool(_HEDGE_RE.search(stripped))
+
+
 class AIDecisionMaker:
     """Two-model AI brain.
 
@@ -85,8 +134,15 @@ class AIDecisionMaker:
     gemma3 does not, and cannot be used here.
     """
 
-    def __init__(self, config_path: str = "core/config.json"):
-        self.config_path = config_path
+    def __init__(self, config_path: str = None):
+        # Resolved against this file, not the cwd. The default used to be the
+        # relative "core/config.json", which is only correct when Phoenix is
+        # launched from the repo root. The listener and processor are spawned
+        # with an inherited cwd that happens to be right today - and when it is
+        # not, _read_config() swallows the error and returns {}, so every model
+        # name silently falls back to the DEFAULT_* constants below. That is a
+        # silent 10x latency regression, not a crash, so nothing would surface it.
+        self.config_path = config_path or os.path.join(_BASE, "core", "config.json")
         self.config = self._read_config()
         self.ai_settings = self.config.get("ai_manager", {})
 
@@ -104,7 +160,22 @@ class AIDecisionMaker:
             with open(self.config_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            logging.error(f"Failed to load config: {e}")
+            # Loud, because the consequence is silent: falling back to the
+            # DEFAULT_* models looks like Phoenix working, just slower and
+            # answering from a different brain than the one configured.
+            logging.error(
+                "Failed to load config at %s (%s). Falling back to router=%s "
+                "answer=%s - this is NOT the configured model.",
+                self.config_path,
+                e,
+                DEFAULT_ROUTER_MODEL,
+                DEFAULT_ANSWER_MODEL,
+            )
+            print(
+                f"\n[WARN] ai_manager could not read {self.config_path}; "
+                f"using fallback models",
+                flush=True,
+            )
             return {}
 
     # ---- model handles (cached so both models stay resident) ----------------
@@ -288,19 +359,31 @@ class AIDecisionMaker:
                 + "\n".join(context.strip().splitlines()[-4:])
                 + "\n\n"
             )
+        # Both branches share one contract: there is always a way to decline, and
+        # it is always the same token. Instructions phrased as "say you don't
+        # know" produce a different sentence each time and are impossible to act
+        # on; a sentinel is detectable, so the caller can escalate to a web
+        # search instead of speaking a shrug.
         if evidence:
             user += (
                 f"Facts:\n{evidence[:900]}\n\n"
-                "Use only these facts. If they lack the answer, say so.\n\n"
+                "Use only these facts. If they do not contain the answer, reply "
+                f"with exactly {UNKNOWN_SENTINEL} and nothing else.\n\n"
             )
         else:
             # Narrowed to PERSONAL details, which is the case that actually
             # fabricated ("often drops by for gaming sessions, brings snacks").
-            # A blanket "say you don't know" made it deflect on ordinary topics.
+            # A blanket "say you don't know" made it deflect on ordinary topics,
+            # so the sentinel is scoped to genuine uncertainty and the personal
+            # guard is kept separate and absolute.
             user += (
                 "Answer from your own knowledge. Never invent personal details "
                 "about the user or people they know - for those, say plainly "
-                "that you were not told.\n\n"
+                "that you were not told.\n"
+                f"If you are not confident the answer is correct, reply with "
+                f"exactly {UNKNOWN_SENTINEL} and nothing else. A wrong answer is "
+                "worse than no answer. Do not guess, and do not hedge - answer "
+                f"plainly or reply {UNKNOWN_SENTINEL}.\n\n"
             )
 
         if repeat_of:

@@ -132,6 +132,12 @@ class PhoenixRuntimeManager:
         if self._is_banner_or_noise(clean):
             return
 
+        if clean.startswith("[FATAL]"):
+            detail = clean.removeprefix("[FATAL]").strip()
+            self._print_feed(f"[!] Voice processor stopped: {detail}")
+            self._set_status("Voice processor stopped - restart Phoenix")
+            return
+
         if clean.startswith("[VOICE_STATE]"):
             state = clean.removeprefix("[VOICE_STATE]").strip().lower()
             if state == "listening":
@@ -142,6 +148,12 @@ class PhoenixRuntimeManager:
                 return
             if state == "processing":
                 self._set_status("🧠 Processing...")
+                return
+            if state == "awake":
+                self._set_status("🎧 Listening (follow-up)...")
+                return
+            if state == "dormant":
+                self._set_status("🎧 Listening - say the wake word...")
                 return
 
         if clean.startswith("[HEARD]"):

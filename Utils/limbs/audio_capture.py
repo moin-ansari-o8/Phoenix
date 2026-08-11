@@ -793,6 +793,7 @@ class CaptureStats:
     gated_frames: int = 0
     utterances: int = 0
     discarded_utterances: int = 0
+    stitched_utterances: int = 0
     last_noise_floor: float = 0.0
     last_threshold: float = 0.0
 
@@ -804,6 +805,22 @@ class CapturePipeline:
     Deliberately transport-agnostic: it hands finished utterances to a callback
     so the same pipeline can feed the cross-process queue in production and a
     plain list in tests.
+
+    ## Continuation stitching (`stitch_window_ms`)
+
+    A slow speaker pauses mid-sentence.  The endpointer, which can only see
+    silence, closes the utterance and the first half of the sentence gets
+    dispatched as a whole command.  Raising `hangover_ms` fixes that but taxes
+    every single command with the same extra wait, because dispatch is bound to
+    endpointing.
+
+    Stitching unbinds them.  A closed utterance is *parked* rather than
+    dispatched; if speech resumes within `stitch_window_ms` the two halves are
+    concatenated and the clock restarts.  Effective silence tolerance becomes
+    `hangover_ms + stitch_window_ms` while a genuinely finished command still
+    only waits `hangover_ms` plus the park timer.
+
+    Set `stitch_window_ms=0` to disable and dispatch immediately on endpoint.
     """
 
     def __init__(
@@ -814,6 +831,7 @@ class CapturePipeline:
         vad_threshold: float = 0.5,
         device_index: Optional[int] = None,
         on_speech_start: Optional[Callable[[], None]] = None,
+        stitch_window_ms: float = 0.0,
     ):
         self.on_utterance = on_utterance
         self.on_speech_start = on_speech_start
@@ -823,7 +841,119 @@ class CapturePipeline:
         self.endpointer = Endpointer(endpointer_config)
         self.echo_gate = echo_gate
         self.stats = CaptureStats()
+        self.stitch_window_ms = max(0.0, float(stitch_window_ms))
+        self._pending: Optional[Utterance] = None
+        self._pending_deadline = 0.0
         self._running = False
+
+    # -- continuation stitching --------------------------------------------
+
+    def drop_pending(self) -> bool:
+        """
+        Discard a parked utterance without dispatching it.
+
+        Called on the echo gate's close edge.  Without this, a fragment captured
+        just before Phoenix started speaking would be stitched onto the front of
+        the user's next command -- which is precisely the "reply and next command
+        in one transcript" defect the listener rewrite existed to kill.  The
+        parked slot is a second place audio can survive across that boundary, so
+        it has to be cleared everywhere `endpointer.reset()` is called.
+        """
+        if self._pending is None:
+            return False
+        logger.debug(
+            "Dropping parked utterance (%.2fs) - echo gate closed or listener reset",
+            self._pending.duration,
+        )
+        self._pending = None
+        self._pending_deadline = 0.0
+        return True
+
+    def reset(self):
+        """Full capture-state reset: endpointer, detector and parked audio."""
+        self.endpointer.reset()
+        self.detector.reset()
+        self.drop_pending()
+
+    def _dispatch(self, utterance: Utterance):
+        self.stats.utterances += 1
+        self.on_utterance(utterance)
+
+    def _merge(self, first: Utterance, second: Utterance) -> Utterance:
+        """Concatenate two utterances, preserving the real silence between them.
+
+        The gap is reinserted as actual silence rather than butt-joining the
+        audio, because Whisper uses the pause as a sentence boundary cue. A
+        hard splice reads as one breathless run-on and transcribes worse.
+        """
+        gap = max(0.0, second.start_timestamp - first.end_timestamp)
+        gap = min(gap, self.stitch_window_ms / 1000.0)
+        silence = np.zeros(int(gap * SAMPLE_RATE), dtype=first.audio.dtype)
+        return Utterance(
+            audio=np.concatenate([first.audio, silence, second.audio]),
+            start_timestamp=first.start_timestamp,
+            end_timestamp=second.end_timestamp,
+            voiced_ms=first.voiced_ms + second.voiced_ms,
+            reason=second.reason,
+        )
+
+    def _handle_utterance(self, utterance: Utterance):
+        """Park, merge or dispatch a freshly closed utterance."""
+        if self.stitch_window_ms <= 0.0:
+            self._dispatch(utterance)
+            return
+
+        if self._pending is not None:
+            merged = self._merge(self._pending, utterance)
+            cap_ms = self.endpointer.config.max_utterance_ms
+            if merged.duration * 1000.0 > cap_ms:
+                # Too long to be one turn. Send what we had and start over with
+                # the new half rather than silently truncating either.
+                logger.debug("Stitch would exceed %.0fms cap - flushing first half", cap_ms)
+                self._dispatch(self._pending)
+                self._pending = utterance
+            else:
+                self.stats.stitched_utterances += 1
+                logger.debug(
+                    "Stitched utterance: %.2fs + %.2fs -> %.2fs",
+                    self._pending.duration,
+                    utterance.duration,
+                    merged.duration,
+                )
+                self._pending = merged
+        else:
+            self._pending = utterance
+
+        self._pending_deadline = (
+            self._pending.end_timestamp + self.stitch_window_ms / 1000.0
+        )
+
+    def _maybe_flush_pending(self, now_timestamp: Optional[float] = None):
+        """Dispatch the parked utterance once its continuation window expires.
+
+        The deadline is in AUDIO time -- the capture timestamp carried by each
+        frame -- not wall-clock time. Same reasoning as the echo gate: if this
+        thread stalls, wall clock races ahead while the audio the decision is
+        about has not moved, and the window would expire against a pause that
+        never happened. Frames arrive continuously (the mic stream is never
+        paused), so audio time always advances in practice.
+
+        `now_timestamp=None` means the mic delivered nothing at all for a beat,
+        so there is no audio clock to consult and the stream is starved anyway.
+        Flush rather than hold audio hostage to a mic that has stopped.
+
+        Never fires while the endpointer is active: speech has resumed, so the
+        parked audio is the first half of a sentence still being spoken and is
+        waiting for its other half.
+        """
+        if self._pending is None or self.endpointer.active:
+            return
+        if now_timestamp is not None and now_timestamp < self._pending_deadline:
+            return
+        utterance = self._pending
+        self._pending = None
+        self._pending_deadline = 0.0
+        self._dispatch(utterance)
 
     def process_frame(self, frame: Frame) -> Optional[Utterance]:
         """
@@ -832,8 +962,13 @@ class CapturePipeline:
         Dispatching the callback and counting stats both happen here rather
         than in run(), so feeding frames directly behaves identically to the
         live path instead of silently skipping the callback.
+
+        The return value is the raw endpointer output. With stitching enabled it
+        is NOT necessarily what gets dispatched -- a returned utterance may be
+        parked and later merged. Assert on the callback, not on this.
         """
         self.stats.frames += 1
+        self._maybe_flush_pending(frame.timestamp)
 
         if self.echo_gate is not None and self.echo_gate.should_drop(frame.timestamp):
             self.stats.gated_frames += 1
@@ -843,6 +978,7 @@ class CapturePipeline:
             dropped = self.mic.flush()
             self.endpointer.reset()
             self.detector.reset()
+            self.drop_pending()
             logger.debug("Echo gate closed: flushed %d frames, reset endpointer", dropped)
             return None
 
@@ -861,8 +997,7 @@ class CapturePipeline:
         self.stats.last_threshold = self.noise_floor.threshold
 
         if utterance is not None:
-            self.stats.utterances += 1
-            self.on_utterance(utterance)
+            self._handle_utterance(utterance)
         return utterance
 
     def run(self, stop_check: Callable[[], bool]):
@@ -872,6 +1007,9 @@ class CapturePipeline:
             while not stop_check():
                 frame = self.mic.read(timeout=0.1)
                 if frame is None:
+                    # No frame does not mean nothing to do: a parked utterance
+                    # still has to be released when its window expires.
+                    self._maybe_flush_pending()
                     continue
                 self.process_frame(frame)
         finally:

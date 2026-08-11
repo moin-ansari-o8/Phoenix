@@ -82,10 +82,15 @@ class PhoenixListener:
 
         endpointer_config = EndpointerConfig(
             pre_roll_ms=float(audio_cfg.get("pre_roll_ms", 300)),
-            hangover_ms=float(audio_cfg.get("hangover_ms", 600)),
+            hangover_ms=float(audio_cfg.get("hangover_ms", 800)),
             min_voiced_ms=float(audio_cfg.get("min_voiced_ms", 400)),
-            max_utterance_ms=float(audio_cfg.get("max_utterance_ms", 12000)),
+            max_utterance_ms=float(audio_cfg.get("max_utterance_ms", 20000)),
         )
+
+        # Tolerance for a mid-sentence pause is hangover + stitch window, but
+        # only a sentence that actually continues pays the stitch window. See
+        # CapturePipeline's docstring.
+        self.stitch_window_ms = float(audio_cfg.get("stitch_window_ms", 900))
 
         self.mic_silence_timeout = float(audio_cfg.get("mic_silence_timeout_seconds", 20))
         self.pipeline = CapturePipeline(
@@ -95,6 +100,7 @@ class PhoenixListener:
             endpointer_config=endpointer_config,
             vad_threshold=float(audio_cfg.get("vad_threshold", 0.5)),
             device_index=audio_cfg.get("input_device"),
+            stitch_window_ms=self.stitch_window_ms,
         )
         self.pipeline.noise_floor.multiplier = float(
             audio_cfg.get("noise_multiplier", 3.0)
@@ -106,11 +112,14 @@ class PhoenixListener:
         self.gui = self._init_gui()
 
         logger.info(
-            "Listener ready (echo_mode=%s, barge_in=%s, vad=%s, hangover=%.0fms, max=%.0fms)",
+            "Listener ready (echo_mode=%s, barge_in=%s, vad=%s, hangover=%.0fms, "
+            "stitch=%.0fms, pause_tolerance=%.0fms, max=%.0fms)",
             self.echo_mode,
             self.barge_in_configured,
             self.pipeline.detector.backend,
             endpointer_config.hangover_ms,
+            self.stitch_window_ms,
+            endpointer_config.hangover_ms + self.stitch_window_ms,
             endpointer_config.max_utterance_ms,
         )
 
@@ -209,11 +218,12 @@ class PhoenixListener:
 
             stats = self.pipeline.stats
             logger.info(
-                "[HEALTH] frames=%d gated=%d utterances=%d backlog=%d dropped=%d "
-                "noise_floor=%.1f threshold=%.1f device=%s silent_for=%.0fs",
+                "[HEALTH] frames=%d gated=%d utterances=%d stitched=%d backlog=%d "
+                "dropped=%d noise_floor=%.1f threshold=%.1f device=%s silent_for=%.0fs",
                 stats.frames,
                 stats.gated_frames,
                 stats.utterances,
+                stats.stitched_utterances,
                 self.pipeline.mic.backlog,
                 self.pipeline.mic.dropped_frames,
                 stats.last_noise_floor,
@@ -255,8 +265,10 @@ class PhoenixListener:
 
         if mic.reselect_device():
             self._trace("MIC", f"switched to input device {mic.device_index}")
-            self.pipeline.endpointer.reset()
-            self.pipeline.detector.reset()
+            # Full reset, not just the endpointer: audio parked for stitching
+            # came from the dead device and must not be glued onto the first
+            # utterance from the new one.
+            self.pipeline.reset()
 
     def run(self):
         logger.info("Starting continuous listening...")

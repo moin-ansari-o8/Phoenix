@@ -10,6 +10,8 @@ import signal
 import tkinter as tk
 import logging
 from datetime import datetime
+from typing import Optional
+
 import numpy as np
 
 # Get root directory for logging
@@ -39,6 +41,9 @@ from Utils.limbs.speech_filters import (
     SelfEchoFilter,
     TranscriptionCandidate,
 )
+from Utils.limbs.wake_gate import WakeGate
+from Utils.limbs.lexicon import get_lexicon
+from Utils.limbs.speaker_id import get_verifier
 from Utils.limbs.assistant_io import VoiceAssistantGUI, SpeechEngine
 from Utils.limbs.action_utilities import Utility, OpenAppHandler, CloseAppHandler
 from Utils.limbs.command_processor import PhoenixAssistant
@@ -87,8 +92,14 @@ class VoiceProcessor:
         self.errors_count = 0
         self.transcriptions_count = 0
 
-        # Wake word / follow-up mode state
-        self.loop = False  # True = follow-up mode (no wake word needed)
+        # Wake word / follow-up state. A deadline, not a flag - see wake_gate.py
+        # for why the previous boolean could never turn itself off.
+        self.wake_gate = WakeGate(
+            wake_words=self.WAKE_WORDS,
+            followup_window_seconds=float(
+                AppConfig.audio.get("followup_window_seconds", 30)
+            ),
+        )
 
         logger.info("Initializing VoiceProcessor...")
 
@@ -105,7 +116,6 @@ class VoiceProcessor:
 
         # Initialize Faster-Whisper for transcription
         self.whisper_model = None
-        self.MIN_SILENCE_DURATION = 0.6
 
         if not WHISPER_AVAILABLE:
             raise RuntimeError(
@@ -127,6 +137,20 @@ class VoiceProcessor:
             wake_words=list(self.WAKE_WORDS),
         )
         self.echo_filter = SelfEchoFilter()
+        # Vocabulary repair for romanised Hindi/Gujarati and known mishearings.
+        # Built here rather than lazily so a broken data/lexicon.json shows up at
+        # startup instead of on the first command.
+        self.lexicon = get_lexicon()
+        # Speaker filter. Starts in "log" mode: it scores every utterance and
+        # suppresses nothing until a threshold has been chosen from real data.
+        self.speaker = get_verifier()
+        logger.info(
+            "Speaker verification: enabled=%s mode=%s enrolled=%s threshold=%.2f",
+            self.speaker.enabled,
+            self.speaker.mode,
+            self.speaker.enrolled,
+            self.speaker.threshold,
+        )
 
         logger.info("Initializing Phoenix handlers...")
 
@@ -228,67 +252,142 @@ class VoiceProcessor:
                 logger.warning(f"Whisper on {attempt_device} unusable ({exc}); using CPU")
 
     def has_wake_word(self, text: str) -> bool:
-        """Check if text contains any wake word"""
-        text_lower = text.lower()
-        return any(word in text_lower for word in self.WAKE_WORDS)
+        """Word-boundary wake-word test. Kept for callers outside this class."""
+        return self.wake_gate.find_wake(text) is not None
 
     def _runtime_trace(self, tag: str, message: str):
         """Emit concise stdout trace lines that the runtime manager can forward."""
         print(f"\n[{tag}] {message}", flush=True)
 
+    def _announce_state(self, was_awake: bool):
+        """
+        Emit a VOICE_STATE trace only when dormant/awake actually flipped.
+
+        The payload is a bare lowercase token because that is the protocol the
+        TUI parsers expect - they compare the whole remainder of the line
+        against a fixed set, so anything more descriptive is silently dropped.
+        Wording belongs on the display side, in main.py and manager.py.
+        """
+        now_awake = self.wake_gate.is_awake
+        if now_awake == was_awake:
+            return
+        self._runtime_trace("VOICE_STATE", "awake" if now_awake else "dormant")
+
+    # faster-whisper truncates the hotword prompt at `max_length // 2` tokens
+    # (see WhisperModel.get_prompt), i.e. 223 for every Whisper checkpoint.
+    # Staying under it is not optional: past the limit the tail is silently
+    # dropped, so the words at the end of the list simply do not exist as far as
+    # the decoder is concerned.
+    HOTWORD_TOKEN_BUDGET = 210
+
     def _build_dynamic_prompt(self) -> str:
         """
-        Builds a dynamic context string (initial_prompt) to feed to Faster-Whisper.
-        This tells the model what words to 'expect', fixing phonetically hallucinated
-        wake words (e.g. 'increase' instead of 'igris', 'rice' instead of 'arise').
+        Build the hotword string that biases Whisper toward words we expect.
+
+        Whisper is autoregressive, so tokens placed in its context before
+        decoding starts raise the probability of those spellings coming out.
+        That is what turns a mangled "sa hiba" into "sahiba" and stops "igris"
+        being transcribed as "increase".
+
+        Two things this must get right, both learned the hard way:
+
+        * **Priority, not alphabetical order.** The previous version collected
+          every word longer than four characters out of all 807 intent patterns,
+          `sorted()` them and kept the first 80. Alphabetical truncation keeps
+          whatever sorts first, which has nothing to do with what matters -- the
+          list was mostly A-to-C filler while song titles never appeared at all.
+
+        * **Budget in TOKENS, not words.** 80 words is not a limit Whisper
+          knows about; 223 tokens is. Counting with the model's own tokenizer is
+          the only way to know where the cut actually falls.
+
+        AppConfig is imported at module level and must NOT be re-imported here:
+        a function-local import makes the name local for the whole body and
+        raises UnboundLocalError above it. That is the bug that broke
+        PhoenixAssistant on 2026-08-12; tests/test_startup_smoke.py guards it.
         """
         try:
-            from core.config import AppConfig
-            import json
+            lexicon = get_lexicon()
 
-            # Start with proper capitalized forms of wake words
-            prompt_words = set()
-            for ww in self.WAKE_WORDS:
-                prompt_words.add(ww.capitalize())
+            # Highest value first: if the budget cuts the list, it must cut the
+            # least important end.
+            #
+            #   wake words - nothing downstream can recover a missed wake word
+            #   names      - proper nouns an English model has never seen
+            #   songs      - the whole reason this exists
+            #   hinglish   - useful, but the repair layer covers most of it
+            #   commands   - LAST, and first to be cut. These are English words
+            #                being fed to an English model, which is the one
+            #                thing it is already good at. They are here only in
+            #                case stt.model is ever switched to a multilingual
+            #                checkpoint, where English can drift.
+            #
+            # MEASURED: romanised Hindi tokenises at ~3.9 tokens per word, not
+            # the ~1.3 an English word costs, so the full list is 429 tokens
+            # against a 223 hard cap. Roughly half of it gets cut, every time.
+            # That is expected and is why the repair layer exists -- a title
+            # that misses the budget still resolves after transcription. What
+            # matters is that the cut falls on the least valuable end, which is
+            # entirely down to this ordering.
+            groups = [
+                [w.capitalize() for w in self.WAKE_WORDS],
+                [str(getattr(AppConfig, "user_name", "User")).capitalize()],
+                [n.capitalize() for n in lexicon.words("names")],
+                lexicon.ranked_songs(),
+                lexicon.words("hinglish"),
+                lexicon.words("commands"),
+            ]
 
-            # Add the user name
-            user_name = getattr(AppConfig, "user_name", "User").capitalize()
-            prompt_words.add(user_name)
+            ordered = []
+            seen = set()
+            for group in groups:
+                for word in group:
+                    key = word.lower()
+                    if word and key not in seen:
+                        seen.add(key)
+                        ordered.append(word)
 
-            # Load intents.json to add domain-specific vocabulary
-            intents_path = os.path.join(_root_dir, "data", "intents.json")
-            if os.path.exists(intents_path):
-                with open(intents_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-
-                # Extract some high-value command words from patterns
-                # We don't want the prompt to be too huge, but Whisper handles a comma-separated list well.
-                for intent in data.get("intents", []):
-                    for pattern in intent.get("patterns", []):
-                        for word in pattern.split():
-                            word = word.lower().strip("?!.,;")
-                            if (
-                                len(word) > 4
-                            ):  # Filter out common short words to save token space
-                                prompt_words.add(word)
-
-            # Give specific hints for known troublesome phonetic pairs
-            prompt_words.add("Arise")
-            prompt_words.add("Igris")
-            prompt_words.add("Phoenix")
-
-            # Sort to make deterministic, limit to ~80 unique words so we don't overflow context
-            prompt_list = sorted(list(prompt_words))[:80]
-
-            final_prompt = f"Commands and entities: {', '.join(prompt_list)}."
-            logger.info(f"Generated dynamic STT prompt: {final_prompt}")
-            return final_prompt
+            prompt = self._fit_to_token_budget(ordered)
+            logger.info(
+                "STT hotwords: %d words, %d tokens -- %s",
+                len(prompt.split(", ")),
+                self._count_tokens(prompt),
+                prompt[:160] + ("..." if len(prompt) > 160 else ""),
+            )
+            return prompt
 
         except Exception as e:
-            logger.error(f"Error building dynamic prompt: {e}")
-            return "Commands: Phoenix, Igris, arise, open, weather, time, user."
+            logger.error(f"Error building hotword prompt: {e}", exc_info=True)
+            return "Phoenix, Igris, Kaly, brightness, volume, screenshot"
 
-    def transcribe_audio(self, chunk: AudioChunk) -> TranscriptionCandidate:
+    def _count_tokens(self, text: str) -> int:
+        """Token count using Whisper's own tokenizer, with a safe fallback."""
+        try:
+            return len(self.whisper_model.hf_tokenizer.encode(text).ids)
+        except Exception:
+            # ~3 chars per token is conservative for word lists; erring low
+            # would let the real prompt overflow and be silently truncated.
+            return len(text) // 3
+
+    def _fit_to_token_budget(self, words):
+        """Longest prefix of `words` that fits inside HOTWORD_TOKEN_BUDGET."""
+        candidate = ", ".join(words)
+        if self._count_tokens(candidate) <= self.HOTWORD_TOKEN_BUDGET:
+            return candidate
+
+        low, high = 0, len(words)
+        while low < high:
+            mid = (low + high + 1) // 2
+            if self._count_tokens(", ".join(words[:mid])) <= self.HOTWORD_TOKEN_BUDGET:
+                low = mid
+            else:
+                high = mid - 1
+        logger.info("Hotword list trimmed to %d of %d words by token budget", low, len(words))
+        return ", ".join(words[:low])
+
+    def transcribe_audio(
+        self, chunk: AudioChunk, hotwords_override: Optional[str] = None
+    ) -> TranscriptionCandidate:
         """
         Transcribe an utterance with Faster-Whisper.
 
@@ -306,13 +405,23 @@ class VoiceProcessor:
 
             if getattr(self, "_dynamic_prompt", None) is None:
                 self._dynamic_prompt = self._build_dynamic_prompt()
+            hotwords = hotwords_override or self._dynamic_prompt
 
             started = time.time()
             segments, info = self.whisper_model.transcribe(
                 audio_float,
+                # Pinned to English on purpose, even for Hindi/Gujarati words.
+                # Left to auto-detect, one Gujarati song title flips the whole
+                # utterance into Gujarati mode and the output comes back in
+                # Devanagari, which matches nothing in songs.txt or the lexicon.
+                # Pinned to "en", the same word is treated as a loanword and
+                # comes out romanised -- which is how the library is written.
                 language="en",
                 beam_size=int(AppConfig.stt.get("beam_size", 1)),
-                initial_prompt=self._dynamic_prompt,
+                # `hotwords`, not `initial_prompt`: this is the channel built for
+                # vocabulary biasing, and it survives condition_on_previous_text
+                # being off. See faster_whisper.WhisperModel.get_prompt.
+                hotwords=hotwords,
                 condition_on_previous_text=False,  # stops hallucination loops
                 vad_filter=False,
                 word_timestamps=False,
@@ -357,14 +466,98 @@ class VoiceProcessor:
             logger.error(f"Whisper transcription failed: {e}", exc_info=True)
             return TranscriptionCandidate(text="")
 
+    def _rerank_song_request(self, chunk: AudioChunk, transcription: str) -> str:
+        """
+        Second transcription pass, biased toward the titles that could plausibly
+        have been said. Returns the transcription to actually use.
+
+        ## Why this exists
+
+        The hotword channel is capped at 223 tokens, and a romanised song title
+        costs ~8.7 of them, so the bias layer holds about twenty titles NO MATTER
+        HOW LARGE the library grows. At 200 songs that is 10% coverage. Biasing
+        the first pass therefore cannot be the answer on its own.
+
+        What makes it tractable is that retrieval and ranking fail differently.
+        Fuzzy-matching a mangled title against the WHOLE library has no size
+        limit and near-perfect recall -- measured 99.6% for the right title
+        being somewhere in the top 8, against 92.9% for it being first. So:
+
+            pass 1  -> plain transcription, general hotwords
+            retrieve -> top 8 candidates from the entire library (~1ms, no cap)
+            pass 2  -> re-transcribe the SAME audio biased to just those 8
+
+        Eight titles always fit the budget, so library size stops mattering.
+
+        ## When it runs
+
+        Only in the ambiguous band. A confident match skips it, and so does a
+        request with nothing plausible in the library:
+
+            score >= SONG_CONFIDENT  -> pass 1 was right, no second pass
+            score <  SONG_FLOOR      -> a new song, no second pass
+            otherwise                -> re-transcribe
+
+        So the ordinary case -- a known song, clearly spoken -- costs nothing
+        extra, and only genuinely unclear requests pay for the extra pass.
+        """
+        lexicon = self.lexicon
+        if not lexicon.is_song_request(transcription):
+            return transcription
+
+        slot = lexicon.extract_song_slot(transcription)
+        if not slot:
+            return transcription  # "play some music" - no title to disambiguate
+
+        best = lexicon.resolve_song(slot, min_score=0)
+        best_score = best[1] if best else 0.0
+
+        if best_score >= lexicon.SONG_CONFIDENT:
+            return transcription
+        if best_score < lexicon.SONG_FLOOR:
+            return transcription
+
+        candidates = lexicon.candidates(slot)
+        if not candidates:
+            return transcription
+
+        titles = [title for title, _ in candidates]
+        started = time.time()
+        second = self.transcribe_audio(chunk, hotwords_override=", ".join(titles))
+        if not second.text:
+            return transcription
+
+        second_text, _ = lexicon.repair_transcript(second.text)
+        second_slot = lexicon.extract_song_slot(second_text)
+        second_best = lexicon.resolve_song(second_slot, min_score=0) if second_slot else None
+        second_score = second_best[1] if second_best else 0.0
+
+        self._runtime_trace(
+            "SONG_RERANK",
+            f"'{slot}' {best_score:.0f} -> '{second_slot}' {second_score:.0f} "
+            f"({time.time() - started:.2f}s, {len(titles)} candidates)",
+        )
+
+        # Keep pass 1 unless pass 2 genuinely did better. A second pass that
+        # scores no higher has told us nothing, and adopting it anyway would
+        # trade a known result for a differently-wrong one.
+        if second_score > best_score:
+            logger.info(
+                "Song rerank: '%s' (%.0f) -> '%s' (%.0f)",
+                slot, best_score, second_slot, second_score,
+            )
+            return second_text
+        return transcription
+
     def process_audio_chunk(self, chunk: AudioChunk):
         """
         Process one complete utterance.
 
         Flow:
+        0. Is this the owner speaking?  (log-only until calibrated)
         1. Transcribe
         2. Reject Whisper hallucinations (silence artefacts)
-        3. Reject / trim Phoenix's own voice
+        3. Reject / trim Phoenix's own voice, then repair mangled vocabulary
         4. Wake word gives one command; a matched command opens follow-up mode
         """
         try:
@@ -372,6 +565,28 @@ class VoiceProcessor:
             chunk_timestamp = datetime.fromtimestamp(chunk.timestamp).strftime(
                 "%H:%M:%S"
             )
+
+            # Step 0: is this the owner? Runs BEFORE Whisper on purpose -- an
+            # embedding costs ~16ms against ~800ms for transcription, so a
+            # rejected voice never reaches the expensive part. Fails open on
+            # every uncertainty; see speaker_id.py.
+            verdict_speaker = self.speaker.verify(chunk.audio_data)
+            if verdict_speaker.verifiable:
+                self._runtime_trace(
+                    "SPEAKER",
+                    f"score={verdict_speaker.score:.2f} "
+                    f"threshold={self.speaker.threshold:.2f} "
+                    + (
+                        "match"
+                        if verdict_speaker.accepted
+                        else ("REJECT" if self.speaker.mode == "gate" else "would reject")
+                    ),
+                )
+            if self.speaker.should_reject(verdict_speaker):
+                logger.info("Speaker rejected (score %.2f)", verdict_speaker.score)
+                self.chunks_processed += 1
+                listening()
+                return
 
             candidate = self.transcribe_audio(chunk)
 
@@ -399,46 +614,81 @@ class VoiceProcessor:
             if verdict.action == "trim":
                 logger.info(f"Self-echo trimmed: {verdict.reason} -> '{transcription}'")
 
+            # Step 3b: repair words the English model spelled phonetically.
+            # Runs BEFORE the wake gate on purpose -- "phonix open brave" has to
+            # become "phoenix open brave" while there is still a gate left to
+            # pass. Scoped to names and known mishearings; see lexicon.py for why
+            # it deliberately does not touch ordinary English.
+            transcription, repairs = self.lexicon.repair_transcript(transcription)
+            if repairs:
+                logger.info("Lexicon repairs: %s", repairs)
+                self._runtime_trace(
+                    "REPAIRED",
+                    ", ".join(f"{heard} -> {fixed}" for heard, fixed in repairs),
+                )
+
+            # Step 3c: a song request whose title landed in the ambiguous band
+            # gets a second, narrowly-biased transcription pass. No-op for
+            # everything else.
+            transcription = self._rerank_song_request(chunk, transcription)
+
             user_said(transcription, chunk_timestamp)
 
-            # Step 4: Wake word logic
-            has_wake = self.has_wake_word(transcription)
+            # Step 4: is this addressed to Phoenix?
+            was_awake = self.wake_gate.is_awake
+            decision = self.wake_gate.evaluate(transcription)
 
-            if has_wake and not self.loop:
-                # Wake word detected, process command
-                self._runtime_trace("HEARD", transcription)
-                logger.info(f"Wake word detected: '{transcription}'")
-                self._runtime_trace("PROCESSING", "wake word detected")
-                result = self.phoenix_assistant.main(transcription)
+            if decision.action == "ignore":
+                # Dormant and not addressed. Heard, transcribed, deliberately
+                # not answered - this is the normal resting state. The reason
+                # is attached because "ignored" alone cannot be told apart from
+                # a rejected transcript or an expired follow-up window, and
+                # those need different fixes.
                 self._runtime_trace(
-                    "INTENT", "matched" if result is not False else "no match"
+                    "IGNORED_HEARD",
+                    f"{transcription}  [dormant: no '{self.WAKE_WORDS[0]}' in sentence]",
                 )
-                self.loop = True if result is not False else False
-                listening()  # Back to listening
 
-            elif self.loop:
-                # Follow-up mode - process without wake word
+            elif decision.action == "acknowledge":
+                # Wake word on its own, nothing to route. Wake up so the next
+                # sentence lands without needing the word again.
                 self._runtime_trace("HEARD", transcription)
-                logger.info(f"Follow-up: '{transcription}'")
-                self._runtime_trace("PROCESSING", "follow-up mode")
-                result = self.phoenix_assistant.main(transcription)
-                self._runtime_trace(
-                    "INTENT", "matched" if result is not False else "no match"
-                )
-                self.loop = True if result is not False else False
-                listening()  # Back to listening
+                logger.info(f"Wake word only: '{transcription}'")
+                self.wake_gate.refresh()
+                self._announce_state(was_awake)
 
             else:
-                # No wake word - ignored
-                self._runtime_trace("IGNORED_HEARD", transcription)
-                self.loop = False
-                listening()  # Back to listening
+                self._runtime_trace("HEARD", transcription)
+                logger.info(f"{decision.trigger}: '{decision.query}'")
+                self._runtime_trace("PROCESSING", f"{decision.trigger} mode")
 
+                result = self.phoenix_assistant.main(decision.query)
+                matched = result is not False
+                self._runtime_trace("INTENT", "matched" if matched else "no match")
+
+                # An explicit wake word is unambiguous intent, so it always
+                # earns the window even if routing found nothing. A follow-up
+                # only earns it by succeeding, so a room full of conversation
+                # cannot keep Phoenix awake indefinitely.
+                if decision.trigger == "wake" or matched:
+                    self.wake_gate.refresh()
+                else:
+                    self.wake_gate.sleep()
+                self._announce_state(was_awake)
+
+                # How long follow-ups stay free. Printed every turn so an
+                # "it stopped listening to me" report has a number attached
+                # instead of a guess.
+                self._runtime_trace(
+                    "GATE", f"awake for {self.wake_gate.seconds_remaining:.0f}s more"
+                )
+
+            listening()  # Back to listening
             self.chunks_processed += 1
 
         except Exception as e:
             self.errors_count += 1
-            self.loop = False
+            self.wake_gate.sleep()
             logger.error(f"Error processing chunk: {e}", exc_info=True)
             listening()
 
@@ -449,6 +699,7 @@ class VoiceProcessor:
 
         consecutive_empty_count = 0
         max_consecutive_empty = 50
+        was_awake = self.wake_gate.is_awake
 
         while self.running:
             try:
@@ -458,7 +709,16 @@ class VoiceProcessor:
                 if chunk is not None:
                     consecutive_empty_count = 0
                     self.process_audio_chunk(chunk)
+                    was_awake = self.wake_gate.is_awake
                 else:
+                    # The awake window can expire with no utterance to notice
+                    # it. Behaviour is already correct without this - the gate
+                    # is checked on read - but the UI would otherwise keep
+                    # claiming "awake" until someone next spoke.
+                    if was_awake and not self.wake_gate.is_awake:
+                        self._announce_state(was_awake=True)
+                        was_awake = False
+
                     # No chunk available
                     consecutive_empty_count += 1
 
@@ -560,6 +820,12 @@ class ProcessManager:
             logger.critical(
                 f"CRITICAL ERROR: Processor failed to start: {e}", exc_info=True
             )
+            # The logger is file-only, so without this the TUI sees nothing at
+            # all: no processor means nothing drains the audio queue, every
+            # later trace stops, and the last status ("Processing...") stays on
+            # screen forever. A crash must not be able to masquerade as a hang.
+            # One line, no traceback - the TUI drops multi-line noise.
+            print(f"\n[FATAL] {type(e).__name__}: {e}", flush=True)
             sys.exit(1)
         finally:
             if self.processor:

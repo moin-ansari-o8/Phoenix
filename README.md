@@ -95,15 +95,38 @@ mic ──► MicStream (PyAudio CALLBACK mode, 512-sample / 32 ms frames, bound
           │  threshold = max(floor * 3.0, 120.0)
           ▼
         Endpointer — pre-roll 300 ms, open on 3 voiced frames,
-          │  close on 600 ms hangover, discard if < 400 ms voiced, hard cap 12 s
+          │  close on 800 ms hangover, discard if < 400 ms voiced, hard cap 20 s
+          ▼
+        Continuation stitching — a closed utterance is PARKED, not sent, for
+          │  stitch_window_ms (900 ms). If speech resumes inside that window the
+          │  halves are concatenated and the clock restarts.
           ▼
         Utterance → create_audio_chunk() → queue → processor
 ```
 
+**Pause tolerance is `hangover_ms + stitch_window_ms` = 1.7 s, but only a
+sentence that actually continues pays the stitch window.** Dispatch used to be
+bound to endpointing, so the only way to tolerate a slow speaker's mid-sentence
+pause was to raise `hangover_ms` — which taxes every command equally. Parking
+unbinds them: a finished command still goes out after `hangover_ms`.
+
+The stitch deadline is measured in **audio time** (the frame's capture
+timestamp), not wall clock — same reasoning as lesson 9 below. If this thread
+stalls, wall clock races ahead while the audio the decision is about has not
+moved. A parked utterance is dropped, never sent, when the echo gate closes:
+otherwise a fragment captured before Phoenix spoke would be glued to the front
+of the user's next command, which is the exact defect the listener rewrite
+existed to kill.
+
 Then in `Utils/runners/voice_command_processor.py`:
 
 ```
-        faster-whisper (small.en, CPU int8 by default, cpu_threads=4,
+        SpeakerVerifier.verify()  (Utils/limbs/speaker_id.py)
+          │  BEFORE Whisper: ~16 ms vs ~800 ms, so a stranger never reaches STT
+          │  ships in "log" mode — scores printed, nothing suppressed
+          ▼
+        faster-whisper (base.en, CPU int8 by default, cpu_threads=6,
+          │             hotwords=<priority-ordered lexicon>, language="en",
           │             condition_on_previous_text=False, vad_filter=False,
           │             warm-up transcribe at startup)
           ▼
@@ -115,8 +138,147 @@ Then in `Utils/runners/voice_command_processor.py`:
         SelfEchoFilter  — word-level SequenceMatcher vs queue_manager.recent_tts()
           │  accept / reject (ratio ≥ 0.62 or ≥60 % coverage) / TRIM an echoed block
           ▼
-        wake-word gate → PhoenixAssistant.main(text)
+        Lexicon.repair_transcript()  (Utils/limbs/lexicon.py)
+          │  names + known mishearings only:  "phonix" → "phoenix"
+          ▼
+        song rerank — ambiguous song titles get a SECOND STT pass (see §4a)
+          ▼
+        WakeGate.evaluate()  (Utils/limbs/wake_gate.py)
+          │  ignore / acknowledge / respond
+          ▼
+        PhoenixAssistant.main(query)      ← wake word already stripped
 ```
+
+### The wake gate — `Utils/limbs/wake_gate.py`
+
+Phoenix boots **dormant**: it transcribes everything but answers nothing. A wake
+word anywhere in a sentence wakes it *and answers that same sentence*. It then stays
+awake for `audio.followup_window_seconds` (default 30), so follow-ups need no wake
+word, and returns to dormant when that expires.
+
+```
+            wake word matched (anywhere in the sentence)
+ DORMANT ───────────────────────────────────────────────► AWAKE
+    ▲       answers THAT sentence, wake word stripped       │
+    └───────────────────────────────────────────────────────┘
+                 now() >= awake_until   (30 s idle)
+```
+
+Wake words come from `core/config.json → profile.<active>.wake_words`. Nothing is
+hardcoded, so switching to the `igris` profile switches the wake words with it.
+
+**Why awake is a deadline, not a boolean.** The previous implementation used
+`self.loop`, set from `result is not False` — but `PhoenixAssistant.main()` always
+returns `True`, so it latched on at the first wake word and never cleared. A deadline
+cannot latch: only an arriving utterance can push it forward, so silence expires it
+by construction. Same reasoning as the `speaking_since/until` window in §2. Do not
+"simplify" this back to a flag.
+
+**Why word boundaries matter.** Matching used to be
+`any(w in text.lower() for w in WAKE_WORDS)`. The profile contains `"yo"`, and
+`"yo" in "you"` is `True` — so nearly every sentence passed the gate, which is why
+Phoenix appeared to answer everything and `[IGNORED_HEARD]` was near-unreachable.
+
+Two behaviours worth knowing:
+- Multi-word wake words are sorted longest-first in the alternation. Regex
+  alternation is first-match, not longest-match, so without this `"hey phoenix"`
+  would match the bare `phoenix` branch and route a dangling `"hey"`.
+- `"phoenix folder"` is protected from stripping (`PROTECTED_FOLLOWERS`) — it names
+  a directory, and stripping it would route `"open folder"`.
+
+Tested by `tests/test_wake_gate.py` (70 checks, injectable clock — no mic, no sleep).
+
+### Speaker verification — `Utils/limbs/speaker_id.py`
+
+Answers the owner's voice rather than the room. Resemblyzer embeddings (256-d,
+~16 ms on this CPU) compared by cosine similarity against an enrolled profile in
+`data/speaker_profile.npz`. Enrol with `tests/enroll_voice.py`.
+
+Runs **before** Whisper: 16 ms to reject a stranger instead of 800 ms.
+
+**It is a convenience filter, not a security control.** A recording of the owner
+passes it, so does a good impersonation, and accuracy drops with distance and
+illness. It exists to stop the TV and other people in the room issuing commands.
+
+**Every uncertainty fails open** — no profile, encoder missing, corrupt profile
+file, or an utterance under `min_duration_s` all return `accepted=True`. A voice
+assistant that goes deaf because a model file is missing is a worse failure than
+one that occasionally answers a guest. `VerificationResult.verifiable` tells a
+real acceptance from a fail-open one.
+
+**Ships in `mode: "log"`** — scores every utterance, suppresses nothing. Run it
+that way until you have real numbers for yourself and for other people, then set
+`threshold` between them and switch to `"gate"`. Picking a cosine threshold by
+intuition is how this ends up ignoring its owner.
+
+### <a name="s4a"></a>Vocabulary — `Utils/limbs/lexicon.py` + `data/lexicon.json`
+
+How romanised Hindi/Gujarati words and song titles survive an **English** STT
+model. Three layers, because no single one can do it:
+
+| Layer | Where | Size limit | Cost |
+|---|---|---|---|
+| **Bias** — `hotwords=` on `transcribe()` | before STT | **~20 song titles, hard** | free |
+| **Repair** — `repair_transcript()` | after STT | none | ~1 ms |
+| **Rerank** — second STT pass | after STT | none | one extra pass |
+
+**The cap is real and is not negotiable.** faster-whisper truncates hotwords at
+`max_length // 2` = **223 tokens** (`WhisperModel.get_prompt`). A romanised song
+title costs **8.7 tokens** against ~1.3 for an English word, so the bias layer
+holds about twenty titles *no matter how large the library grows* — 50 % coverage
+at 40 songs, 10 % at 200, 4 % at 500. Do not try to fix this by enlarging the
+list; it is silently truncated at the tail.
+
+Since the budget is fixed, the only lever is **which** twenty:
+`Lexicon.ranked_songs()` orders by play count (`data/song_stats.json`), so the
+bias window follows what is actually listened to.
+
+**The rerank is what makes library size irrelevant.** Retrieval and ranking fail
+differently — measured over the real library with synthetic mangling
+(`tests/test_lexicon.py::test_candidate_recall`):
+
+| | top-1 correct | correct in top-8 |
+|---|---|---|
+| light mangling | 92.1 % | **100 %** |
+| heavy mangling | 93.3 % | **98.8 %** |
+
+So a full-library fuzzy scan almost always *contains* the answer even when it
+ranks it wrong. The second pass exploits that:
+
+```
+pass 1    plain transcription
+   ▼
+retrieve  top 8 candidates from the WHOLE library   (~1 ms, no size limit)
+   ▼
+pass 2    re-transcribe the same audio, biased to just those 8
+```
+
+Eight titles always fit the budget, so the library can grow without bound. It
+only runs in the ambiguous band — `score ≥ 88` means pass 1 was right, `< 60`
+means it is a new song; neither pays for a second pass.
+
+**`normalize_roman()` folds romanisation variance**, not English spelling:
+doubled vowels, aspirates written with a trailing `h`, and the v/w, j/z pairs
+that have no settled convention. `sahiba`/`saahibaa`/`sahiwa` collapse to one
+key. Double-metaphone and soundex are **wrong** for this corpus — they encode
+English orthography, so they split `sahiba` from `saahibaa` while collapsing
+`ishq` into `ask`.
+
+**Repair is scoped to `names` only, deliberately.** It once covered command and
+Hinglish vocabulary too, and turned "what is the weather today" into
+"…weather **thoda**". The STT model is an English model — English command words
+are what it already gets right. Those categories still feed the *bias* layer,
+where the acoustics still get a vote; rewriting a finished transcript has no
+such safety net. Known mishearings (`phonix` → `phoenix`) use the exact
+`aliases` map instead, because lowering a fuzzy threshold far enough to catch
+`pheonix` also catches words that were never wrong.
+
+> **This is not the fuzzy intent matcher from lesson 1.** Nothing here selects an
+> intent, a tool or an action. `repair_transcript` rewrites *words* toward a
+> closed lexicon; `resolve_song` matches a *slot value* against a known library
+> after the decision to play a song has already been made. Intent selection
+> remains exact-alias → grammar → LLM. A change that lets this module decide
+> which action runs is reintroducing that bug.
 
 **Two independent self-voice defences** (acoustic gate + text similarity) because
 either one alone leaks. There is deliberately **no real AEC** (WebRTC APM / speexdsp);
@@ -266,6 +428,8 @@ Phoenix/
 │   ├── limbs/
 │   │   ├── audio_capture.py    MicStream/NoiseFloor/VoiceDetector/Endpointer/EchoGate/CapturePipeline
 │   │   ├── speech_filters.py   HallucinationFilter, SelfEchoFilter
+│   │   ├── lexicon.py          Hinglish normaliser, song resolver, transcript repair
+│   │   ├── speaker_id.py       SpeakerVerifier — owner-voice filter (fails open)
 │   │   ├── queue_manager.py    client side of queue_server; AudioChunk dataclass
 │   │   ├── assistant_io.py     SpeechEngine (Piper/Edge/pyttsx3), VoiceAssistantGUI, VoiceRecognition(legacy)
 │   │   ├── intent_router.py    the 4-stage router
@@ -318,8 +482,9 @@ There is **no hot reload**; changing config requires a restart.
 | `tts_engine` | `"piper"` (offline neural) \| `"edge"` (**online**, Microsoft) \| anything else → pyttsx3/SAPI5. **Currently `"local"`, which falls through to SAPI5.** |
 | `show_routing` | print `-> tool arg` trace lines in the TUI |
 | `ai_manager.router_mode` | `"json"` \| `"tools"` |
-| `audio.*` | `echo_mode`, `vad_threshold`, `hangover_ms`, `min_voiced_ms`, `max_utterance_ms`, `pre_roll_ms`, `noise_multiplier`, `noise_absolute_min`, `barge_in` |
-| `stt.*` | `model` (`small.en`), `device` (`auto`→CPU by design, see `_resolve_device` docstring), `beam_size`, `max_no_speech_prob`, `min_avg_logprob` |
+| `audio.*` | `echo_mode`, `vad_threshold`, `hangover_ms` (800), `stitch_window_ms` (900 — pause tolerance is the sum of the two), `min_voiced_ms`, `max_utterance_ms` (20 000; must stay well above hangover + stitch or long sentences truncate mid-word), `pre_roll_ms`, `noise_multiplier`, `noise_absolute_min`, `barge_in`, `followup_window_seconds` |
+| `stt.*` | `model` (`base.en`), `device` (`auto`→CPU by design, see `_resolve_device` docstring), `beam_size`, `max_no_speech_prob`, `min_avg_logprob` |
+| `security.speaker_verification.*` | `enabled`, `mode` (`log` \| `gate` — **stays `log` until calibrated**), `threshold`, `min_duration_s` |
 | `memory.*` | `context_turns`, `max_remember_entries`, `persist_chatlog`, `max_chatlog_entries`, `announce_saves` |
 | `web.*` | `enabled`, `max_results`, `fetch_timeout_seconds`, `max_context_chars` |
 | `bg_progs.*` | toggles for battery/time/todo/hydration background threads (**all currently `false`**) |
@@ -350,7 +515,17 @@ break `Utils.*` imports depending on cwd.
 |---|---|
 | `tests/test_listener_pipeline.py` | endpointer, echo gate, hallucination filter, self-echo. **These are the regression tests for the 30-second-chunk disaster.** |
 | `tests/test_routing.py` | 44-case routing accuracy harness. Needs Ollama up. Reports LLM accuracy, zero-cost resolutions, and effective end-to-end. |
+| `tests/test_lexicon.py` | 102 checks — normaliser, song resolution, candidate recall, play-count ranking, and the **negative set proving repair leaves English alone** |
+| `tests/test_honesty.py` | 35 checks — `UNKNOWN` sentinel and hedge detection. The "confident answers survive" set is the important half; over-deflection is the failure mode. |
+| `tests/test_speaker_id.py` | 32 checks — mostly fail-open paths (missing/corrupt profile, short audio, log mode never suppressing) |
+| `tests/enroll_voice.py` | not a test — records ~20 phrases and writes `data/speaker_profile.npz` |
 | `tests/unit/`, `tests/integration/`, `tests/experimental/` | mixed vintage, mostly ad-hoc scripts |
+
+All six suites above are offline and run in seconds:
+
+```powershell
+W:\workplace-1\Phoenix\.venv\Scripts\python.exe W:\workplace-1\Phoenix\tests\test_lexicon.py
+```
 
 ---
 
@@ -374,9 +549,30 @@ break `Utils.*` imports depending on cwd.
    differently between runs.
 8. **The mic stream is never paused.** Pausing let the OS capture buffer accumulate
    Phoenix's own TTS and replay it seconds later as user speech.
-9. **Gate self-voice on capture timestamp, never on a live boolean.**
+9. **Gate self-voice on capture timestamp, never on a live boolean.** The same
+   applies to the stitch window: it is measured in audio time, not wall clock.
 10. **Prompt length, then VRAM fit, are the two latency levers.** In that order for
     prompts, but check `ollama ps` first.
+11. **Fuzzy matching is allowed on slot values and words, never on intents.** The
+    distinction lesson 1 turns on is *what the match decides*. Matching a word
+    against a closed lexicon, or "which of my 40 songs is this", is bounded and
+    correctable. Choosing an action is not. See §4a.
+12. **Never fuzzy-repair a word the model already gets right.** Scoping repair to
+    English command vocabulary turned "the weather today" into "the weather
+    thoda". Scope the mechanism; a blocklist of exceptions can never be complete.
+13. **Give the answer model a way to decline, and make it a fixed token.**
+    "Say you don't know" produces a different sentence every time and half of
+    them are a guess wearing a hedge. `UNKNOWN` is detectable, so the router can
+    escalate to a web search instead of speaking a shrug. Same reasoning as the
+    fixed "Noted." in lesson 4 — a constant string cannot lie.
+14. **A fixed-size channel meeting a growing dataset is a design split, not a
+    tuning problem.** The hotword budget holds ~20 song titles forever. The fix
+    was not a bigger list but noticing that retrieval (99.6 % recall@8) and
+    ranking (92.9 % top-1) fail differently, and putting a second pass in the
+    gap.
+15. **Verification failures must fail open.** Speaker ID sits in front of
+    everything; every uncertain branch returns "accepted". Going deaf because a
+    model file is missing is worse than answering a guest.
 
 ---
 
@@ -391,6 +587,31 @@ Headline items:
 - ~~`utils/` (lowercase) is a case-duplicate of `Utils/`~~ — **resolved 2026-08-11**, the 32
   stale lowercase paths are out of the git index; the repo clones correctly on Linux/macOS
 - ~~~38 stray scripts and stale fix-notes at repo root~~ — **resolved 2026-08-11**
+- ~~Wake-word matching is naive substring (`"yo" in "you"` → true)~~ and
+  ~~follow-up mode latches on forever~~ — **resolved 2026-08-12**, replaced by
+  `Utils/limbs/wake_gate.py` (see §3)
+- ~~Phoenix cuts off a slow speaker mid-sentence~~ — **resolved 2026-08-12**,
+  continuation stitching (see §3)
+- ~~Hindi/Gujarati words and song titles are unrecognisable~~ — **resolved
+  2026-08-12**, three-layer lexicon (see §4a)
+- ~~The answer model invents rather than admitting ignorance~~ — **resolved
+  2026-08-12**, `UNKNOWN` sentinel + hedge detection + web escalation
+- ~~Anyone in the room can command Phoenix~~ — **partly resolved 2026-08-12**,
+  speaker verification is wired and tested but **ships in `log` mode and nobody
+  has enrolled yet**. It does nothing until `tests/enroll_voice.py` is run and
+  `mode` is switched to `"gate"`.
 - `core/main_assistant.py` is a superseded duplicate of `command_processor.py`
-- `tts_engine: "local"` silently means SAPI5, not Piper
-- Wake-word matching is naive substring (`"yo" in "you"` → true)
+- `tts_engine: "local"` matches no branch and falls through to SAPI5. Per the
+  2026-08-12 review that engine is the *wanted* one — but it must be chosen, validated
+  and voice-selected by name, not reached by fallthrough. Piper is being dropped.
+
+**Not yet measured, and worth doing before further tuning:**
+- Whether biasing toward 8 retrieved candidates actually flips a wrong
+  transcription often enough to justify the second pass. The retrieval half is
+  measured (99.6 % recall@8); the *effect on Whisper's output* is not.
+- Whether `stt.model` should move to multilingual `base`. Same size, same speed,
+  slightly worse on English, but it removes the root cause instead of
+  compensating for it. Decide from `tests/stt_bench.py` numbers, not argument.
+  Note `base.en` is **not** incapable of romanised Hindi — its tokenizer is
+  byte-level, so it can spell `sahiba`; it simply has no Hindi acoustics to work
+  from and guesses worse.

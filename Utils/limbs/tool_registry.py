@@ -359,6 +359,43 @@ def _forget_request(query: str):
     return None
 
 
+def web_allowed() -> bool:
+    """
+    Whether Phoenix may reach the internet right now.
+
+    `web.enabled` was parsed by core/config.py but read by nobody, so setting it
+    to false did precisely nothing - the one switch a user would reach for to
+    make Phoenix offline was decorative. Every network path in this module now
+    goes through here, and here delegates to connectivity.network_allowed(),
+    which also honours `offline_mode` and an actual reachability probe.
+    """
+    from Utils.limbs.connectivity import network_allowed
+
+    return network_allowed()
+
+
+# Spoken when a lookup is refused. Deliberately an admission, not an attempt:
+# the failure mode this exists to prevent is Phoenix answering from stale
+# training data while sounding like it just looked something up.
+OFFLINE_NOTICE = "I can't look that up right now - web access is turned off."
+NO_NETWORK_NOTICE = "I can't look that up - I'm not connected to the internet."
+
+
+def _refuse_web(query: str):
+    """
+    Uniform refusal for a blocked network lookup.
+
+    "You switched the web off" and "there is no wifi" are different facts and
+    lead to different user actions, so they get different sentences.
+    """
+    from Utils.limbs.connectivity import network_allowed
+
+    _, why = network_allowed(reason=True)
+    spoken = NO_NETWORK_NOTICE if why == "no network detected" else OFFLINE_NOTICE
+    logging.info(f"[tool_registry] blocked ({why}); refusing lookup for {query!r}")
+    return _result("direct", spoken=spoken)
+
+
 def needs_fresh_data(query: str) -> bool:
     """True if the query is explicitly time-sensitive and not about this PC."""
     low = (query or "").lower()
@@ -429,9 +466,13 @@ def dispatch(name, args, assistant=None, original_query="", remember_store=None)
 
     if name == "search_web":
         from core.config import AppConfig
-        from Utils.limbs.web_search import gather_context
 
         query = str(args.get("query", "") or original_query).strip()
+        if not web_allowed():
+            return _refuse_web(query)
+
+        from Utils.limbs.web_search import gather_context
+
         evidence = gather_context(
             query,
             max_chars=AppConfig.web["max_context_chars"],
@@ -442,6 +483,10 @@ def dispatch(name, args, assistant=None, original_query="", remember_store=None)
 
     if name == "lookup_encyclopedia":
         from core.config import AppConfig
+
+        if not web_allowed():
+            return _refuse_web(str(args.get("topic", "") or original_query))
+
         from Utils.limbs.web_search import gather_context, wiki_summary
 
         # Never look up someone the user calls their own. "my friend rohit told
@@ -549,6 +594,15 @@ def dispatch(name, args, assistant=None, original_query="", remember_store=None)
     # from stale training data.
     if needs_fresh_data(original_query):
         from core.config import AppConfig
+
+        # The upgrade path matters most for the offline promise: this is where
+        # "who is the current prime minister" silently becomes a web lookup. If
+        # the web is off, the honest answer is a refusal, NOT a fall-through to
+        # answer_directly - that would answer a time-sensitive question from
+        # stale training data, which is exactly the behaviour to avoid.
+        if not web_allowed():
+            return _refuse_web(original_query)
+
         from Utils.limbs.web_search import gather_context
 
         logging.info(

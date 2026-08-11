@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import logging
 import threading
 import subprocess
 from urllib.parse import quote
@@ -38,6 +39,8 @@ from Utils.limbs.assistant_io import (
 import win32con
 import ctypes
 from pyvda import AppView, VirtualDesktop, get_virtual_desktops
+
+logger = logging.getLogger("Utility")
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 temp_stdout = sys.stdout
@@ -367,6 +370,15 @@ class Utility:
     }
     current_dir = os.path.dirname(__file__)
     SONGS_FILE = os.path.join(current_dir, "..", "..", "data", "songs.txt")
+    # Words that are never a song title. These are the exact strings that got
+    # written into songs.txt by the old confirm-and-save path.
+    SONG_STOPWORDS = frozenset(
+        {
+            "no", "yes", "original", "music", "song", "songs", "random",
+            "some music settings", "it", "that", "this", "gujarati", "hindi",
+            "english", "play", "gaana",
+        }
+    )
     OK = [
         "K!",
         "Alrighty!",
@@ -1214,8 +1226,6 @@ class Utility:
         Written to config for next launch AND pushed into shared state so the
         running listener picks it up immediately.
         """
-        import logging
-
         from core.config import AppConfig
 
         mode = "open" if str(mode).lower() in ("open", "headphone", "headphones") else "gate"
@@ -1233,7 +1243,7 @@ class Utility:
             with open(config_path, "w", encoding="utf-8") as handle:
                 json.dump(data, handle, indent=2)
         except Exception as exc:
-            logging.getLogger("Utility").warning(f"Could not persist echo mode: {exc}")
+            logger.warning(f"Could not persist echo mode: {exc}")
 
         queue_manager = None
         getter = getattr(self.spk, "_get_queue_manager", None)
@@ -1743,7 +1753,9 @@ class Utility:
     def load_songs(self):
         if os.path.exists(self.SONGS_FILE):
             songs = {}
-            with open(self.SONGS_FILE, "r") as file:
+            # encoding is explicit: titles are romanised Hindi/Gujarati and the
+            # default cp1252 on this machine raises on anything outside it.
+            with open(self.SONGS_FILE, "r", encoding="utf-8") as file:
                 for line in file:
                     line = line.strip()
                     if line:
@@ -1751,11 +1763,33 @@ class Utility:
                             index, song = line.split("|", 1)
                             index = int(index.strip())
                             song = song.strip()
-                            songs[index] = song
+                            if song:
+                                songs[index] = song
                         except ValueError:
                             print(f"Skipping invalid line: {line}")
             return songs
         return {}
+
+    def add_song(self, title):
+        """
+        Add a title to the library, if it is worth keeping.
+
+        Guards exist because this file is written by a voice path and used as a
+        matching corpus: junk in here becomes junk the resolver can match
+        against. The library previously accumulated 'no', 'music' and 18 copies
+        of the word 'original' precisely because nothing checked.
+        """
+        title = (title or "").strip().lower()
+        if len(title) < 3 or title in self.SONG_STOPWORDS:
+            return False
+
+        songs = self.load_songs()
+        if any(existing.lower() == title for existing in songs.values()):
+            return False
+
+        songs[max(songs.keys(), default=0) + 1] = title
+        self.save_songs(songs)
+        return True
 
     def maiNdesKtoP(self):
         self.speak("which, sir?")
@@ -2125,48 +2159,98 @@ class Utility:
                 break
 
     def play_random_song(self, query):
-        match = re.search(r"play (.+?) (song|music)", query)
-        song = ""
-        if match:
-            song = match.group(1)
+        """
+        Play a song by name, or a random one when no name was given.
+
+        The old version matched `r"play (.+?) (song|music)"`, which required the
+        word "song" or "music" to trail the title -- so "play sahiba" missed and
+        fell through to playing something random instead. It also never consulted
+        the library for MATCHING, only as a random pool, which meant a Hindi
+        title had to survive an English speech model letter-perfect to be usable.
+
+        Now the slot is matched phonetically against data/songs.txt. That is slot
+        resolution against a closed list of ~40 titles, NOT intent matching --
+        the decision to play a song at all was already made upstream. See the
+        rule in Utils/limbs/lexicon.py.
+        """
+        from Utils.limbs.lexicon import get_lexicon
+
         songs = self.load_songs()
-        if "random" in query:
-            if songs:
-                song = random.choice(list(songs.values()))
-                print(f"Playing a random song: {song}")
-                self.play_song(song)
-            else:
-                print("The song library is empty. Add some songs first.")
-        else:
-            if song == "":
-                song = random.choice(list(songs.values()))
-                print(f"Playing a random song: {song}")
-                self.play_song(song)
-                return
-            self.speak(f"Sir, do you want to play {song}?")
-            while True:
-                print(">>> Listening for confirmation...")
-                confirmation = self.take_command().lower()
-                if any((x in confirmation for x in ["yes", "ha", "sure", "play it"])):
-                    self.play_song(song)
-                    new_index = max(songs.keys(), default=1) + 1
-                    songs[new_index] = song + " original"
-                    self.save_songs(songs)
-                    print(f"'{song}' has been added to the library.")
-                    break
-                elif any((x in confirmation for x in ["no", "don't", "do not", "na"])):
-                    self.speak("Okay, sir.")
-                    break
-                else:
-                    self.speak("I didn't understand that. Please confirm again.")
+        if not songs:
+            self.speak("The song library is empty, sir.")
+            return
+
+        if "random" in (query or "").lower():
+            song = random.choice(list(songs.values()))
+            print(f"Playing a random song: {song}")
+            self.play_song(song)
+            return
+
+        lexicon = get_lexicon()
+        slot = lexicon.extract_song_slot(query)
+
+        if not slot:
+            # "play some music" -- a request for anything, not a failed match.
+            song = random.choice(list(songs.values()))
+            print(f"Playing a random song: {song}")
+            self.play_song(song)
+            return
+
+        match = lexicon.resolve_song(slot)
+        if match is not None:
+            title, score = match
+            # The library match IS the confirmation. Asking "do you want to play
+            # sahiba?" after the user just said "play sahiba" is a round trip
+            # that only exists because the old code could not tell a hit from a
+            # guess.
+            print(f"Matched '{slot}' -> '{title}' ({score:.0f})")
+            self.play_song(title)
+            # Feeds the bias window: the hotword budget only holds ~20 titles,
+            # so it should hold the twenty actually listened to.
+            lexicon.record_play(title)
+            return
+
+        # Not in the library. Play it anyway and say what is being played.
+        #
+        # The old code asked "do you want to play X?" and blocked on
+        # take_command(). That could never work in the voice processor: the mic
+        # belongs to another process, `Utility` is built with `reco=None`, and
+        # the call raised AttributeError. Even fixed, blocking this thread would
+        # stall the queue the answer has to arrive through. Announcing what is
+        # about to play gives the user the same correction opportunity without
+        # a round trip that cannot complete.
+        print(f"'{slot}' not in library - searching")
+        self.speak(f"Playing {slot}, sir.")
+        if self.play_song(slot) and self.add_song(slot):
+            print(f"'{slot}' has been added to the library.")
+            lexicon.record_play(slot)
 
     def play_song(self, song):
-        search = Search(song)
-        video_url = search.results[0].watch_url
-        print(f"Playing: {video_url}")
-        webbrowser.open(video_url)
-        sleep(6)
-        self.minimize_window()
+        """
+        Open the first YouTube result for `song`. Returns True if it played.
+
+        pytube scrapes YouTube's HTML, so it breaks every time YouTube changes
+        the page -- historically several times a year. An unguarded
+        `search.results[0]` therefore raises or IndexErrors straight through the
+        action dispatcher and kills the turn. The search-results URL is an ugly
+        fallback but it always works and leaves the user one click away.
+        """
+        try:
+            search = Search(song)
+            results = getattr(search, "results", None) or []
+            if results:
+                video_url = results[0].watch_url
+                print(f"Playing: {video_url}")
+                webbrowser.open(video_url)
+                sleep(6)
+                self.minimize_window()
+                return True
+            logger.warning("No YouTube results for %r", song)
+        except Exception as exc:
+            logger.warning("pytube search failed for %r: %s", song, exc)
+
+        webbrowser.open(f"https://www.youtube.com/results?search_query={quote(song)}")
+        return False
 
     def press(self, key, times):
         try:
@@ -2318,9 +2402,9 @@ class Utility:
             print(f"An error occurred: {e}")
 
     def save_songs(self, songs):
-        with open(self.SONGS_FILE, "w") as file:
+        with open(self.SONGS_FILE, "w", encoding="utf-8") as file:
             for index, song in sorted(songs.items()):
-                file.write(f"{index} | {song} \n")
+                file.write(f"{index} | {song}\n")
 
     def screenshot(self):
         try:
@@ -2648,7 +2732,23 @@ class Utility:
         return random.choice(["It's", "The time is", "Time is"])
 
     def take_command(self):
-        return self.voice_recognition.take_command()
+        """
+        Read one utterance from the legacy in-process recogniser.
+
+        Returns "" when there is no recogniser rather than raising. In the voice
+        processor `Utility` is built with `reco=None` -- the mic lives in another
+        process and audio arrives over the queue -- so every caller here was one
+        `AttributeError` away from killing the processor. Callers must treat ""
+        as "no answer available" and choose a default rather than blocking.
+        """
+        if self.voice_recognition is None:
+            logger.debug("take_command() called with no recogniser; returning empty")
+            return ""
+        try:
+            return self.voice_recognition.take_command() or ""
+        except Exception as exc:
+            logger.warning("take_command() failed: %s", exc)
+            return ""
 
     def tim(self):
         tt = datetime.now().strftime("%I:%M %p")

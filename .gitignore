@@ -66,6 +66,13 @@ data/*.bak
 data/ChatLog.json
 data/remember.md
 data/remember.json
+# Listening habits. Regenerates itself from use; songs.txt is the shared part.
+data/song_stats.json
+
+# Voice biometrics. Derived from recordings of the user, tied to this machine's
+# microphone, and useless anywhere else - never commit either of these.
+data/speaker_profile.npz
+data/voice_enroll/
 
 # Experiments
 trials/

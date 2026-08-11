@@ -1,58 +1,40 @@
-1 | sahiba 
-2 | falak tak 
-3 | mere sapno ki rani sanam puri 
-4 | chand sifarish 
-5 | yeh tune kya kiya 
-6 | vhalam aavo ne 
-7 | dillagi 
-8 | tum ho sath mere original 
-9 | ek din teri raahon main original 
-10 | khuda aur mohabbat song original 
-11 | original 
-12 | some music settings original 
-13 | music original 
-14 | music original 
-15 | music original 
-16 | haan tu hai original 
-17 | maahi ve original 
-18 | ishq original 
-19 | sahiba original 
-20 | raanjhanaa original 
-21 | slim shady original 
-22 | haan tu hai original 
-23 | monster original 
-24 | monster the kgf original 
-25 | haan tu hai original 
-26 | phirta rahoon original 
-27 | perfect original 
-28 | sanam teri kasam original 
-29 | janam janam original 
-30 | no original 
-31 | billionaire by honey singh original 
-32 | perfect original 
-33 | perfect original 
-34 | vikram thakur original 
-35 | millionaire by honey singh original 
-36 | feelings original 
-37 | gujarati original 
-38 | white brown black original 
-39 | bulleya original 
-40 | fasle original 
-41 | tum hi ho original 
-42 | tere naina original 
-43 | yara teri kahani original 
-44 | ek biladi jadi original 
-45 | ek mota hathi original 
-46 | russian bandana original 
-47 | aaj ki raat original 
-48 | russian bandana original 
-49 | aaj ki raat original 
-50 | ishq hai original 
-51 | chammak challo original 
-52 | ishq hai original 
-53 | tum hi ho original 
-54 | russian bandana original 
-55 | bandish bandits original 
-56 | despacito original 
-57 | haan tu hai original 
-58 | kaho na pyar hai original 
+1 | sahiba
+2 | falak tak
+3 | mere sapno ki rani sanam puri
+4 | chand sifarish
+5 | yeh tune kya kiya
+6 | vhalam aavo ne
+7 | dillagi
+8 | tum ho sath mere
+9 | ek din teri raahon main
+10 | khuda aur mohabbat
+11 | haan tu hai
+12 | maahi ve
+13 | ishq
+14 | raanjhanaa
+15 | slim shady
+16 | monster
+17 | monster the kgf
+18 | phirta rahoon
+19 | perfect
+20 | sanam teri kasam
+21 | janam janam
+22 | billionaire by honey singh
+23 | vikram thakur
+24 | millionaire by honey singh
+25 | feelings
+26 | white brown black
+27 | bulleya
+28 | fasle
+29 | tum hi ho
+30 | tere naina
+31 | yara teri kahani
+32 | ek biladi jadi
+33 | ek mota hathi
+34 | russian bandana
+35 | aaj ki raat
+36 | ishq hai
+37 | chammak challo
+38 | bandish bandits
+39 | despacito
+40 | kaho na pyar hai

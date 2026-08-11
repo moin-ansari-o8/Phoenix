@@ -71,28 +71,44 @@ except ImportError:
 
 class SpeechEngine:
     """
-    Speech Engine using Edge TTS (natural neural voices) with pyttsx3 fallback.
-    Edge TTS provides much more natural-sounding voices like IGRS.
+    Speech engine. SAPI5 (pyttsx3) is the default and tested path; Edge TTS is
+    available but reaches Microsoft's cloud, so it is opt-in only.
+
+    Piper was removed 2026-08-12. It synthesised a .wav via a subprocess on
+    every utterance, which is too slow for a conversational turn and was
+    intermittently glitchy. `voice/*.onnx` on disk is now unused.
+
+    Config is read in __init__, NOT into class attributes. The old code did
+    `EDGE_VOICE = AppConfig.voice` in the class body, which binds once at first
+    import and leaks AppConfig into the class namespace - so a profile switch
+    could not affect an already-imported process, and the separate processes
+    that each build a SpeechEngine could disagree about the voice.
     """
 
-    # Neural voice options - pick your favorite!
-    # Male: en-US-GuyNeural, en-US-ChristopherNeural, en-GB-RyanNeural, en-AU-WilliamNeural
-    # Female: en-US-JennyNeural, en-US-AriaNeural, en-GB-SoniaNeural
-    from core.config import AppConfig
-
-    EDGE_VOICE = AppConfig.voice
-    PIPER_VOICE = AppConfig.piper_voice
-    TTS_ENGINE = AppConfig.tts_engine  # "edge" or "piper" or "local"
-    EDGE_PITCH = "+0Hz"  # Adjust pitch: "+5Hz", "-5Hz", etc.
+    EDGE_PITCH = "+0Hz"
     EDGE_RATE = "+10%"  # Slightly faster speech
 
     def __init__(self):
+        from core.config import AppConfig
+
         self.lock = threading.Lock()
         self.honorifics = True
         self.on_playback_start = None  # callback fired when audio begins playing
+
+        self.EDGE_VOICE = AppConfig.voice
+        self.TTS_ENGINE = AppConfig.tts_engine  # validated in core/config.py
+        self.SAPI_VOICE = getattr(AppConfig, "sapi_voice", "")
+        self._fallback_voice_index = AppConfig.fallback_voice_index
+
         self.use_edge_tts = (self.TTS_ENGINE == "edge") and EDGE_TTS_AVAILABLE
-        self.use_piper_tts = self.TTS_ENGINE == "piper"
         self._pygame_initialized = False
+
+        # One SAPI engine per thread, built lazily. pyttsx3.init() was being
+        # called on EVERY utterance - a COM init plus driver construction per
+        # sentence, on the critical path between the answer and the first
+        # audible word. It is per-thread rather than shared because a SAPI COM
+        # object belongs to the apartment that created it.
+        self._tls = threading.local()
 
         # One queue-server connection for the lifetime of the engine. This used
         # to be re-established on every single utterance, which meant a fresh
@@ -109,33 +125,53 @@ class SpeechEngine:
         os.makedirs(self._temp_audio_dir, exist_ok=True)
         self._temp_audio_file = os.path.join(self._temp_audio_dir, "phoenix_speech.mp3")
 
-        # Piper config
-        self._piper_models_dir = os.path.join(
-            os.path.dirname(__file__), "..", "..", "voice"
-        )
-
-        if self.use_piper_tts:
-            _console_print(f"🎤 Voice Engine: Piper TTS ({self.PIPER_VOICE})")
-        elif self.use_edge_tts:
-            _console_print(f"🎤 Voice Engine: Edge TTS ({self.EDGE_VOICE})")
-
-        # Fallback: pyttsx3 settings
         self.voice_id = None
+        self.voice_name = ""
         self.rate = 174
         self.volume = 1.0
 
         try:
-            temp_engine = pyttsx3.init("sapi5")
-            voices = temp_engine.getProperty("voices")
-            if voices and len(voices) > 0:
-                idx = min(AppConfig.fallback_voice_index, len(voices) - 1)
-                self.voice_id = voices[idx].id
-            temp_engine.stop()
-            del temp_engine
-            if not self.use_edge_tts and not self.use_piper_tts:
-                _console_print("🎤 Voice Engine: pyttsx3 (SAPI5)")
-        except Exception:
-            pass
+            probe = pyttsx3.init("sapi5")
+            self.voice_id, self.voice_name = self._pick_sapi_voice(
+                probe.getProperty("voices")
+            )
+            probe.stop()
+            del probe
+        except Exception as exc:
+            _console_print(f"[WARN] Could not enumerate SAPI voices: {exc}", force=True)
+
+        if self.use_edge_tts:
+            _console_print(f"[INFO] Voice engine: Edge TTS ({self.EDGE_VOICE})")
+        else:
+            _console_print(f"[INFO] Voice engine: SAPI5 ({self.voice_name or 'default'})")
+
+    def _pick_sapi_voice(self, voices):
+        """
+        Resolve the SAPI voice by NAME, falling back to the index.
+
+        `fallback_voice_index` indexes a registry enumeration whose order is
+        machine-dependent, so index 1 is Zira on this box and could be anything
+        elsewhere. Name matching makes the config portable; the index survives
+        only as a last resort.
+        """
+        if not voices:
+            return None, ""
+
+        wanted = (self.SAPI_VOICE or "").strip().lower()
+        if wanted:
+            for voice in voices:
+                if wanted in (voice.name or "").lower():
+                    return voice.id, voice.name
+
+            _console_print(
+                f"[WARN] SAPI voice {self.SAPI_VOICE!r} not installed. "
+                f"Available: {', '.join(v.name for v in voices)}. Using index "
+                f"{self._fallback_voice_index}.",
+                force=True,
+            )
+
+        idx = max(0, min(self._fallback_voice_index, len(voices) - 1))
+        return voices[idx].id, voices[idx].name
 
     def _manage_honorifics(self):
         self.honorifics = False
@@ -279,69 +315,6 @@ class SpeechEngine:
         except:
             pass
 
-    def _generate_and_play_piper_tts(self, text):
-        """Generate and play speech using Piper (local offline TTS)"""
-        try:
-            import uuid
-            import subprocess
-            import ctypes
-
-            unique_filename = f"piper_speech_{uuid.uuid4().hex[:8]}.wav"
-            unique_path = os.path.join(self._temp_audio_dir, unique_filename)
-            model_file = os.path.join(
-                self._piper_models_dir, f"{self.PIPER_VOICE}.onnx"
-            )
-
-            if not os.path.exists(model_file):
-                _console_print(
-                    f"[ERROR] Piper model not found: {model_file}", force=True
-                )
-                return False
-
-            # Create sub process locally
-            piper_exe = sys.executable.replace("python.exe", "piper.exe")
-            for attempt in range(3):
-                try:
-                    proc = subprocess.run(
-                        [
-                            piper_exe,
-                            "--model",
-                            model_file,
-                            "--output_file",
-                            unique_path,
-                        ],
-                        input=text.encode("utf-8"),
-                        capture_output=True,
-                        check=False,
-                    )
-                    if proc.returncode == 0 and os.path.exists(unique_path):
-                        break
-                    elif attempt == 2:
-                        _console_print(
-                            f"[ERROR] Piper failed: {proc.stderr.decode('utf-8', errors='ignore')}",
-                            force=True,
-                        )
-                        return False
-                except Exception as e:
-                    if attempt == 2:
-                        _console_print(f"[ERROR] Piper exception: {e}", force=True)
-                        return False
-                    time.sleep(0.5)
-
-            # Play with Windows MCI (polled, so barge-in can stop it)
-            alias = f"phoenix_piper_{uuid.uuid4().hex[:8]}"
-            self._play_file_interruptible(unique_path, alias)
-
-            try:
-                os.remove(unique_path)
-            except:
-                pass
-            return True
-
-        except Exception as e:
-            _console_print(f"?? Piper TTS error: {e}", force=True)
-            return False
-
     def _generate_and_play_edge_tts(self, text):
         """Generate and play speech using Edge TTS (synchronous wrapper)"""
         try:
@@ -446,15 +419,7 @@ class SpeechEngine:
                             f"[WARN] Could not open speaking window: {e}", force=True
                         )
 
-                if self.use_piper_tts:
-                    if self._generate_and_play_piper_tts(audio):
-                        speak_success = True
-                    else:
-                        _console_print(
-                            "[WARN] Piper TTS failed, using fallback...", force=True
-                        )
-
-                elif self.use_edge_tts:
+                if self.use_edge_tts:
                     if self._generate_and_play_edge_tts(audio):
                         speak_success = True
                     else:
@@ -492,34 +457,59 @@ class SpeechEngine:
         """True if the last utterance was cut short by the user talking over it."""
         return self._interrupted
 
-    def _speak_pyttsx3(self, audio, speed=174):
-        """Fallback speech using pyttsx3"""
+    def _build_sapi_engine(self, speed):
+        """Create and configure one SAPI engine for the calling thread."""
         try:
             import pythoncom
+
             pythoncom.CoInitialize()
         except Exception:
             pass
 
         try:
             engine = pyttsx3.init("sapi5")
-        except Exception as e:
+        except Exception:
             try:
                 engine = pyttsx3.init()
-            except Exception as e2:
-                return False
+            except Exception:
+                return None
 
         try:
-            from core.config import AppConfig
-            voices = engine.getProperty("voices")
-            if voices and len(voices) > 0:
-                idx = min(AppConfig.fallback_voice_index, len(voices) - 1)
-                voice_id = voices[idx].id
-                engine.setProperty("voice", voice_id)
-                
+            if self.voice_id:
+                engine.setProperty("voice", self.voice_id)
             engine.setProperty("rate", speed)
             engine.setProperty("volume", self.volume)
-        except Exception as e:
+        except Exception:
             pass
+        return engine
+
+    def _get_sapi_engine(self, speed):
+        """
+        Per-thread cached SAPI engine.
+
+        Rebuilding this per utterance cost a COM init and a driver construction
+        on the critical path. Cached per thread because a SAPI COM object
+        belongs to the apartment that created it, and speech can come from the
+        TUI's GlobalSpeechWorker thread or the processor's main thread.
+        """
+        engine = getattr(self._tls, "engine", None)
+        if engine is None:
+            engine = self._build_sapi_engine(speed)
+            self._tls.engine = engine
+            self._tls.rate = speed
+        elif getattr(self._tls, "rate", None) != speed:
+            try:
+                engine.setProperty("rate", speed)
+                self._tls.rate = speed
+            except Exception:
+                pass
+        return engine
+
+    def _speak_pyttsx3(self, audio, speed=174):
+        """Speak via SAPI5. This is the default engine."""
+        engine = self._get_sapi_engine(speed)
+        if engine is None:
+            return False
 
         if self.on_playback_start:
             self.on_playback_start()
@@ -548,13 +538,22 @@ class SpeechEngine:
         try:
             engine.say(audio)
             engine.runAndWait()
+        except Exception as exc:
+            # A cached engine can be left in a bad state - most often by
+            # engine.stop() landing mid-loop during a barge-in. Drop it so the
+            # next utterance builds a fresh one rather than failing forever.
+            _console_print(f"[WARN] SAPI engine reset after error: {exc}", force=True)
+            self._tls.engine = None
+            return False
         finally:
             watcher_stop.set()
             watcher.join(timeout=0.3)
 
-        engine.stop()
-        del engine
-        sleep(0.2)
+        if self._interrupted:
+            # stop() during runAndWait leaves the driver's loop flag set on some
+            # SAPI builds; the next say() then returns instantly and silently.
+            self._tls.engine = None
+
         return True
 
     def threadedSpeak(self, audio):

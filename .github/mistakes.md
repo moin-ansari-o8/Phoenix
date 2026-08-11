@@ -143,3 +143,183 @@ must do everything the live path does. Otherwise the tests validate a different
 program than the one that ships.
 
 _Related Files:_ Utils/limbs/audio_capture.py
+
+---
+
+## 2026-08-12 - A boolean cannot express "still"
+
+_Problem:_ Follow-up mode was `self.loop`, set from `result is not False`. But
+`PhoenixAssistant.main()` always returns `True`, so after one wake word the flag
+latched on and never cleared -- Phoenix answered every utterance in the room
+forever. This is the second time the same shape of bug has appeared in this
+repo: `speaking_flag` as a bool had to become a `(since, until)` window for
+exactly the same reason.
+
+_Solution:_ `WakeGate._awake_until`, a deadline. `is_awake` is
+`now() < _awake_until`. Only an arriving utterance can push it forward, so
+silence expires it by construction rather than by remembering to clear a flag.
+
+_Lesson:_ When state means "this was true recently", store the time it stops
+being true, not a boolean. A flag needs someone to remember to unset it; a
+deadline unsets itself. Reach for a timestamp whenever the correct answer
+depends on *when* you ask.
+
+_Related Files:_ Utils/limbs/wake_gate.py, Utils/runners/voice_command_processor.py
+
+---
+
+## 2026-08-12 - Raw f-strings ate the word boundaries
+
+_Problem:_ `remove_phoenix_except_folder` guarded its wake-word stripping with
+`rf"(?<!\w)({aliases})(?! folder)(?!\w)"`. In a **raw** string `\w` is three
+characters -- backslash, backslash, w -- so the regex compiled to a lookbehind
+for a literal backslash followed by `w`, which is essentially never present.
+Both boundary guards were dead. The pattern had also been hardcoded to the
+"phoenix" aliases, so under the `igris` profile the wake word was never stripped
+and got routed to the LLM as part of the query.
+
+_Solution:_ Delegated to `WakeGate.strip_wake`, which builds its alternation from
+`AppConfig.wake_words` and uses plain `\b`.
+
+_Lesson:_ Escaping in a raw string is already literal -- do not double it. And a
+regex that silently matches too much looks identical to one that works until you
+test the negative case. Every regex guard needs a test that proves it *rejects*.
+
+_Related Files:_ Utils/limbs/command_processor.py, Utils/limbs/wake_gate.py
+
+---
+
+## 2026-08-12 - A local import made a module-level name unreachable
+
+_Problem:_ Added `from core.config import AppConfig` at module level in
+`command_processor.py` and used it in `__init__`. A pre-existing
+`from core.config import AppConfig` still sat further down the same `__init__`.
+Python decides scope statically: an import anywhere in a function body makes
+that name local for the ENTIRE body, so the earlier reference raised
+`UnboundLocalError` before the import line was ever reached.
+`PhoenixAssistant` never constructed, the voice processor exited, and nothing
+drained the audio queue.
+
+_Solution:_ Deleted the redundant function-local imports. Added
+`tests/test_startup_smoke.py`, which constructs the real objects and statically
+fails any function-local import that shadows a module-level one.
+
+_Lesson:_ Adding a module-level import is not additive - it can break code that
+already worked, if any function re-imports the same name. Grep for the name
+across the file before adding it at the top.
+
+_Related Files:_ Utils/limbs/command_processor.py, Utils/runners/voice_command_processor.py
+
+---
+
+## 2026-08-12 - A crash that looked like a hang
+
+_Problem:_ When the above crash killed the processor, the TUI showed
+"Processing..." indefinitely. The processor's logger is file-only, so the
+traceback went to `bg_voice_processor.log` and nothing reached the screen. The
+symptom reported was "it's stuck, it was fast before" - which points at
+performance, not at a dead subprocess, and cost real debugging time.
+
+_Solution:_ The processor now prints a single-line `[FATAL] <type>: <msg>` to
+stdout before exiting. `main.py` and `manager.py` match it BEFORE their
+noise filters and show it in red with a "restart Phoenix" status.
+
+_Lesson:_ A supervised subprocess that can die silently will eventually die
+silently at the worst time. Any process whose death stops the pipeline must
+announce it on the channel the UI actually reads - a log file nobody is tailing
+does not count.
+
+_Related Files:_ Utils/runners/voice_command_processor.py, main.py, Utils/runners/manager.py
+
+---
+
+## 2026-08-12 - The dictionary that could not fit
+
+_Problem:_ The plan for Hindi/Gujarati recognition was "put the vocabulary in
+Whisper's prompt". Measured against the real library that is impossible:
+faster-whisper truncates hotwords at `max_length // 2` = **223 tokens**
+(`WhisperModel.get_prompt`), and a romanised song title costs **8.7 tokens** -
+against ~1.3 for an English word. The bias layer holds about **twenty titles, no
+matter how large the library grows**: 50% coverage at 40 songs, 10% at 200, 4%
+at 500. The first implementation silently shipped that ceiling.
+
+_Solution:_ Two layers, split by what each is good at. Prompt bias handles the
+top ~20 titles by PLAY COUNT (`Lexicon.ranked_songs`), because the budget is
+fixed so the only lever is which twenty. Everything else is handled after
+transcription by fuzzy matching over the whole library, which has no size limit.
+Ambiguous cases get a second transcription pass biased to just 8 retrieved
+candidates - and 8 always fits, whatever the library size.
+
+_Lesson:_ When a fixed-size channel meets a growing dataset, stop trying to fit
+the data and split the problem by failure mode instead. Retrieval over the full
+set and ranking within it fail differently: measured here, the right title is
+first only 92.9% of the time but is in the top 8 **99.6%** of the time. Design
+around that gap rather than against the cap.
+
+_Related Files:_ Utils/limbs/lexicon.py, Utils/runners/voice_command_processor.py
+
+---
+
+## 2026-08-12 - A repair layer that broke what already worked
+
+_Problem:_ The transcript repair layer originally fuzzy-matched every word
+against the whole lexicon - names, command words and Hinglish. Testing against
+ordinary English immediately produced "what is the weather today" ->
+"...weather **thoda**" and "remind me to call mom" -> "**reminder** me to
+**chalu** mom". Common English words were being rewritten into Hindi ones that
+happened to sit close phonetically.
+
+_Solution:_ Scoped repair to `names` only, plus an exact alias map for known
+mishearings (`phonix` -> `phoenix`). The STT model is an ENGLISH model, so
+English command words are what it already gets right - running a fuzzy rewrite
+over them risked the words that worked to fix words that were never broken.
+Command and Hinglish vocabulary still feed the prompt BIAS, where the acoustics
+still get a vote; editing a finished transcript has no such safety net.
+
+_Lesson:_ Two lessons. A blocklist of "words not to touch" can never be
+complete - scope the mechanism instead. And known cases deserve exact handling:
+lowering a fuzzy threshold far enough to catch "pheonix" also catches words that
+were never wrong.
+
+_Related Files:_ Utils/limbs/lexicon.py, data/lexicon.json, tests/test_lexicon.py
+
+---
+
+## 2026-08-12 - pip installed a package that shadows the standard library
+
+_Problem:_ `pip install resemblyzer` pulled in a transitive dependency literally
+named `typing` - the Python 3.4 backport - which shadows the stdlib `typing`
+module on 3.11 and breaks imports across unrelated packages.
+
+_Solution:_ `pip uninstall -y typing` immediately, then verified
+`typing.__file__` pointed back at the stdlib. Noted in `pyproject.toml` next to
+the dependency so the next install does not repeat it.
+
+_Lesson:_ Check what a new dependency dragged in, not just whether the install
+succeeded. Backport packages named after stdlib modules are still on PyPI and
+still installable on versions that have long since absorbed them.
+
+_Related Files:_ pyproject.toml, Utils/limbs/speaker_id.py
+
+---
+
+## 2026-08-12 - Blocking for confirmation in a process with no microphone
+
+_Problem:_ `play_random_song` asked "do you want to play X?" and then blocked on
+`self.take_command()`. In the voice processor `Utility` is built with
+`reco=None` - the microphone belongs to another process and audio arrives over a
+queue - so the call raised `AttributeError` on a `None`. Even had it worked,
+blocking that thread would have stalled the queue the answer needed to arrive
+through.
+
+_Solution:_ Removed the confirmation round trip; Phoenix announces what it is
+about to play instead. `take_command()` now returns "" rather than raising, so
+the other legacy callers degrade instead of killing the processor.
+
+_Lesson:_ Code moved from a single-process design into a multi-process one keeps
+compiling and stops making sense. Any call that waits for user input has to be
+re-examined when the input arrives somewhere else - and a method that can return
+None must never be called with a bare attribute access.
+
+_Related Files:_ Utils/limbs/action_utilities.py
+

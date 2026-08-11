@@ -124,6 +124,10 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         )
         self.console = Console(theme=self.theme)
 
+        # Mirrors the processor's wake gate, updated from [VOICE_STATE] traces.
+        # Display only - the processor owns the real state.
+        self._awake = False
+
         self.speech_worker = GlobalSpeechWorker()
         self.speech_worker.start()
 
@@ -154,7 +158,12 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         if AppConfig.current_mode == "text":
             pass  # Keep it at whatever text was typed by user
         elif self._current_status != "Processing...":
-            self._set_status("Listening...")
+            # Dormant means Phoenix is hearing but not answering. Show it, or
+            # the user has no way to tell that state from a broken mic.
+            if getattr(self, "_awake", False):
+                self._set_status("Listening (follow-up)...")
+            else:
+                self._set_status(f"Listening - say '{AppConfig.wake_words[0]}'...")
 
     def _set_status(self, status: str):
         with self._ui_lock:
@@ -174,6 +183,20 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             sys.stdout.write("\r\033[2K")
             sys.stdout.flush()
             self.console.print(Text(f"  -> {label}", style="dim cyan"))
+            self._render_status()
+
+    def log_fatal(self, detail):
+        """Surface a dead subprocess. Silence here reads as a hang, not a crash."""
+        with self._ui_lock:
+            sys.stdout.write("\r\033[2K")
+            sys.stdout.flush()
+            self.console.print(
+                Text(f"  [!] Voice processor stopped: {detail}", style="bold red")
+            )
+            self.console.print(
+                Text("      Details in bg_voice_processor.log", style="dim")
+            )
+            self._current_status = "Voice processor stopped - restart Phoenix"
             self._render_status()
 
     def log_chat(self, speaker, message, is_ignored=False):
@@ -297,6 +320,16 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
 
                     if source == "voice_processor" and event_type == "log":
                         clean = message.strip()
+
+                        # Checked before the noise filter: if the processor dies
+                        # there is nothing left to consume the audio queue, and
+                        # every later trace stops arriving. Without this the TUI
+                        # sits on its last status forever and the failure looks
+                        # like a hang instead of a crash.
+                        if clean.startswith("[FATAL]"):
+                            self.log_fatal(clean.removeprefix("[FATAL]").strip())
+                            continue
+
                         if (
                             not clean
                             or "DEBUG" in clean
@@ -313,6 +346,13 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                                 self._set_status("Processing...")
                             elif state == "interrupt":
                                 self._set_status("Interrupted - listening...")
+                            elif state == "awake":
+                                # Follow-ups need no wake word until this expires.
+                                self._awake = True
+                                self._set_idle_status()
+                            elif state == "dormant":
+                                self._awake = False
+                                self._set_idle_status()
                             elif state == "detected":
                                 pass
                             continue
@@ -338,6 +378,11 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                         if clean.startswith("[STT]"):
                             if AppConfig.show_routing:
                                 self.log_route(clean.removeprefix("[STT]").strip())
+                            continue
+
+                        if clean.startswith("[GATE]"):
+                            if AppConfig.show_routing:
+                                self.log_route(clean.removeprefix("[GATE]").strip())
                             continue
 
                         # The listener goes back to "listening" the moment it

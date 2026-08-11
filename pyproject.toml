@@ -18,6 +18,14 @@ dependencies = [
     "faster-whisper>=1.0.0",
     "webrtcvad>=2.0.10",
     "numpy>=1.26.0",
+    # Phonetic matching for the Hinglish/song lexicon (Utils/limbs/lexicon.py)
+    "rapidfuzz>=3.0.0",
+    # Speaker verification (Utils/limbs/speaker_id.py). Optional at runtime -
+    # speaker_id fails open if it is missing.
+    # WARNING: `pip install resemblyzer` also pulls the `typing` BACKPORT, which
+    # shadows the standard library on Python 3.10+ and breaks unrelated imports.
+    # Uninstall it right after: `pip uninstall -y typing`.
+    "resemblyzer>=0.1.4",
     
     # GUI and System
     "PyQt5==5.15.11",

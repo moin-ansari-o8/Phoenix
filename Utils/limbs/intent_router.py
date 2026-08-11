@@ -15,11 +15,15 @@ question can legitimately need a local tool ("what is the time"). Routing is
 decided by where the answer lives, and whether it mutates state.
 """
 
+import logging
 import re
 from dataclasses import dataclass
 from typing import Optional
 
 from Utils.limbs import tool_registry
+from Utils.ai_manager import is_unknown
+
+logger = logging.getLogger("IntentRouter")
 
 
 @dataclass
@@ -584,5 +588,52 @@ class IntentRouter:
                 memory = f"{memory}\n\nEarlier exchanges that mention this:\n{recalled}"
         text = self.ai_manager.compose_answer(query, soul, context, memory, evidence)
 
+        if is_unknown(text):
+            text = self._handle_unknown(query, soul, context, memory, had_evidence=bool(evidence))
+
         self._remember(query, text)
         return RouteResult(source="ai", spoken=text, tool=choice["name"])
+
+    def _handle_unknown(self, query, soul, context, memory, had_evidence):
+        """
+        The answer model declined. Look it up rather than giving up.
+
+        "I don't know" is honest but useless when the answer is one search away,
+        so a decline escalates to the web first and only becomes a spoken "I
+        don't know" when that also comes back empty. Escalating is skipped when
+        the model was already working from web evidence -- searching again would
+        just fetch the same page and decline again, slower.
+        """
+        # Imported locally to match route() above, which does the same. A
+        # module-level AppConfig here would be shadowed inside route() by its
+        # own local import and raise UnboundLocalError -- see the 2026-08-12
+        # entry in .github/mistakes.md.
+        from core.config import AppConfig
+
+        if had_evidence or not AppConfig.web.get("enabled", True):
+            self._emit_trace("unknown", "no answer, not escalating")
+            return "I don't know that one, sir."
+
+        self._emit_trace("unknown", "escalating to web search")
+        try:
+            result = tool_registry.dispatch(
+                "search_web",
+                {"query": query},
+                assistant=self.assistant,
+                original_query=query,
+                remember_store=self.remember_store,
+            )
+            evidence = result.get("evidence") or None
+        except Exception as exc:
+            logger.warning("Escalated search failed: %s", exc)
+            evidence = None
+
+        if not evidence:
+            return "I don't know that one, sir."
+
+        text = self.ai_manager.compose_answer(query, soul, context, memory, evidence)
+        if is_unknown(text):
+            # The search ran and the model still could not answer from it. Say
+            # so plainly instead of reading out whatever it hedged with.
+            return "I looked it up and still couldn't find a clear answer, sir."
+        return text

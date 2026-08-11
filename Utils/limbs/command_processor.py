@@ -8,6 +8,15 @@ import re
 import random
 import os
 
+from core.config import AppConfig
+from Utils.limbs.wake_gate import WakeGate
+from Utils.limbs.confirm_gate import ConfirmationGate
+
+# Whisper renders the wake word inconsistently. These are the misspellings
+# observed in ChatLog.json; they are aliases of a wake word, not wake words the
+# user would ever configure, so they live here rather than in config.json.
+PHONETIC_VARIANTS = ("phoenim", "phonix", "phoneix", "fenix", "pheonix", "phinix")
+
 
 class PhoenixAssistant:
     """Intent matcher and action executor for voice commands"""
@@ -55,8 +64,26 @@ class PhoenixAssistant:
         self.cls_print = True
         self.reload = False
         self.last_tag_response = ""
-        
-        from core.config import AppConfig
+
+        # Wake-word stripper: configured words plus their known mis-transcriptions.
+        # Used for its strip_wake() only - the dormant/awake state machine lives
+        # in the voice processor, which owns the single source of that state.
+        self._stripper = WakeGate(
+            wake_words=list(AppConfig.wake_words) + list(PHONETIC_VARIANTS)
+        )
+
+        self.confirm_gate = ConfirmationGate(
+            enabled=bool(getattr(AppConfig, "confirm_destructive", True)),
+            timeout_seconds=float(
+                getattr(AppConfig, "confirm_timeout_seconds", 30)
+            ),
+        )
+
+        # NOTE: do not re-import AppConfig inside this function. A function-local
+        # `from core.config import AppConfig` anywhere in the body makes the name
+        # local for the WHOLE body, so the reference above would raise
+        # UnboundLocalError before the import line is ever reached. It is
+        # imported at module level; that is enough.
         from Utils.ai_manager import AIDecisionMaker
         from Utils.limbs.intent_router import IntentRouter
         from Utils.limbs.memory_manager import (
@@ -87,8 +114,6 @@ class PhoenixAssistant:
 
     def _trace_route(self, label: str):
         """Surface the routing decision, IGRS-style, if the TUI supports it."""
-        from core.config import AppConfig
-
         if not getattr(AppConfig, "show_routing", False):
             return
         tui = getattr(getattr(self.utility, "speech_engine", None), "tui", None)
@@ -96,6 +121,19 @@ class PhoenixAssistant:
             tui.log_route(label)
 
     def _execute_action(self, tag, query):
+        # Irreversible actions are parked for a spoken confirmation instead of
+        # running. The input path is a microphone in a room, and shutD() ends
+        # the session for every unsaved file on the machine.
+        if self.confirm_gate.needs_confirmation(tag):
+            question = self.confirm_gate.arm(tag, query)
+            self._trace_route(f"confirm required: {tag}")
+            self.speak(question)
+            return
+
+        self._execute_action_now(tag, query)
+
+    def _execute_action_now(self, tag, query):
+        """Run an action, bypassing the confirmation gate. Not a command entry point."""
         common_tags = {
             self.utility.handle_time_based_greeting: (
                 "morning",
@@ -323,6 +361,21 @@ class PhoenixAssistant:
 
         query_main = self.remove_phoenix_except_folder(sent)
         query = self.remove_phoenix_except_folder(sent)
+
+        # A pending "should I go ahead?" owns this turn. Checked before routing,
+        # because "yes" must never be interpreted as a fresh command.
+        if self.confirm_gate.is_armed:
+            outcome, tag, pending_query, spoken = self.confirm_gate.resolve(query)
+            if outcome == "confirmed":
+                self._trace_route(f"confirmed: {tag}")
+                self._execute_action_now(tag, pending_query)
+                return True
+            if spoken:
+                self.speak(spoken)
+                return True
+            # Neither yes nor no: the gate has disarmed itself and the
+            # utterance falls through to be handled as an ordinary command.
+            self._trace_route(f"cancelled: {tag}")
         keywords = ["open", "launch", "start"]
         for keyword in keywords:
             if keyword in query and "restart" not in query:
@@ -366,16 +419,21 @@ class PhoenixAssistant:
 
     def remove_phoenix_except_folder(self, sent):
         """
-        Remove Phoenix wake-word variants except when used as 'phoenix folder'.
+        Remove wake-word variants, except where the word names a thing
+        ("open phoenix folder").
+
+        The voice path already strips the wake word in WakeGate before routing,
+        so this is a no-op there. It still matters for text mode, where
+        main.py feeds keyboard input straight into main().
+
+        The previous implementation was broken twice over: the alias list was
+        hardcoded to "phoenix" (so the igris profile's wake words were never
+        stripped and got routed as part of the query), and its word-boundary
+        guards were written `(?<!\\w)` inside a raw f-string, which compiles to
+        a lookbehind for a literal backslash followed by 'w' - a condition that
+        is essentially always true, so no boundary was enforced at all.
         """
-        aliases_pattern = r"phoenix|phoenim|phonix|phoneix|fenix|pheonix"
-        sent = re.sub(
-            rf"(?<!\\w)({aliases_pattern})(?! folder)(?!\\w)",
-            "",
-            sent,
-            flags=re.IGNORECASE,
-        ).strip()
-        return sent
+        return self._stripper.strip_wake(sent)
 
     def speak(self, text, speed=174):
         self.utility.speak(text, speed)
