@@ -80,6 +80,28 @@ data/song_stats.json
 data/speaker_profile.npz
 data/voice_enroll/
 
+# Generated project-structure dumps. The "folder structure generate" action
+# walks a whole drive and writes the tree here; two of these are already in
+# git history at 46 MB EACH, which is most of why .git is 710 MB.
+data/folder_details/
+
+# Model weights of every flavour. None of these belong in a git repo - they
+# are downloaded artefacts, and a single one can exceed GitHub's 100 MB
+# hard limit and make a push fail outright.
+*.bin
+*.pt
+*.pth
+*.gguf
+*.safetensors
+*.tflite
+
+# Archives
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+
 # Experiments
 trials/
-*.zip
