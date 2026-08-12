@@ -220,6 +220,90 @@ def test_offline_evidence_is_used_before_refusing(monkeypatch):
         AppConfig.web["enabled"] = original
 
 
+# -------------------------------------------- settled vs volatile, while ONLINE
+
+
+def _online_dispatch(monkeypatch, query, local_answer):
+    """
+    Run search_web with the web ENABLED, recording whether it went out.
+
+    Returns (source, network_calls) where source is "local" or "web".
+    """
+    from core.config import AppConfig
+    from Utils.limbs import tool_registry as tr
+    import Utils.limbs.web_search as ws
+
+    calls = []
+
+    def fake_fetch(q, **kwargs):
+        calls.append(q)
+        return "WEB_RESULT"
+
+    monkeypatch.setattr(ws, "gather_context", fake_fetch)
+    monkeypatch.setattr(ws, "wiki_summary", fake_fetch)
+    monkeypatch.setattr(tr, "_offline_evidence", lambda topic: local_answer)
+    monkeypatch.setitem(AppConfig.web, "enabled", True)
+
+    result = tr.dispatch("search_web", {"query": query}, original_query=query)
+    evidence = result.get("evidence") or ""
+    return ("web" if evidence == "WEB_RESULT" else "local"), calls
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "who was mahatma gandhi",
+        "what is photosynthesis",
+        "ada lovelace",
+        "how far is the moon",
+    ],
+)
+def test_settled_facts_come_from_the_archive_even_when_online(query, monkeypatch):
+    """~3 ms and free, against a multi-second round trip for a fact that
+    has not changed since the archive was built."""
+    source, calls = _online_dispatch(monkeypatch, query, "A local encyclopedia answer.")
+    assert source == "local", f"{query!r} went to the web"
+    assert calls == [], f"{query!r} touched the network: {calls}"
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "who is the current prime minister of india",
+        "what is the price of bitcoin",
+        "latest python version",
+        "what is the population of france",
+    ],
+)
+def test_volatile_facts_never_come_from_the_archive(query, monkeypatch):
+    """
+    The archive is a dated snapshot. Answering "who is the current prime
+    minister" from it would be confident and wrong - exactly the failure the
+    volatility check exists to prevent.
+    """
+    source, calls = _online_dispatch(monkeypatch, query, "A STALE local answer.")
+    assert source == "web", f"{query!r} was answered from the dated archive"
+    assert calls, f"{query!r} did not reach the network"
+
+
+def test_archive_miss_falls_through_to_the_web(monkeypatch):
+    """A settled fact the archive lacks must still get answered."""
+    source, calls = _online_dispatch(monkeypatch, "who was mahatma gandhi", None)
+    assert source == "web"
+    assert calls
+
+
+def test_the_preference_can_be_turned_off(monkeypatch):
+    from core.config import AppConfig
+
+    monkeypatch.setattr(AppConfig, "prefer_offline_encyclopedia", False)
+    source, calls = _online_dispatch(
+        monkeypatch, "who was mahatma gandhi", "A local answer."
+    )
+    assert source == "web", "prefer_offline_encyclopedia: false was ignored"
+    assert calls
+
+
 # ------------------------------------------------------------- with archive
 
 

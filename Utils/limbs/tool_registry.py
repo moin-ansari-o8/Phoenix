@@ -497,6 +497,22 @@ def dispatch(name, args, assistant=None, original_query="", remember_store=None)
         if not web_allowed():
             return _refuse_web(query)
 
+        # Settled facts come from the local archive; changing ones do not.
+        #
+        # needs_fresh_data() already draws exactly this line, and it is the
+        # only line that matters here: the ZIM is a dated snapshot, so using it
+        # for "who is the current prime minister" would answer confidently and
+        # wrongly - the precise failure the whole volatility check exists to
+        # prevent. For "who was Gandhi" it is ~3 ms and free against a
+        # multi-second round trip, and a missing article falls straight through
+        # to the web, so the worst case is what happened before.
+        if getattr(AppConfig, "prefer_offline_encyclopedia", True) and not (
+            needs_fresh_data(query) or needs_fresh_data(original_query)
+        ):
+            local = _offline_evidence(query)
+            if local:
+                return _result("evidence", evidence=local)
+
         from Utils.limbs.web_search import gather_context
 
         evidence = gather_context(

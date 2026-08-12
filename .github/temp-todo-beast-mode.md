@@ -374,6 +374,27 @@ the paragraph approach fixes for free. Each is now a regression test.
 
 Measured end-to-end with `web.enabled: false`: **2-21 ms** per lookup.
 
+**The archive is used while ONLINE too, and the line is drawn by volatility.** As first
+written it was only consulted from `_refuse_web`, so with working wifi the 468 MB sat
+unused - and `prefer_offline_encyclopedia` guarded the `lookup_encyclopedia` branch, which
+the router never selects (that tool is deliberately not exposed to it; see the NOTE above
+the schemas). The live path is `search_web`, which now splits on `needs_fresh_data()`:
+
+```
+LOCAL   62.7 ms  who was mahatma gandhi
+LOCAL    2.0 ms  what is photosynthesis
+LOCAL    1.0 ms  ada lovelace
+WEB              who is the current prime minister of india
+WEB              what is the price of bitcoin
+WEB              latest python version
+```
+
+Only those three reached the network. The volatility check is the right line and it
+already existed: the ZIM is a dated snapshot, so answering "who is the current prime
+minister" from it would be confident and wrong - the exact failure `needs_fresh_data`
+was written to prevent. A settled fact the archive lacks falls through to the web, so the
+worst case is the old behaviour.
+
 ### (original note) [todo-B3]
 For the offline case, the honest answer to "what is the population of France" is "I don't
 know current figures offline". But a large amount of what `search_web` is used for is
