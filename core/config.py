@@ -116,10 +116,23 @@ class AppConfig:
             "min_duration_s": 0.8,
         }
     }
-    # base.en, not small.en: Whisper pads every input to a 30s mel window, so
-    # encoder cost barely depends on how long the utterance actually is.
-    # Measured on this machine for a 3s command: base.en 0.74s vs small.en
-    # 2.36s, for identical output on the test phrase.
+    # "base", NOT "base.en". The .en checkpoints are trained on English audio
+    # only, so they have no Hindi/Gujarati acoustics whatsoever - "sahiba" came
+    # out as "saiva saum", which is too far gone for the lexicon to repair (it
+    # resolved to "slim shady" at 44% confidence). Hotwords cannot conjure
+    # phonemes the encoder never learned.
+    #
+    # Measured on this machine, 7.4s of English audio, and the multilingual
+    # model is FASTER as well as broader:
+    #     base.en  beam 1  1.23s (rtf 0.165)   beam 5  1.41s, output degraded
+    #     base     beam 1  0.98s (rtf 0.133)   beam 5  1.08s, output clean
+    # language stays "en": commands are English and the song titles are
+    # romanised, so English decoding with Hindi acoustics is what is wanted.
+    #
+    # beam_size 5 rather than 1: hotword bias only really bites when there are
+    # alternatives to re-rank, and it costs 0.10s. base.en actually got WORSE
+    # at beam 5 (lost capitalisation and punctuation); the multilingual model
+    # did not.
     # Mirrors the ai_manager block of config.json. AIDecisionMaker used to open
     # and parse config.json itself, making two independent readers of the same
     # file that could disagree - and its path was relative, so it sometimes read

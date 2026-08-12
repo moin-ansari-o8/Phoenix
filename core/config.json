@@ -99,9 +99,9 @@
     "max_chunk_age_seconds": 12
   },
   "stt": {
-    "model": "base.en",
+    "model": "base",
     "device": "auto",
-    "beam_size": 1,
+    "beam_size": 5,
     "max_no_speech_prob": 0.6,
     "min_avg_logprob": -1.2
   },
