@@ -12,8 +12,19 @@ import logging
 from datetime import datetime
 import psutil
 
+# This file is launched as a SCRIPT (`python core/launch_phoenix.py`), so
+# sys.path[0] is core/, not the repo root - `import core.x` therefore fails.
+# It never needed a path fix before, because it only called
+# logging.basicConfig(); the moment it imported anything from the package it
+# did, and the failure is total: the launcher dies on import, so no queue
+# server, no listener and no processor ever start. The TUI then sits on
+# "Listening..." forever with nothing behind it.
+_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT_DIR not in sys.path:
+    sys.path.insert(0, _ROOT_DIR)
+
 # Setup logging (file only - console has clean TUI output)
-from core.logging_setup import setup_logging
+from core.logging_setup import setup_logging  # noqa: E402
 
 logger = setup_logging("launcher")
 

@@ -323,3 +323,25 @@ None must never be called with a bare attribute access.
 
 _Related Files:_ Utils/limbs/action_utilities.py
 
+
+## 2026-08-12 - A logging import killed the entire voice subtree
+_Problem:_ `core/launch_phoenix.py` gained `from core.logging_setup import setup_logging`
+during the logging unification. That file had never needed a sys.path fix, because
+`logging.basicConfig()` imports nothing from the package. Run as a script, `python
+core/launch_phoenix.py` puts `core/` on sys.path -- not the repo root -- so the import
+raised ModuleNotFoundError at line 16 and the launcher died instantly. No queue server,
+no listener, no processor. The TUI starts independently and starts fine, so it sat on
+"Listening - say 'phoenix'..." forever with nothing behind it. It looked like the wake
+word was broken; nothing was wrong with the wake word.
+_Solution:_ Put the repo root on sys.path before the first package import, and added
+`tests/test_entrypoints.py`, which imports every launched script in a subprocess with
+sys.path[0] set to the script's own directory - the condition that actually holds in
+production - plus a static guard on import ordering.
+_Lesson:_ Adding an import to a script is not a free change. A file launched by path has
+a different sys.path from the same file imported by a test, and EVERY existing test
+imported these modules with the repo root already present, so all 147 passed while the
+assistant was completely dead. Test entry points the way they are actually started.
+A second lesson: the symptom pointed at the most recently changed *feature* (the wake
+gate), and the cause was in the *plumbing* of an unrelated refactor. The 0-byte
+`logs/phoenix_processor.log` was the real clue - a process that never logs never ran.
+_Related Files:_ core/launch_phoenix.py, core/logging_setup.py, tests/test_entrypoints.py

@@ -105,7 +105,7 @@ testpaths = ["tests"]
 # Only files that pytest should collect. The standalone suites are driven
 # through tests/test_suites.py as subprocesses, not collected directly - see
 # that module for why sharing an interpreter between them is unsafe.
-python_files = ["test_suites.py", "test_units.py", "test_theme.py", "test_sentence_stream.py", "test_trace.py", "test_action_registry.py", "test_offline_wiki.py"]
+python_files = ["test_suites.py", "test_units.py", "test_theme.py", "test_sentence_stream.py", "test_trace.py", "test_action_registry.py", "test_offline_wiki.py", "test_entrypoints.py"]
 markers = [
     "slow: needs a live Ollama server (deselect with '-m \"not slow\"')",
 ]
