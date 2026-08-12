@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import threading
@@ -24,6 +25,9 @@ os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 # Keep helper-level console output quiet unless explicitly enabled.
 CONSOLE_VERBOSE = os.environ.get("PHOENIX_CONSOLE_VERBOSE", "0") == "1"
+
+
+_logger = logging.getLogger("SpeechEngine")
 
 
 def _console_print(*args, force=False, **kwargs):
@@ -476,6 +480,22 @@ class SpeechEngine:
                     _console_print(
                         f"[WARN] Error closing speaking window: {e}", force=True
                     )
+
+        if not speak_success and not self._interrupted:
+            # Never fail silently. "Phoenix wrote it but did not say it" was
+            # indistinguishable from "Phoenix chose not to answer", and the
+            # only way to tell them apart was to read the source. A failed
+            # utterance is now in the log with the text that was lost.
+            _logger.warning(
+                "Speech FAILED (engine=%s, voice=%s): %r",
+                "edge" if self.use_edge_tts else "sapi5",
+                self.voice_name or "default",
+                (audio or "")[:80],
+            )
+            _console_print(
+                "[WARN] Phoenix could not speak that line - see logs/", force=True
+            )
+
         return speak_success
 
     @property

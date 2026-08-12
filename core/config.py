@@ -90,6 +90,12 @@ class AppConfig:
         # addressed. Refreshed on every answered turn; expiring returns it to
         # dormant, where it transcribes but does not respond.
         "followup_window_seconds": 30,
+        # Audio older than this is dropped instead of transcribed. The loop is
+        # single-threaded, so a noisy room (or Phoenix's own music coming back
+        # through the mic) builds a backlog and answers arrive half a minute
+        # late. Answering a stale question is worse than dropping it. 0 = never
+        # drop.
+        "max_chunk_age_seconds": 12,
     }
     # Speaker verification. A convenience filter, NOT a security control - a
     # recording of the owner passes it. See Utils/limbs/speaker_id.py.

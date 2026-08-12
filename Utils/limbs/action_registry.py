@@ -41,6 +41,20 @@ from typing import Any, Callable
 # inspection alone cannot tell what to pass.
 FLAG_ACTIONS = frozenset({"maximize", "minimize"})
 
+# Actions that start audio Phoenix does not control and cannot predict the end
+# of - a YouTube tab, a local player. The microphone hears all of it.
+#
+# The echo gate only covers Phoenix's OWN speech: it knows the window in which
+# TTS is playing and drops mic frames inside it. Music has no such window, so
+# the listener transcribes it, and while the follow-up window is open every
+# mangled lyric is treated as a command. A real session searched the web for
+# "waalakhua, ari waalakhua" and spent 21 seconds transcribing a chorus.
+#
+# So starting media returns Phoenix to dormant. Say the wake word again to talk
+# over the music - which is the right interaction anyway, because ambient audio
+# during playback is almost never addressed to it.
+MEDIA_ACTIONS = frozenset({"playsong", "suggestsong", "searchyoutube", "play-game"})
+
 
 def required_positional(fn: Callable) -> int:
     """

@@ -90,6 +90,7 @@ class VoiceProcessor:
         self.chunks_processed = 0
         self.errors_count = 0
         self.transcriptions_count = 0
+        self.chunks_dropped = 0
 
         # Wake word / follow-up state. A deadline, not a flag - see wake_gate.py
         # for why the previous boolean could never turn itself off.
@@ -672,11 +673,24 @@ class VoiceProcessor:
                 matched = result is not False
                 self._runtime_trace("INTENT", "matched" if matched else "no match")
 
+                # Starting media beats everything else. Phoenix has just filled
+                # the room with audio it does not control and cannot see the end
+                # of, and the mic hears all of it - the echo gate only covers
+                # Phoenix's own speech. Staying awake means every mangled lyric
+                # becomes a follow-up command; a real session searched the web
+                # for "waalakhua, ari waalakhua" and burned 21s transcribing a
+                # chorus. Say the wake word again to talk over the music.
+                if self.phoenix_assistant.started_media:
+                    self.phoenix_assistant.started_media = False
+                    self.wake_gate.sleep()
+                    self._runtime_trace(
+                        "GATE", "media started - dormant until the wake word"
+                    )
                 # An explicit wake word is unambiguous intent, so it always
                 # earns the window even if routing found nothing. A follow-up
                 # only earns it by succeeding, so a room full of conversation
                 # cannot keep Phoenix awake indefinitely.
-                if decision.trigger == "wake" or matched:
+                elif decision.trigger == "wake" or matched:
                     self.wake_gate.refresh()
                 else:
                     self.wake_gate.sleep()
@@ -698,6 +712,43 @@ class VoiceProcessor:
             logger.error(f"Error processing chunk: {e}", exc_info=True)
             listening()
 
+    def _is_stale(self, chunk) -> bool:
+        """
+        Skip audio that has been waiting too long to still be worth answering.
+
+        This loop is single-threaded: one Whisper pass at a time. When the room
+        is noisy - and most of all when Phoenix has just played a song through
+        the speakers, which the mic hears - utterances arrive faster than they
+        can be transcribed and the queue becomes a backlog.
+
+        Observed in a real session: transcription times climbing to 21.0s,
+        20.2s, 18.9s while the processor ground through lyrics. Your actual
+        question sits behind all of it, so the reply arrives half a minute late
+        and over the music, which reads as "sometimes it speaks, sometimes it
+        doesn't".
+
+        Answering a question from 30 seconds ago is worse than not answering
+        it: the moment has passed and the reply lands on top of whatever is
+        happening now. So old audio is dropped, newest-first, and the drop is
+        traced rather than silent.
+        """
+        max_age = float(AppConfig.audio.get("max_chunk_age_seconds", 12))
+        if max_age <= 0:
+            return False
+
+        age = time.time() - getattr(chunk, "timestamp", time.time())
+        if age <= max_age:
+            return False
+
+        self.chunks_dropped += 1
+        logger.info(
+            "Dropped stale chunk: %.1fs old (%.1fs of audio), queue is behind",
+            age,
+            getattr(chunk, "duration", 0.0),
+        )
+        self._runtime_trace("STALE", f"dropped audio {age:.0f}s old - queue behind")
+        return True
+
     def main_loop(self):
         """Main processing loop - receives and processes chunks"""
         logger.info("Starting main processing loop...")
@@ -714,6 +765,8 @@ class VoiceProcessor:
 
                 if chunk is not None:
                     consecutive_empty_count = 0
+                    if self._is_stale(chunk):
+                        continue
                     self.process_audio_chunk(chunk)
                     was_awake = self.wake_gate.is_awake
                 else:

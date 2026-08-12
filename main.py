@@ -249,6 +249,14 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
         #   speaker     speaker-verification score (see speaker_id.py)
         #   repaired    lexicon fixes, e.g. "phonix -> phoenix"
         #   song_rerank a second STT pass changed the chosen song
+        if kind == "stale":
+            # Visible on purpose: dropped audio is Phoenix admitting it fell
+            # behind, which is information. Silently discarding it would look
+            # like the mic had stopped working.
+            self.log_route(f"skipped: {text}")
+            self._set_idle_status()
+            return
+
         if kind in ("stt", "gate", "intent", "speaker", "repaired", "song_rerank"):
             if AppConfig.show_routing and text:
                 prefix = {

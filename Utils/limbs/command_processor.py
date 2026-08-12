@@ -11,7 +11,7 @@ import os
 from core.config import AppConfig
 from Utils.limbs.wake_gate import WakeGate
 from Utils.limbs.confirm_gate import ConfirmationGate
-from Utils.limbs.action_registry import call_action
+from Utils.limbs.action_registry import MEDIA_ACTIONS, call_action
 
 # Whisper renders the wake word inconsistently. These are the misspellings
 # observed in ChatLog.json; they are aliases of a wake word, not wake words the
@@ -72,6 +72,11 @@ class PhoenixAssistant:
         self._stripper = WakeGate(
             wake_words=list(AppConfig.wake_words) + list(PHONETIC_VARIANTS)
         )
+
+        # What the last turn actually ran, for callers that need to react to
+        # it. `started_media` is consumed (reset) by the reader.
+        self.last_action_tag = None
+        self.started_media = False
 
         self.confirm_gate = ConfirmationGate(
             enabled=bool(getattr(AppConfig, "confirm_destructive", True)),
@@ -135,6 +140,12 @@ class PhoenixAssistant:
 
     def _execute_action_now(self, tag, query):
         """Run an action, bypassing the confirmation gate. Not a command entry point."""
+        # Recorded so the caller can react to what was actually run - the voice
+        # processor uses it to go dormant after starting media. Set before the
+        # action runs, because play_song blocks for several seconds.
+        self.last_action_tag = tag
+        if tag in MEDIA_ACTIONS:
+            self.started_media = True
         common_tags = {
             self.utility.handle_time_based_greeting: (
                 "morning",

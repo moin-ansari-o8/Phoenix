@@ -153,6 +153,10 @@ class PhoenixRuntimeManager:
             return
         # Diagnostics. Listed explicitly so a new event type fails
         # tests/test_trace.py rather than disappearing without trace.
+        if kind == "stale":
+            self._print_feed(f"  -> skipped: {text}")
+            self._set_status("Listening...")
+            return
         if kind in ("stt", "gate", "speaker", "repaired", "song_rerank"):
             if text:
                 self._print_feed(f"  -> {kind}: {text}")

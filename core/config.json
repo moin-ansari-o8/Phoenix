@@ -95,7 +95,8 @@
     "barge_in": true,
     "input_device": null,
     "mic_silence_timeout_seconds": 20,
-    "followup_window_seconds": 30
+    "followup_window_seconds": 30,
+    "max_chunk_age_seconds": 12
   },
   "stt": {
     "model": "base.en",

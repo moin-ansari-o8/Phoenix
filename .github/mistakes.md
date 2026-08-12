@@ -345,3 +345,26 @@ A second lesson: the symptom pointed at the most recently changed *feature* (the
 gate), and the cause was in the *plumbing* of an unrelated refactor. The 0-byte
 `logs/phoenix_processor.log` was the real clue - a process that never logs never ran.
 _Related Files:_ core/launch_phoenix.py, core/logging_setup.py, tests/test_entrypoints.py
+
+## 2026-08-12 - Phoenix answered its own music
+_Problem:_ Phoenix played a song on YouTube; the microphone heard it through the speakers.
+The echo gate only covers Phoenix's OWN speech (it knows the window in which TTS is
+playing) so music was transcribed as user input, and because the follow-up window was open
+every mangled lyric became a command - a four-engine web search ran on "waalakhua, ari
+waalakhua". Worse, the processor loop is single-threaded, so it built a backlog: measured
+transcription times of 21.0s, 20.2s, 18.9s while it ground through the chorus. Real
+questions were answered half a minute late, over the music. To the user this read as
+"tools are broken" and "sometimes she speaks, sometimes she doesn't". Neither was true.
+_Solution:_ (1) starting media returns the wake gate to dormant, so ambient audio during
+playback cannot be a follow-up; (2) audio older than `max_chunk_age_seconds` (12) is
+dropped rather than transcribed, killing the backlog; (3) a failed utterance now logs a
+warning with the lost text instead of returning False silently.
+_Lesson:_ Two separate suspicions were wrong and cost time - the connectivity probe and
+barge-in were both blamed before the log was read properly, and both were fine (the
+listener had logged zero interrupts). The log said plainly what was happening: every
+transcription for three minutes was song lyrics. Read the whole log before theorising.
+Second lesson: a feature that emits audio into the room is not a normal action. Anything
+that starts uncontrolled sound has to tell the listener, because the echo gate cannot
+infer it.
+_Related Files:_ Utils/runners/voice_command_processor.py, Utils/limbs/action_registry.py,
+Utils/limbs/command_processor.py, Utils/limbs/assistant_io.py, tests/test_backlog.py
