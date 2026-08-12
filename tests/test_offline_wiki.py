@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from Utils.limbs.offline_wiki import (  # noqa: E402
     OfflineWiki,
     _first_sentences,
+    _is_prose,
     _strip_html,
     get_wiki,
 )
@@ -75,6 +76,89 @@ def test_first_sentences_falls_back_to_a_word_boundary():
     got = _first_sentences(text, 50)
     assert len(got) <= 50
     assert not got.endswith("wor")
+
+
+# ------------------------------------------------ found by the real archive
+# Every case below was a live defect, not a hypothetical. The unit tests above
+# all passed while Phoenix would have read a CSS stylesheet aloud.
+
+
+def test_style_block_contents_are_removed():
+    """
+    The first thing the real archive produced for "Mahatma Gandhi" was
+    ".mw-parser-output .infobox-subbox{padding:0;border:none...}" - Wikipedia
+    ships per-article CSS inline, so stripping tags alone leaves the rules as
+    text. This is the normal case, not an edge one.
+    """
+    html = (
+        "<style>/* start */ .mw-parser-output .infobox{padding:0;border:none}"
+        "@media screen{html.night{background:#1f1f23}}</style>"
+        "<p>Gandhi was a leader of Indian nationalism.</p>"
+    )
+    got = _strip_html(html)
+    assert "mw-parser-output" not in got
+    assert "padding" not in got
+    assert "{" not in got and "}" not in got
+    assert "Gandhi was a leader" in got
+
+
+def test_script_contents_are_removed():
+    got = _strip_html("<script>var x = 1; alert('hi');</script><p>Real text.</p>")
+    assert "alert" not in got and "var x" not in got
+    assert "Real text." in got
+
+
+def test_licence_footer_is_not_prose():
+    """Short articles ran straight into the CC footer and would have spoken it."""
+    assert not _is_prose(
+        "This article is issued from Wikipedia. The text is available under "
+        "Creative Commons Attribution-Share Alike 4.0 unless otherwise noted."
+    )
+
+
+@pytest.mark.parametrize(
+    "hatnote",
+    [
+        "This article is about Earth's moon. For moons in general, see Natural satellite.",
+        "For other uses, see Python. This page is a disambiguation listing.",
+        "Not to be confused with something else entirely and other similar things.",
+    ],
+)
+def test_hatnotes_are_not_prose(hatnote):
+    assert not _is_prose(hatnote)
+
+
+def test_infobox_fragments_are_not_prose():
+    """
+    An infobox flattens to capitalised fragments with no verbs. "India" used to
+    begin "Flag State Emblem Motto: ... Anthem:" and the Moon began "Apparent
+    magnitude -2.5 to -12.9".
+    """
+    assert not _is_prose(
+        "Flag State Emblem Motto: Truth Alone Triumphs Anthem: Thou Art the "
+        "Ruler Capital New Delhi Currency Rupee Area 3287263 km2"
+    )
+    assert not _is_prose(
+        "Apparent magnitude -2.5 to -12.9 Angular diameter 29.3 to 34.1 "
+        "arcminutes Surface pressure 2.25 torr Orbital period 27.3 days"
+    )
+
+
+def test_real_sentences_are_prose():
+    assert _is_prose(
+        "The Moon, also known as Luna, is Earth's only natural satellite and "
+        "is usually visible in the night sky at some point during the month."
+    )
+    assert _is_prose(
+        "Ada Lovelace was an English mathematician and writer who is known as "
+        "the first computer programmer in the history of the field."
+    )
+
+
+def test_very_short_text_is_not_prose():
+    """A stub sounds like an answer while carrying no information."""
+    assert not _is_prose("A city.")
+    assert not _is_prose("")
 
 
 # --------------------------------------------------------------- no archive
@@ -158,12 +242,29 @@ def test_real_lookup_by_title():
 
 
 @needs_archive
-@pytest.mark.parametrize("topic", ["India", "Python (programming language)", "Moon"])
-def test_real_lookups(topic):
+@pytest.mark.parametrize(
+    "topic,must_contain",
+    [
+        ("India", "India"),
+        ("Moon", "Moon"),
+        ("Ada Lovelace", "Lovelace"),
+        ("Albert Einstein", "Einstein"),
+        ("Python (programming language)", "Python"),
+    ],
+)
+def test_real_lookups_are_speakable(topic, must_contain):
+    """
+    Each of these was broken against the real archive in a different way:
+    India and Moon opened with infobox fragments, Ada Lovelace lost her own
+    name to the title de-duplication and ran into the licence footer, and
+    Python opened with a hatnote.
+    """
     got = get_wiki().summary(topic)
-    assert isinstance(got, str)
-    if got:
-        assert "<" not in got
+    assert got, f"no article for {topic}"
+    assert must_contain.lower() in got.lower(), "the subject is missing"
+    for artefact in ("<", "{", "}", "mw-parser-output", "Creative Commons"):
+        assert artefact not in got, f"{artefact!r} leaked into spoken text"
+    assert _is_prose(got)
 
 
 @needs_archive

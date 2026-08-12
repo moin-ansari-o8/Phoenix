@@ -63,20 +63,58 @@ def test_gate_reads_config():
     check("disabled -> False", tool_registry.web_allowed(), False)
 
 
+def blocked_ok(kind, spoken):
+    """
+    A blocked lookup may end two legitimate ways, and which one depends on
+    whether an offline archive happens to be installed:
+
+      "direct"   + a refusal notice        - nothing local to say
+      "evidence" + text from data/zim/*    - answered from the local archive
+
+    Both are correct. The thing that must NEVER happen is reaching the network,
+    which the tripwire turns into "NETWORK_TOUCHED", or quietly answering from
+    the model's training data, which would return "direct" with no notice.
+    """
+    if kind == "evidence":
+        return True
+    return kind == "direct" and spoken in (
+        tool_registry.OFFLINE_NOTICE,
+        tool_registry.NO_NETWORK_NOTICE,
+    )
+
+
 def test_search_web_blocked():
-    print("\n[2] search_web refuses instead of fetching")
+    print("\n[2] search_web answers locally or refuses - never fetches")
     AppConfig.web["enabled"] = False
     kind, spoken = call("search_web", {"query": "population of france"})
-    check("does not reach the network", kind, "direct")
-    check("says so out loud", spoken, tool_registry.OFFLINE_NOTICE)
+    check("does not reach the network", kind != "NETWORK_TOUCHED", True)
+    check("refuses or answers from the local archive", blocked_ok(kind, spoken), True)
 
 
 def test_encyclopedia_blocked():
-    print("\n[3] lookup_encyclopedia refuses instead of fetching")
+    print("\n[3] lookup_encyclopedia answers locally or refuses")
     AppConfig.web["enabled"] = False
     kind, spoken = call("lookup_encyclopedia", {"topic": "ada lovelace"})
-    check("does not reach the network", kind, "direct")
-    check("says so out loud", spoken, tool_registry.OFFLINE_NOTICE)
+    check("does not reach the network", kind != "NETWORK_TOUCHED", True)
+    check("refuses or answers from the local archive", blocked_ok(kind, spoken), True)
+
+
+def test_refusal_without_an_archive():
+    """With no local archive there is nothing to fall back on - it must refuse."""
+    print("\n[3b] with the archive stubbed out, a refusal is still a refusal")
+    AppConfig.web["enabled"] = False
+    original = tool_registry._offline_evidence
+    try:
+        tool_registry._offline_evidence = lambda topic: None
+        kind, spoken = call("search_web", {"query": "population of france"})
+        check("refuses", kind, "direct")
+        check(
+            "says so out loud",
+            spoken in (tool_registry.OFFLINE_NOTICE, tool_registry.NO_NETWORK_NOTICE),
+            True,
+        )
+    finally:
+        tool_registry._offline_evidence = original
 
 
 def test_fresh_data_upgrade_blocked():
@@ -89,11 +127,11 @@ def test_fresh_data_upgrade_blocked():
           tool_registry.needs_fresh_data(query), True)
 
     kind, spoken = call("answer_directly", {"answer": ""}, query=query)
-    check("does not reach the network", kind, "direct")
+    check("does not reach the network", kind != "NETWORK_TOUCHED", True)
     check(
-        "refuses rather than answering from stale training data",
-        spoken,
-        tool_registry.OFFLINE_NOTICE,
+        "never answers a time-sensitive question from stale training data",
+        blocked_ok(kind, spoken),
+        True,
     )
 
 
@@ -117,6 +155,7 @@ if __name__ == "__main__":
         test_gate_reads_config()
         test_search_web_blocked()
         test_encyclopedia_blocked()
+        test_refusal_without_an_archive()
         test_fresh_data_upgrade_blocked()
         test_device_queries_unaffected()
     finally:

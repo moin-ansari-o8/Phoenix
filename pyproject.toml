@@ -56,6 +56,9 @@ dependencies = [
     "ddgs>=9.0.0",
     "trafilatura>=2.0.0",
     "wikipedia>=1.4.0",
+    # Offline encyclopedia (Utils/limbs/offline_wiki.py). Optional at runtime -
+    # with no data/zim/*.zim archive Phoenix simply has no local lookup.
+    "libzim>=3.4.0",
     "pytube>=15.0.0",
 
     # TUI

@@ -334,7 +334,47 @@ real-machine testing (too slow, occasionally glitchy). The removal work now live
 revised [todo-A5]. Nothing else in this plan depends on Piper except [todo-D3], which was
 retargeted rather than cancelled (D-4).
 
-### [todo-B3] Local knowledge fallback instead of a web search
+### ~~[todo-B3]~~ Offline encyclopedia — **DONE 2026-08-12**
+
+`Utils/limbs/offline_wiki.py`, reading a Kiwix ZIM from `data/zim/`. Title lookup first
+(faster and far more accurate than relevance ranking), full-text search as fallback,
+redirects followed, markup and `[1]`/`[edit]` markers stripped - what comes back is prose
+meant to be spoken, so nothing may reach the speech engine as HTML.
+
+Wired into `tool_registry` in two places:
+- before refusing a blocked lookup, so being offline stops being a dead end for settled facts
+- before the web for `lookup_encyclopedia` (`prefer_offline_encyclopedia`, default true),
+  since a disk read beats a network round trip and a missing article falls straight
+  through - worst case is exactly the old behaviour
+
+Archive chosen: **`wikipedia_en_simple_all_mini`, ~450 MB**. It holds lead paragraphs, and
+a voice assistant speaks one or two sentences - downloading 3.2 GB of full text and images
+to read out thirty words of it is mostly wasted disk. Swap in `_nopic` (940 MB, full text)
+by dropping it in the same directory; the largest archive present wins.
+
+A missing or corrupt archive is never an error - it just means no local lookup.
+
+**Verified against the real 468.6 MB archive (394,552 articles), and it found four bugs
+that every unit test had passed straight through:**
+
+1. **Phoenix would have read a CSS stylesheet aloud.** The first thing the archive
+   returned for "Mahatma Gandhi" was `.mw-parser-output .infobox-subbox{padding:0;
+   border:none...}`. Stripping tags leaves the *contents* of `<style>` as text, and
+   Wikipedia ships per-article CSS inline - so this was the normal case, not an edge one.
+2. **Infoboxes read as a list of disconnected nouns** - "India" began "Flag State Emblem
+   Motto: ... Anthem:", the Moon began "Apparent magnitude -2.5 to -12.9".
+3. **Short articles ran into the Creative Commons footer** and would have spoken it.
+4. **Hatnotes** - "This article is about Earth's moon. For moons in general, see..."
+
+Fixed by extracting the first real `<p>` rather than flattening the page and slicing, with
+an `_is_prose` check that rejects hatnotes, boilerplate, and infobox residue (a table has
+almost no function words, so the connective-word ratio separates it from a sentence).
+A first attempt at de-duplicating the repeated title also ate Ada Lovelace's name, which
+the paragraph approach fixes for free. Each is now a regression test.
+
+Measured end-to-end with `web.enabled: false`: **2-21 ms** per lookup.
+
+### (original note) [todo-B3]
 For the offline case, the honest answer to "what is the population of France" is "I don't
 know current figures offline". But a large amount of what `search_web` is used for is
 *encyclopedic*, not volatile. Options, cheapest first:
@@ -421,7 +461,38 @@ tree used (apps / browser / desktop / information / input / media / personal / s
 windows). Recover the deleted tree from git history if it is useful as a layout
 reference, but treat it as a sketch, not a source.
 
-### [todo-C4] The `action_map` should be data, not a 100-line dict duplicated in two files
+### ~~[todo-C4]~~ Action dispatch as data — **DONE 2026-08-12**
+
+`Utils/limbs/action_registry.py`. Arity now comes from `inspect.signature` on the callable
+about to be invoked, so it cannot disagree with itself. The four hand-written tag lists in
+`_execute_action` are gone.
+
+**Those lists had been hiding four completely broken actions.** The audit spotted
+`"type_text"` (not a tag - the real one is `"type"`) and a duplicated `"setTimer"`;
+introspecting every entry found the true damage:
+
+| tag | needs | dispatch sent |
+|---|---|---|
+| `type` | query | nothing |
+| `press` | query | nothing |
+| `addsong` | query | nothing |
+| `play-game` | query | nothing |
+
+Each raised `TypeError` on **every** invocation, which the handler caught and reported as
+"Sorry, I encountered an error performing that action." Nothing crashed and nothing was
+logged as a defect, so "type hello world" had simply never worked. `"open"`, `"select"`,
+`"forward"` and `"backward"` also had dispatch arms for tags that are not in `action_map`
+at all - dead branches.
+
+`tests/test_action_registry.py` builds the real `action_map` and asserts every entry can
+be called with what dispatch would send, plus a guard that fails if a hand-written arity
+list ever reappears.
+
+**Deliberately NOT done:** generating `CONTROL_ACTIONS` from `action_map`. That list is
+the enum the router sees, and widening it from 41 to 64 tags would change routing accuracy
+- a behaviour change that needs a live test session, not a refactor.
+
+### (original note) [todo-C4]
 `command_processor._execute_action` has a 100-entry dict of lambdas, and
 `tool_registry.CONTROL_ACTIONS` has a **hand-maintained list of the same tags**, and
 `core/intents.md` documents them **again** in a markdown table. Three sources of truth
@@ -956,8 +1027,7 @@ about to delete) → C4 → C3
 **Phase 5 — speed** — ✅ **COMPLETE 2026-08-12**
 D3 done, D2 done, D4 measured and rejected (SAPI5 synthesis is ~0.15 s; nothing to cache).
 
-**Phase 6 — offline knowledge**
-B3 (Kiwix/ZIM Wikipedia)
+**Phase 6 — offline knowledge** — ✅ **COMPLETE 2026-08-12**
 
 **Sequencing note:** A1+A2 has no dependencies and is the change the user will feel most
 (today Phoenix answers every sentence in the room). It is a good first commit. C7 is

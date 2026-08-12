@@ -50,6 +50,19 @@ ZIM_DIR = os.path.join(_BASE, "data", "zim")
 logger = logging.getLogger("OfflineWiki")
 
 # Markup and artefacts that must never reach the speech engine.
+#
+# Elements whose CONTENT is not prose. Stripping tags alone is not enough:
+# a <style> block's body survives as text, and the first thing Phoenix said
+# about Mahatma Gandhi was ".mw-parser-output .infobox-subbox{padding:0;
+# border:none...}" read aloud. Wikipedia ships per-article CSS inline, so this
+# is the normal case, not an edge one.
+_DROP_ELEMENT = re.compile(
+    r"<(style|script|sup|table)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL
+)
+# Infoboxes and navigation boxes are tables of fragments - "Born 2 October 1869
+# Porbandar" - which read as a list of disconnected nouns.
+_CSS_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
+_CSS_RULE = re.compile(r"[.#@][\w-]+[^{}]*\{[^{}]*\}")
 _TAG = re.compile(r"<[^>]+>")
 _REFERENCE = re.compile(r"\[\d+\]|\[edit\]|\[citation needed\]", re.IGNORECASE)
 _WHITESPACE = re.compile(r"\s+")
@@ -58,7 +71,12 @@ _PRONUNCIATION = re.compile(r"\((?:[^()]*[/ˈːɡɑ][^()]*)\)")
 
 
 def _strip_html(html: str) -> str:
-    text = _TAG.sub(" ", html or "")
+    text = html or ""
+    # Content-bearing junk first, while the element boundaries still exist.
+    text = _DROP_ELEMENT.sub(" ", text)
+    text = _CSS_COMMENT.sub(" ", text)
+    text = _CSS_RULE.sub(" ", text)
+    text = _TAG.sub(" ", text)
     for entity, char in (
         ("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
         ("&quot;", '"'), ("&#39;", "'"), ("&apos;", "'"),
@@ -67,6 +85,54 @@ def _strip_html(html: str) -> str:
     text = _REFERENCE.sub("", text)
     text = _PRONUNCIATION.sub("", text)
     return _WHITESPACE.sub(" ", text).strip()
+
+
+_PARAGRAPH = re.compile(r"<p\b[^>]*>(.*?)</p>", re.IGNORECASE | re.DOTALL)
+
+# Text that is on the page but is not about the subject.
+_BOILERPLATE = re.compile(
+    r"This article is issued from Wikipedia.*|"
+    r"The text is available under Creative Commons.*|"
+    r"Additional terms may apply.*",
+    re.IGNORECASE | re.DOTALL,
+)
+# Hatnotes: "This article is about Earth's moon. For moons in general, see ..."
+_HATNOTE = re.compile(
+    r"^\s*(this article is about|for other uses|for the .{0,40}, see|not to be "
+    r"confused with|see also)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_prose(text: str) -> bool:
+    """
+    Is this a paragraph a person would want read aloud?
+
+    Rejects hatnotes, licence boilerplate, and infobox residue. The last is the
+    interesting one: an infobox flattens to many short capitalised fragments
+    with few verbs, so a paragraph with almost no lowercase connective words is
+    a table, not a sentence.
+    """
+    if not text or len(text) < 60:
+        return False
+    if _HATNOTE.match(text):
+        return False
+    if _BOILERPLATE.match(text.strip()):
+        return False
+    # A real sentence contains function words. "Flag State Emblem Motto Anthem"
+    # does not.
+    words = text.split()
+    if len(words) < 8:
+        return False
+    connectives = sum(
+        1
+        for w in words
+        if w.lower().strip(".,;:()\"'")
+        in {"the", "a", "an", "of", "is", "was", "are", "were", "in", "on",
+            "and", "to", "for", "with", "that", "which", "as", "by", "it",
+            "he", "she", "they", "has", "have", "had", "from", "at", "its"}
+    )
+    return connectives / len(words) >= 0.12
 
 
 def _first_sentences(text: str, max_chars: int) -> str:
@@ -150,7 +216,24 @@ class OfflineWiki:
             raw = bytes(item.content).decode("utf-8", errors="replace")
         except Exception:
             return ""
-        return _first_sentences(_strip_html(raw), max_chars)
+
+        # Take the first real PARAGRAPH, not the first N characters of the
+        # cleaned page. Flattening the whole document and slicing produced, in
+        # order: the title twice (it is also an <h1>), then the infobox read as
+        # a list of fragments - "Flag State Emblem Motto: ... Anthem:" for
+        # India, "Apparent magnitude -2.5 to -12.9" for the Moon - and for
+        # short articles the Creative Commons footer. A <p> is the unit that
+        # actually corresponds to prose.
+        for block in _PARAGRAPH.findall(raw):
+            candidate = _strip_html(block)
+            if _is_prose(candidate):
+                return _first_sentences(candidate, max_chars)
+
+        # No usable paragraph: fall back to the flattened page, minus the
+        # boilerplate, so a differently-built ZIM still yields something.
+        text = _BOILERPLATE.sub(" ", _strip_html(raw))
+        text = _WHITESPACE.sub(" ", text).strip()
+        return _first_sentences(text, max_chars) if _is_prose(text) else ""
 
     def _by_title(self, topic: str):
         archive = self.archive
