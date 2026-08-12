@@ -53,6 +53,12 @@ test_*_output.*
 !assets/sound/*.wav
 !assets/sound/*.mp3
 
+# Offline Wikipedia archives. Hundreds of MB to tens of GB; download
+# separately from https://download.kiwix.org/zim/wikipedia/ - see
+# Utils/limbs/offline_wiki.py.
+data/zim/
+*.zim
+
 # Large models - download separately, never commit.
 # voice/ held Piper .onnx voices. Piper was dropped 2026-08-12 in favour of
 # SAPI5; the directory is unused and can be deleted to reclaim ~121 MB.

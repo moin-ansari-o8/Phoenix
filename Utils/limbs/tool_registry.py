@@ -381,14 +381,40 @@ OFFLINE_NOTICE = "I can't look that up right now - web access is turned off."
 NO_NETWORK_NOTICE = "I can't look that up - I'm not connected to the internet."
 
 
+def _offline_evidence(topic: str):
+    """
+    Try the local encyclopedia before admitting defeat.
+
+    Most of what search_web was used for is encyclopedic rather than volatile,
+    and that does not need a network - it needs a local copy. Returns evidence
+    or None; a missing archive is simply None.
+    """
+    try:
+        from Utils.limbs.offline_wiki import get_wiki
+
+        text = get_wiki().summary(topic)
+    except Exception as exc:
+        logging.debug(f"[tool_registry] offline wiki unavailable: {exc}")
+        return None
+    if text:
+        logging.info(f"[tool_registry] answered {topic!r} from the offline archive")
+    return text or None
+
+
 def _refuse_web(query: str):
     """
-    Uniform refusal for a blocked network lookup.
+    A blocked network lookup: answer locally if we can, otherwise say so.
 
     "You switched the web off" and "there is no wifi" are different facts and
-    lead to different user actions, so they get different sentences.
+    lead to different user actions, so they get different sentences. Neither is
+    ever a fall-through to answering from training data - that is the failure
+    this whole path exists to prevent.
     """
     from Utils.limbs.connectivity import network_allowed
+
+    evidence = _offline_evidence(query)
+    if evidence:
+        return _result("evidence", evidence=evidence)
 
     _, why = network_allowed(reason=True)
     spoken = NO_NETWORK_NOTICE if why == "no network detected" else OFFLINE_NOTICE
@@ -515,6 +541,16 @@ def dispatch(name, args, assistant=None, original_query="", remember_store=None)
                 "skipping encyclopedia lookup"
             )
             return _result("direct")
+
+        # Local archive first when one is installed. Encyclopedic facts do not
+        # go stale on a useful timescale, a disk read beats a network round
+        # trip, and if the archive has no article this falls straight through
+        # to the web - so the worst case is exactly the old behaviour.
+        # Set prefer_offline_encyclopedia: false to always go online first.
+        if getattr(AppConfig, "prefer_offline_encyclopedia", True):
+            local = _offline_evidence(topic)
+            if local:
+                return _result("evidence", evidence=local)
 
         evidence = wiki_summary(topic)
         if not evidence:

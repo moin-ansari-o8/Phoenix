@@ -129,6 +129,11 @@ class AppConfig:
     # Speak each sentence as the model writes it, instead of waiting for the
     # whole answer. Measured: first word at ~0.8 s instead of ~4.9 s.
     stream_answers = True
+    # Consult data/zim/*.zim before the web for encyclopedic lookups. Faster,
+    # works with no network, and falls through to the web when the archive has
+    # no article - so the worst case is the old behaviour. See
+    # Utils/limbs/offline_wiki.py.
+    prefer_offline_encyclopedia = True
     stt = {
         "model": "base.en",
         "device": "auto",  # "auto" | "cpu" | "cuda"
@@ -183,6 +188,11 @@ class AppConfig:
             )
             cls.stream_answers = bool(
                 data.get("stream_answers", cls.stream_answers)
+            )
+            cls.prefer_offline_encyclopedia = bool(
+                data.get(
+                    "prefer_offline_encyclopedia", cls.prefer_offline_encyclopedia
+                )
             )
 
             # An offline assistant must not be one config typo away from a

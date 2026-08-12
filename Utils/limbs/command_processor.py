@@ -11,6 +11,7 @@ import os
 from core.config import AppConfig
 from Utils.limbs.wake_gate import WakeGate
 from Utils.limbs.confirm_gate import ConfirmationGate
+from Utils.limbs.action_registry import call_action
 
 # Whisper renders the wake word inconsistently. These are the misspellings
 # observed in ChatLog.json; they are aliases of a wake word, not wake words the
@@ -245,32 +246,13 @@ class PhoenixAssistant:
         }
         if tag in action_map:
             try:
-                if tag in [
-                    "adjustVolume",
-                    "adjustBrightness",
-                    "changetab",
-                    "playsong",
-                    "playpause",
-                    "type_text",
-                    "setTimer",
-                    "openelse",
-                    "setTimer",
-                    "setAlarm",
-                    "setReminder",
-                    "movewind",
-                    "switchdesk",
-                    "weather",
-                    "greet-to",
-                ]:
-                    action_map[tag](query)
-                elif tag in ["maximize", "minimize"]:
-                    action_map[tag](True)
-                elif tag in ["open", "close", "select"]:
-                    action_map[tag](query, self.tag_response)
-                elif tag in ["forward", "backward"]:
-                    action_map[tag](tag, query)
-                else:
-                    action_map[tag]()
+                # Arguments come from the callable's own signature. The four
+                # hand-written tag lists that used to live here had drifted from
+                # action_map: "type", "press", "addsong" and "play-game" all
+                # require a query and were being called with none, so every one
+                # of them raised TypeError and reported a generic failure.
+                # See Utils/limbs/action_registry.py.
+                call_action(action_map[tag], tag, query, self.tag_response)
             except Exception as e:
                 error_msg = f"Error executing action '{tag}': {e}"
                 print(error_msg)

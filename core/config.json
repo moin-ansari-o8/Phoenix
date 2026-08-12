@@ -14,6 +14,7 @@
   "confirm_destructive": true,
   "confirm_timeout_seconds": 30,
   "stream_answers": true,
+  "prefer_offline_encyclopedia": true,
   "show_routing": true,
   "ui": {
     "theme": "auto"
