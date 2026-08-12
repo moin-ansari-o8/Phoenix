@@ -173,6 +173,32 @@ class SpeechEngine:
         idx = max(0, min(self._fallback_voice_index, len(voices) - 1))
         return voices[idx].id, voices[idx].name
 
+    # -- process-wide instance ------------------------------------------------
+
+    _instance = None
+    _instance_lock = threading.Lock()
+
+    @classmethod
+    def shared(cls):
+        """
+        The one SpeechEngine for this process.
+
+        Constructing this is not free - a COM init plus a SAPI voice
+        enumeration - and more importantly two engines in one process can talk
+        over each other, since only the queue server's speaking window
+        coordinates them. `PhoenixRuntimeManager.__init__` built one that
+        `AdvancedTUIManager` then replaced with a proxy, so the TUI process was
+        paying for an engine it never spoke through.
+
+        Safe to share across threads: the SAPI handle itself is per-thread
+        (see _get_sapi_engine), only the configuration is shared.
+        """
+        if cls._instance is None:
+            with cls._instance_lock:
+                if cls._instance is None:
+                    cls._instance = cls()
+        return cls._instance
+
     def _manage_honorifics(self):
         self.honorifics = False
         sleep(30)

@@ -51,7 +51,10 @@ class PhoenixRuntimeManager:
         try:
             from Utils.limbs.assistant_io import SpeechEngine
 
-            self.shared_speech_engine = SpeechEngine()
+            # One per process. AdvancedTUIManager replaces this reference
+            # with a proxy, so building a second engine here was paying for
+            # a COM init and a voice enumeration nothing ever spoke through.
+            self.shared_speech_engine = SpeechEngine.shared()
         except Exception:
             # Services can still self-initialize speech engines if shared init fails.
             self.shared_speech_engine = None
@@ -108,6 +111,53 @@ class PhoenixRuntimeManager:
             print(line, flush=True)
             self._render_status()
 
+    def _handle_trace_event(self, event):
+        """Render a structured trace in the plain (non-rich) fallback UI."""
+        kind = event.get("event", "")
+        text = (event.get("text") or "").strip()
+
+        if kind == "fatal":
+            self._print_feed(f"[!] Voice processor stopped: {text}")
+            self._set_status("Voice processor stopped - restart Phoenix")
+            return
+        if kind == "voice_state":
+            state = text.lower()
+            self._set_status(
+                {
+                    "listening": "Listening...",
+                    "detected": "Voice detected...",
+                    "processing": "Processing...",
+                    "awake": "Listening (follow-up)...",
+                    "dormant": "Listening - say the wake word...",
+                }.get(state, "Listening...")
+            )
+            return
+        if kind == "heard":
+            if text and text != "<empty>":
+                self._print_feed(f"You: {text}")
+            self._set_status("Listening...")
+            return
+        if kind == "ignored_heard":
+            if text and text != "<empty>":
+                self._print_feed(f"heard: {text}")
+            self._set_status("Listening...")
+            return
+        if kind == "processing":
+            self._set_status("Processing...")
+            return
+        if kind == "intent":
+            self._set_status("Listening...")
+            return
+        if kind in ("discarded", "self_echo"):
+            self._set_status("Listening...")
+            return
+        # Diagnostics. Listed explicitly so a new event type fails
+        # tests/test_trace.py rather than disappearing without trace.
+        if kind in ("stt", "gate", "speaker", "repaired", "song_rerank"):
+            if text:
+                self._print_feed(f"  -> {kind}: {text}")
+            return
+
     def _is_banner_or_noise(self, line: str) -> bool:
         # Startup chatter from the child processes. These used to be matched by
         # their emoji prefix; assistant_io now emits [INFO]/[WARN] per the
@@ -133,6 +183,17 @@ class PhoenixRuntimeManager:
 
     def _handle_voice_log(self, line: str):
         clean = line.strip()
+
+        # Structured traces first - see core/trace.py. This fallback formatter
+        # (used when the TUI subclass is not driving) previously carried its
+        # own copy of the tag parser, which drifted out of sync with main.py's.
+        from core.trace import parse as parse_trace
+
+        event = parse_trace(clean)
+        if event is not None:
+            self._handle_trace_event(event)
+            return
+
         if self._is_banner_or_noise(clean):
             return
 

@@ -12,6 +12,7 @@ from rich.text import Text
 from rich.theme import Theme
 
 from core.config import AppConfig
+from core.trace import parse as parse_trace
 
 from Utils.runners.manager import RuntimeConfig, PhoenixRuntimeManager
 from Utils.runners.battery_monitor import BatteryMonitorConfig
@@ -42,7 +43,7 @@ class GlobalSpeechWorker(threading.Thread):
             pass
 
         try:
-            self.engine = SpeechEngine()
+            self.engine = SpeechEngine.shared()
         except Exception:
             return
 
@@ -184,6 +185,85 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
             sys.stdout.flush()
             self.console.print(Text(f"  -> {label}", style="route"))
             self._render_status()
+
+    def _handle_trace(self, event):
+        """
+        Render one structured trace from the voice processor.
+
+        One dispatch table, one place. The old design string-matched tags in
+        two files that then drifted apart - manager.py was still matching emoji
+        prefixes that no longer existed, so it had quietly stopped working.
+        """
+        kind = event.get("event", "")
+        text = (event.get("text") or "").strip()
+
+        if kind == "fatal":
+            self.log_fatal(text)
+            return
+
+        if kind == "voice_state":
+            state = text.lower()
+            if state == "listening":
+                self._set_idle_status()
+            elif state == "processing":
+                self._set_status("Processing...")
+            elif state == "interrupt":
+                self._set_status("Interrupted - listening...")
+            elif state == "awake":
+                self._awake = True
+                self._set_idle_status()
+            elif state == "dormant":
+                self._awake = False
+                self._set_idle_status()
+            return
+
+        if kind == "heard":
+            if text and text != "<empty>":
+                self.log_chat("You", text)
+            self._set_idle_status()
+            return
+
+        if kind == "ignored_heard":
+            if text and text != "<empty>":
+                self.log_chat("You", text, is_ignored=True)
+            self._set_idle_status()
+            return
+
+        if kind in ("discarded", "self_echo"):
+            # Audio the pipeline captured but deliberately did not act on.
+            # Shown so that silence stays visibly silent, rather than Whisper's
+            # invented "Thank you." looking like real user input.
+            if AppConfig.show_routing and text:
+                label = "self-voice ignored" if kind == "self_echo" else "discarded"
+                self.log_route(f"{label}: {text}")
+            self._set_idle_status()
+            return
+
+        # Diagnostics. All render the same way - a dim "-> ..." line under
+        # show_routing - but they are listed explicitly rather than caught by a
+        # fallback, so a new event type fails the test in tests/test_trace.py
+        # instead of vanishing silently, which is how the old parsers rotted.
+        #   stt         transcription timing
+        #   gate        how long the follow-up window has left
+        #   intent      whether routing matched
+        #   speaker     speaker-verification score (see speaker_id.py)
+        #   repaired    lexicon fixes, e.g. "phonix -> phoenix"
+        #   song_rerank a second STT pass changed the chosen song
+        if kind in ("stt", "gate", "intent", "speaker", "repaired", "song_rerank"):
+            if AppConfig.show_routing and text:
+                prefix = {
+                    "repaired": "repaired: ",
+                    "song_rerank": "song: ",
+                    "speaker": "speaker: ",
+                }.get(kind, "")
+                self.log_route(f"{prefix}{text}")
+            if kind == "intent":
+                self._set_idle_status()
+            return
+
+        if kind == "processing":
+            self._set_status("Thinking...")
+            return
 
     def log_fatal(self, detail):
         """Surface a dead subprocess. Silence here reads as a hang, not a crash."""
@@ -336,11 +416,16 @@ class AdvancedTUIManager(PhoenixRuntimeManager):
                     if source == "voice_processor" and event_type == "log":
                         clean = message.strip()
 
-                        # Checked before the noise filter: if the processor dies
-                        # there is nothing left to consume the audio queue, and
-                        # every later trace stops arriving. Without this the TUI
-                        # sits on its last status forever and the failure looks
-                        # like a hang instead of a crash.
+                        # Structured traces first. A line either carries the
+                        # sentinel and is an event, or it is ordinary output -
+                        # there is no guessing, so a stray print() in 3,500
+                        # lines of action code can no longer be mistaken for
+                        # one. See core/trace.py.
+                        parsed = parse_trace(clean)
+                        if parsed is not None:
+                            self._handle_trace(parsed)
+                            continue
+
                         if clean.startswith("[FATAL]"):
                             self.log_fatal(clean.removeprefix("[FATAL]").strip())
                             continue

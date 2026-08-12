@@ -26,6 +26,7 @@ if _root_dir not in sys.path:
 # reached 2.2 MB of comtypes COM refcount chatter with the real tracebacks
 # buried in it. Set PHOENIX_LOG_LEVEL=DEBUG for a noisy run.
 from core.logging_setup import setup_logging
+from core.trace import emit as trace_emit
 
 logger = setup_logging("processor")
 
@@ -107,7 +108,7 @@ class VoiceProcessor:
         self.gui = VoiceAssistantGUI(self.root)
 
         # Initialize speech engine
-        self.speech_engine = SpeechEngine()
+        self.speech_engine = SpeechEngine.shared()
 
         # Initialize utilities (without VoiceRecognition - we handle transcription here)
         self.utility = Utility(spk=self.speech_engine, reco=None)
@@ -254,8 +255,15 @@ class VoiceProcessor:
         return self.wake_gate.find_wake(text) is not None
 
     def _runtime_trace(self, tag: str, message: str):
-        """Emit concise stdout trace lines that the runtime manager can forward."""
-        print(f"\n[{tag}] {message}", flush=True)
+        """
+        Emit one structured trace the TUI can parse without guessing.
+
+        Kept as a (tag, message) call so the ~14 call sites did not all have to
+        change; the wire format underneath is now JSON behind a sentinel, so a
+        stray print() elsewhere can no longer be mistaken for a trace. See
+        core/trace.py.
+        """
+        trace_emit(tag.lower(), text=message)
 
     def _announce_state(self, was_awake: bool):
         """
@@ -823,7 +831,7 @@ class ProcessManager:
             # later trace stops, and the last status ("Processing...") stays on
             # screen forever. A crash must not be able to masquerade as a hang.
             # One line, no traceback - the TUI drops multi-line noise.
-            print(f"\n[FATAL] {type(e).__name__}: {e}", flush=True)
+            trace_emit("fatal", text=f"{type(e).__name__}: {e}")
             sys.exit(1)
         finally:
             if self.processor:

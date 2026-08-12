@@ -122,7 +122,7 @@ class BatteryMonitorService:
             try:
                 from Utils.limbs.assistant_io import SpeechEngine
 
-                self.se = SpeechEngine()
+                self.se = SpeechEngine.shared()
             except Exception as e:
                 self._emit("error", {"message": f"speech engine init failed: {e}"})
         if self.config.initial_delay_seconds > 0:

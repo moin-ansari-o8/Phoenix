@@ -115,7 +115,7 @@ class TimeMonitorService:
             root.withdraw()
             gui = VoiceAssistantGUI(root)
             recognition = VoiceRecognition(gui)
-            speech = self.se or SpeechEngine()
+            speech = self.se or SpeechEngine.shared()
             self.se = speech
             utility = Utility(spk=speech, reco=recognition)
 

@@ -376,7 +376,15 @@ already takes a callable, so `audio_capture.py` needs **zero changes**.
 This is the single biggest structural win available. Keep `queue_manager.py`'s API shape
 so the migration is mechanical.
 
-### [todo-C2] One `SpeechEngine`, one speech queue, process-wide
+### ~~[todo-C2]~~ One `SpeechEngine` per process — **DONE 2026-08-12**
+`SpeechEngine.shared()`, a locked lazy singleton. `PhoenixRuntimeManager.__init__` built
+one that `AdvancedTUIManager` then replaced with a proxy, so the TUI process paid a COM
+init plus a SAPI voice enumeration - measured **306 ms** - for an engine it never spoke
+through. Safe to share across threads because the SAPI handle itself is already
+per-thread (see `_get_sapi_engine`); only the configuration is shared. The two remaining
+bare constructions are in `__main__` demo blocks, not live paths.
+
+### (original note) [todo-C2] One `SpeechEngine`, one speech queue, process-wide
 `main.py:GlobalSpeechWorker` already implements exactly the right pattern (a queue + one
 worker thread + blocking `speak()`), but only for the TUI process. `manager.py:__init__`
 constructs a *second* `SpeechEngine`, and the processor a *third*. Under C1 this collapses
@@ -436,7 +444,23 @@ explicitly. Keep a module-level `CONFIG` for convenience during migration. Add
 name not present in `ollama list`, `stt.model` not a valid whisper size, `echo_mode`
 not in `{gate, open}` (this last one is already done — extend the pattern).
 
-### [todo-C6] Structured trace events instead of `print("[TAG] msg")` parsed by regex
+### ~~[todo-C6]~~ Structured trace events — **DONE 2026-08-12**
+`core/trace.py`. Events are now `@@PHX@@{"event": "heard", "text": "..."}` - a line either
+carries the sentinel and is an event, or it is ordinary output. No guessing, so a stray
+`print()` in 3,500 lines of action code can no longer be mistaken for a UI event, and the
+"drop any line containing | or ---" heuristic is no longer load-bearing.
+
+Both parsers now share one dispatch shape, and `tests/test_trace.py` asserts that every
+event the processor emits is handled by **both** UIs. **That test immediately found three
+unhandled events** - `speaker`, `repaired` and `song_rerank`, from the parallel
+voice-upgrade work - which neither UI rendered at all. Exactly the drift C6 exists to
+prevent: `manager.py` had already been matching emoji prefixes that no longer existed.
+
+Most of the test file asserts the negative property, since that is the one that failed
+before: tracebacks, table rows, old-style `[TAG]` lines, bare JSON and a transcript
+containing the literal text `[VOICE_STATE]` must all parse as None.
+
+### (original note) [todo-C6] Structured trace events
 The TUI reads subprocess stdout and string-matches `[VOICE_STATE]`, `[HEARD]`,
 `[IGNORED_HEARD]`, `"Phoenix ["`, plus a heuristic filter that drops any line containing
 `"|"` or `"---"` (`main.py:298-306`). `manager.py:_handle_voice_log` has a *second,
