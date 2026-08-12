@@ -101,7 +101,69 @@ IDENTITY_ALIASES = {
     "whats my name": "whoiskaly",
 }
 
-EXACT_ALIASES = {**DEVICE_ALIASES, **IDENTITY_ALIASES}
+# Social formulae. Added 2026-08-12 from scripts/utilities/mine_aliases.py run
+# against the real data/ChatLog.json, which showed only 3% of actual utterances
+# resolving without a model call - far below the ~40% that tests/test_routing.py
+# suggests, because that file is device-command heavy while real use is mostly
+# conversational. Greetings and farewells were each costing a ~1.7 s model call
+# to produce a canned reply the model was not adding anything to.
+#
+# Kept deliberately narrow. An alias is a permanent claim that a phrase always
+# means one thing, so only fixed social formulae are here. Notably absent:
+# "it's amazing" (repeated twice in the log) - that is a comment about something
+# specific and deserves a real answer, not a stock reply.
+CONVERSATION_ALIASES = {
+    # greetings
+    "hi": "hi",
+    "hii": "hi",
+    "hello": "hi",
+    "hey": "hi",
+    "hi there": "hi",
+    "hello there": "hi",
+    "hey there": "hi",
+    "hi bro": "hi",
+    "hi there bro": "hi",
+    "hello bro": "hi",
+    "yo": "hi",
+    "good morning": "hi",
+    "good evening": "hi",
+    # presence checks - "are you there" wants an acknowledgement, not an essay
+    "are you there": "hi",
+    "you there": "hi",
+    "hello are you there": "hi",
+    "are you awake": "hi",
+    "are you listening": "hi",
+    # how are you
+    "how are you": "greetask",
+    "how are you doing": "greetask",
+    "hows it going": "greetask",
+    "how is it going": "greetask",
+    "whats up": "greetask",
+    "wassup": "greetask",
+    "sup": "greetask",
+    # thanks
+    "thank you": "youarewelcome",
+    "thanks": "youarewelcome",
+    "thank you so much": "youarewelcome",
+    "thanks a lot": "youarewelcome",
+    "thankyou": "youarewelcome",
+    # farewells
+    "thank you bye": "nicetalking",
+    "bye": "nicetalking",
+    "goodbye": "nicetalking",
+    "good bye": "nicetalking",
+    "see you": "nicetalking",
+    "see you later": "nicetalking",
+    "nice talking to you": "nicetalking",
+    # acknowledgements
+    "ok": "okay",
+    "okay": "okay",
+    "alright": "okay",
+    "got it": "okay",
+    "cool": "okay",
+}
+
+EXACT_ALIASES = {**DEVICE_ALIASES, **IDENTITY_ALIASES, **CONVERSATION_ALIASES}
 
 
 # --- Stage 0b: imperative command grammar ------------------------------------
@@ -586,13 +648,63 @@ class IntentRouter:
             recalled = self._recall_text(query)
             if recalled and recalled not in context:
                 memory = f"{memory}\n\nEarlier exchanges that mention this:\n{recalled}"
-        text = self.ai_manager.compose_answer(query, soul, context, memory, evidence)
+        text, already_spoken = self._answer(query, soul, context, memory, evidence)
 
-        if is_unknown(text):
+        if is_unknown(text) and not already_spoken:
             text = self._handle_unknown(query, soul, context, memory, had_evidence=bool(evidence))
 
         self._remember(query, text)
-        return RouteResult(source="ai", spoken=text, tool=choice["name"])
+        # spoken=None tells the caller it has already been said aloud, sentence
+        # by sentence, while the model was still writing the rest.
+        return RouteResult(
+            source="ai", spoken=None if already_spoken else text, tool=choice["name"]
+        )
+
+    def _answer(self, query, soul, context, memory, evidence):
+        """
+        Produce the spoken answer, streaming it when that is safe.
+
+        Returns (text, already_spoken).
+
+        **Streaming commits us.** Once the first sentence has been spoken there
+        is no taking it back, so `_handle_unknown`'s escalation to a web search
+        is only available while we are still silent. That is why `emit` below
+        refuses to speak a sentinel or a hedge: if the model declines, nothing
+        is voiced, `already_spoken` stays False, and the normal escalation path
+        runs exactly as it did before. A late hedge after two good sentences is
+        simply not spoken - far better than answering twice, which is what
+        escalating mid-stream would produce.
+        """
+        from core.config import AppConfig
+
+        streaming = bool(getattr(AppConfig, "stream_answers", True))
+        speaker = getattr(self.assistant, "speak", None)
+        if not streaming or speaker is None:
+            return self.ai_manager.compose_answer(
+                query, soul, context, memory, evidence
+            ), False
+
+        spoken_flag = {"any": False}
+
+        def emit(sentence):
+            spoken_flag["any"] = True
+            speaker(sentence)
+
+        try:
+            text = self.ai_manager.compose_answer_streaming(
+                query, soul, context, memory, evidence, on_sentence=emit
+            )
+        except Exception as exc:
+            logger.warning("Streaming answer failed (%s); using blocking path", exc)
+            if spoken_flag["any"]:
+                # Half an answer is out. Say nothing more rather than starting
+                # a second, different one.
+                return "", True
+            return self.ai_manager.compose_answer(
+                query, soul, context, memory, evidence
+            ), False
+
+        return text, spoken_flag["any"]
 
     def _handle_unknown(self, query, soul, context, memory, had_evidence):
         """

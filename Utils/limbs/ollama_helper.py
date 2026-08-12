@@ -72,6 +72,57 @@ class OllamaHelper:
         except Exception as e:
             return {"error": f"Unexpected error: {str(e)}"}
 
+    def chat_stream(self, messages, timeout=120, temperature=0.4,
+                    num_predict=None):
+        """
+        Yield content fragments as the model produces them.
+
+        Same request as chat() with stream=True. Ollama then returns one JSON
+        object per line rather than a single body, and the caller can start
+        speaking sentence one while sentence three is still being generated.
+
+        Yields str fragments. On failure it yields nothing and the caller
+        falls back to chat() - a stream that dies mid-answer must not leave the
+        user with half a sentence.
+        """
+        import json as _json
+
+        if not self._server_ready:
+            self._wait_for_ready()
+
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "stream": True,
+            "keep_alive": "30m",
+            "options": {"temperature": temperature},
+        }
+        if num_predict:
+            payload["options"]["num_predict"] = num_predict
+
+        with requests.post(
+            f"{self.ollama_url}/api/chat",
+            json=payload,
+            timeout=timeout,
+            stream=True,
+        ) as response:
+            if response.status_code != 200:
+                return
+            for line in response.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                try:
+                    chunk = _json.loads(line)
+                except ValueError:
+                    continue
+                if chunk.get("error"):
+                    return
+                fragment = (chunk.get("message") or {}).get("content") or ""
+                if fragment:
+                    yield fragment
+                if chunk.get("done"):
+                    return
+
     def _call_ollama(self, prompt, format_json=True, temperature=None,
                      num_predict=None, timeout=120):
         """

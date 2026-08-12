@@ -190,6 +190,69 @@ def test_settled_and_device_queries_do_not(query):
     assert tr.needs_fresh_data(query) is False
 
 
+# ---------------------------------------------------------------------------
+# The alias table. Every entry here is an utterance that never reaches the LLM,
+# so a broken entry is a silent 0 ms path to a missing response.
+# ---------------------------------------------------------------------------
+
+
+def _intents():
+    import json
+
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "intents.json")
+    with open(path, encoding="utf-8") as fh:
+        return {i["tag"]: i.get("responses", []) for i in json.load(fh)["intents"]}
+
+
+def test_every_alias_target_exists_and_speaks():
+    """
+    An alias pointing at a missing tag resolves instantly to nothing at all -
+    Phoenix goes silent with no error, which is worse than the slow path.
+    """
+    from Utils.limbs.intent_router import EXACT_ALIASES
+
+    responses = _intents()
+    for utterance, tag in EXACT_ALIASES.items():
+        if tag not in responses:
+            # Device/action tags execute rather than speak; they are dispatched
+            # through action_map instead of intents.json.
+            src = open(
+                os.path.join(
+                    os.path.dirname(__file__), "..", "Utils", "limbs",
+                    "command_processor.py",
+                ),
+                encoding="utf-8",
+            ).read()
+            assert f'"{tag}"' in src, (
+                f"alias {utterance!r} -> {tag!r} exists in neither intents.json "
+                f"nor the action map"
+            )
+
+
+def test_conversation_aliases_all_have_spoken_replies():
+    from Utils.limbs.intent_router import CONVERSATION_ALIASES
+
+    responses = _intents()
+    for utterance, tag in CONVERSATION_ALIASES.items():
+        assert responses.get(tag), f"{utterance!r} -> {tag!r} has no responses"
+        assert responses[tag][0].strip(), f"{tag!r} first response is blank"
+        # A response equal to its own tag is a placeholder, not a sentence.
+        assert responses[tag][0].strip() != tag, (
+            f"{tag!r} responds with its own tag name - that is a placeholder"
+        )
+
+
+def test_aliases_are_normalised():
+    """A key that normalize() would alter can never be matched."""
+    from Utils.limbs.intent_router import EXACT_ALIASES, normalize
+
+    for utterance in EXACT_ALIASES:
+        assert normalize(utterance) == utterance, (
+            f"alias key {utterance!r} normalises to {normalize(utterance)!r} "
+            f"and is therefore unreachable"
+        )
+
+
 def test_offline_notice_is_a_refusal_not_an_answer():
     """The refusal must not look like a successful lookup."""
     for notice in (tr.OFFLINE_NOTICE, tr.NO_NETWORK_NOTICE):

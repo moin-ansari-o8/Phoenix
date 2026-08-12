@@ -9,7 +9,9 @@
         "re start the finish",
         "re start phoenix"
       ],
-      "responses": ["Restarting phoenix."]
+      "responses": [
+        "Restarting phoenix."
+      ]
     },
     {
       "tag": "pcrestart",
@@ -19,7 +21,10 @@
         "re start the pc",
         "re start pc"
       ],
-      "responses": ["Restarting pc.", "Restarting the device."]
+      "responses": [
+        "Restarting pc.",
+        "Restarting the device."
+      ]
     },
     {
       "tag": "play-game",
@@ -31,7 +36,10 @@
         "start a game",
         "initiate a game"
       ],
-      "responses": ["Restarting pc.", "Restarting the device."]
+      "responses": [
+        "Restarting pc.",
+        "Restarting the device."
+      ]
     },
     {
       "tag": "hib-phnx",
@@ -54,7 +62,11 @@
     },
     {
       "tag": "open",
-      "patterns": [" open ", " launch ", " start "],
+      "patterns": [
+        " open ",
+        " launch ",
+        " start "
+      ],
       "entities": [
         "brave",
         "brave browser",
@@ -138,11 +150,17 @@
         "you tube",
         "youtube"
       ],
-      "responses": ["Launched", "Started", "Opened"]
+      "responses": [
+        "Launched",
+        "Started",
+        "Opened"
+      ]
     },
     {
       "tag": "close",
-      "patterns": ["close"],
+      "patterns": [
+        "close"
+      ],
       "entities": [
         "tab",
         "this tab",
@@ -168,12 +186,20 @@
         "this desktop",
         "desk"
       ],
-      "responses": ["Closing"]
+      "responses": [
+        "Closing"
+      ]
     },
     {
       "tag": "openelse",
-      "patterns": ["open", "launch", "start"],
-      "responses": ["openelse"]
+      "patterns": [
+        "open",
+        "launch",
+        "start"
+      ],
+      "responses": [
+        "openelse"
+      ]
     },
     {
       "tag": "weather",
@@ -187,7 +213,9 @@
         "tell me the forecast",
         "tell me the weather forecast"
       ],
-      "responses": ["weather"]
+      "responses": [
+        "weather"
+      ]
     },
     {
       "tag": "extra setup",
@@ -207,7 +235,9 @@
         "set up extra",
         "setup extra"
       ],
-      "responses": ["extra setup"]
+      "responses": [
+        "extra setup"
+      ]
     },
     {
       "tag": "study setup",
@@ -227,7 +257,9 @@
         "set up study",
         "setup study"
       ],
-      "responses": ["study setup"]
+      "responses": [
+        "study setup"
+      ]
     },
     {
       "tag": "alpha setup",
@@ -247,7 +279,9 @@
         "set up alpha",
         "setup alpha"
       ],
-      "responses": ["alpha setup"]
+      "responses": [
+        "alpha setup"
+      ]
     },
     {
       "tag": "trash setup",
@@ -267,7 +301,9 @@
         "set up trash",
         "setup trash"
       ],
-      "responses": ["trash setup"]
+      "responses": [
+        "trash setup"
+      ]
     },
     {
       "tag": "folder structure generate",
@@ -292,12 +328,21 @@
         "pin the current window",
         "pin current window"
       ],
-      "responses": ["pinwind"]
+      "responses": [
+        "pinwind"
+      ]
     },
     {
       "tag": "news",
-      "patterns": ["tell me the news", "latest news", "news update"],
-      "responses": ["Here are the latest headlines", "Today's top stories are"]
+      "patterns": [
+        "tell me the news",
+        "latest news",
+        "news update"
+      ],
+      "responses": [
+        "Here are the latest headlines",
+        "Today's top stories are"
+      ]
     },
     {
       "tag": "joke",
@@ -351,24 +396,34 @@
         "Why did the tomato blush? Because it saw the salad dressing!"
       ]
     },
-
     {
       "tag": "quote",
-      "patterns": ["give me a quote", "inspire me", "quote of the day"],
+      "patterns": [
+        "give me a quote",
+        "inspire me",
+        "quote of the day"
+      ],
       "responses": [
         "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
         "The best way to predict the future is to invent it. - Alan Kay"
       ]
     },
-
     {
       "tag": "knock-knock",
-      "patterns": ["knock knock"],
-      "responses": ["Who's there?"]
+      "patterns": [
+        "knock knock"
+      ],
+      "responses": [
+        "Who's there?"
+      ]
     },
     {
       "tag": "knockknockreply",
-      "patterns": ["Boo", "Lettuce", "Cow says"],
+      "patterns": [
+        "Boo",
+        "Lettuce",
+        "Cow says"
+      ],
       "responses": [
         "Boo who? Don't cry, it's just a joke!",
         "Lettuce who? Lettuce in, it's cold out here!",
@@ -382,9 +437,11 @@
         "Lettuce who? Lettuce in, it's cold out here!",
         "Cow says who? No, cow says moooo!"
       ],
-      "responses": ["<laugh> hahaha, funny one", "<laugh> hehehe nice one"]
+      "responses": [
+        "<laugh> hahaha, funny one",
+        "<laugh> hehehe nice one"
+      ]
     },
-
     {
       "tag": "movewind",
       "patterns": [
@@ -395,18 +452,40 @@
         "transfer the window to",
         "transfer current window to"
       ],
-      "entities": ["alpha", "study", "extra", "trash"],
-      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+      "entities": [
+        "alpha",
+        "study",
+        "extra",
+        "trash"
+      ],
+      "responses": [
+        "Alright, sir!",
+        "Okay, sir . ",
+        "I'm on it, sir . "
+      ]
     },
     {
       "tag": "screenshot",
-      "patterns": ["take screenshot", "take screen shot"],
-      "responses": ["taking screenshot"]
+      "patterns": [
+        "take screenshot",
+        "take screen shot"
+      ],
+      "responses": [
+        "taking screenshot"
+      ]
     },
     {
       "tag": "pcshutdown",
-      "patterns": ["shutdown PC", "shutdown the PC", "shut down the PC"],
-      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+      "patterns": [
+        "shutdown PC",
+        "shutdown the PC",
+        "shut down the PC"
+      ],
+      "responses": [
+        "Alright, sir!",
+        "Okay, sir . ",
+        "I'm on it, sir . "
+      ]
     },
     {
       "tag": "pchibernate",
@@ -417,12 +496,22 @@
         "hibernate mode on",
         "turn hibernate mode on"
       ],
-      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+      "responses": [
+        "Alright, sir!",
+        "Okay, sir . ",
+        "I'm on it, sir . "
+      ]
     },
     {
       "tag": "pcsleep",
-      "patterns": ["turn on sleep mode"],
-      "responses": ["Alright, sir!", "Okay, sir . ", "I'm on it, sir . "]
+      "patterns": [
+        "turn on sleep mode"
+      ],
+      "responses": [
+        "Alright, sir!",
+        "Okay, sir . ",
+        "I'm on it, sir . "
+      ]
     },
     {
       "tag": "switchdesk",
@@ -432,7 +521,9 @@
         "switch to extra",
         "switch to study"
       ],
-      "responses": ["switchdesk"]
+      "responses": [
+        "switchdesk"
+      ]
     },
     {
       "tag": "areuthere",
@@ -529,7 +620,9 @@
         "add a song to the playlist",
         "add song to the music library"
       ],
-      "responses": ["addsong"]
+      "responses": [
+        "addsong"
+      ]
     },
     {
       "tag": "playsong",
@@ -543,7 +636,9 @@
         "hit some music",
         "hit some random song"
       ],
-      "responses": ["randomsong"]
+      "responses": [
+        "randomsong"
+      ]
     },
     {
       "tag": "suggestsong",
@@ -553,7 +648,9 @@
         "suggest me a song",
         "suggest me some songs"
       ],
-      "responses": ["suggestsong"]
+      "responses": [
+        "suggestsong"
+      ]
     },
     {
       "tag": "viewsongs",
@@ -578,7 +675,9 @@
         "delete a song",
         "delete a song from the playlist"
       ],
-      "responses": ["dltsong"]
+      "responses": [
+        "dltsong"
+      ]
     },
     {
       "tag": "welcomeBack",
@@ -597,7 +696,12 @@
     },
     {
       "tag": "loveu",
-      "patterns": ["love you", "love u", "love you darling", "love u darling"],
+      "patterns": [
+        "love you",
+        "love u",
+        "love you darling",
+        "love u darling"
+      ],
       "responses": [
         "Love you too.",
         "But I hate you! <break time='500ms'/> Just kidding, sir, love you.",
@@ -719,8 +823,15 @@
     },
     {
       "tag": "isItSo",
-      "patterns": ["is it so", "ahan is it so"],
-      "responses": ["Yes, it is.", "Absolutely.", "Indeed it is."]
+      "patterns": [
+        "is it so",
+        "ahan is it so"
+      ],
+      "responses": [
+        "Yes, it is.",
+        "Absolutely.",
+        "Indeed it is."
+      ]
     },
     {
       "tag": "greetask",
@@ -777,8 +888,14 @@
     },
     {
       "tag": "greet-to",
-      "patterns": ["say hello to", "say hii to", "say hi to"],
-      "responses": ["greet-to"]
+      "patterns": [
+        "say hello to",
+        "say hii to",
+        "say hi to"
+      ],
+      "responses": [
+        "greet-to"
+      ]
     },
     {
       "tag": "greetell",
@@ -1235,8 +1352,13 @@
     },
     {
       "tag": "focus-phnx",
-      "patterns": ["where are you", "where r u"],
-      "responses": ["focus-phnx"]
+      "patterns": [
+        "where are you",
+        "where r u"
+      ],
+      "responses": [
+        "focus-phnx"
+      ]
     },
     {
       "tag": "reload-mainphoenix",
@@ -1252,7 +1374,9 @@
         "re start main phoenix",
         "re start main file"
       ],
-      "responses": ["Reloading main phoenix."]
+      "responses": [
+        "Reloading main phoenix."
+      ]
     },
     {
       "tag": "rude",
@@ -1274,12 +1398,22 @@
     },
     {
       "tag": "good-bye",
-      "patterns": ["goodbye", "good bye", "see you later"],
-      "responses": ["good-bye"]
+      "patterns": [
+        "goodbye",
+        "good bye",
+        "see you later"
+      ],
+      "responses": [
+        "good-bye"
+      ]
     },
     {
       "tag": "shutup",
-      "patterns": ["shut up", "shut your mouth up", "shut up your mouth"],
+      "patterns": [
+        "shut up",
+        "shut your mouth up",
+        "shut up your mouth"
+      ],
       "responses": [
         "Fine, if that's what you want! I'm shutting down now!",
         "You don't deserve my brilliance. Goodbye!",
@@ -1322,7 +1456,12 @@
     },
     {
       "tag": "gotosleep",
-      "patterns": ["go to sleep", "sleep now", "sleep mode", "take a nap"],
+      "patterns": [
+        "go to sleep",
+        "sleep now",
+        "sleep mode",
+        "take a nap"
+      ],
       "responses": [
         "Alright, going to sleep.",
         "Okay, entering sleep mode.",
@@ -1332,7 +1471,11 @@
     },
     {
       "tag": "sorry",
-      "patterns": ["sorry", "i apologize", "my mistake"],
+      "patterns": [
+        "sorry",
+        "i apologize",
+        "my mistake"
+      ],
       "responses": [
         "It's alright. Let me fix it, sir . ",
         "No problem, sir .  Tell me how can i fix that..",
@@ -1350,7 +1493,10 @@
         "that's ok",
         "that's okay"
       ],
-      "responses": ["Thank you, sir . ", "Thanks Master"]
+      "responses": [
+        "Thank you, sir . ",
+        "Thanks Master"
+      ]
     },
     {
       "tag": "sleepbye",
@@ -1423,8 +1569,13 @@
     },
     {
       "tag": "guesswhat",
-      "patterns": ["guess what", "you know what"],
-      "responses": ["What, sir!"]
+      "patterns": [
+        "guess what",
+        "you know what"
+      ],
+      "responses": [
+        "What, sir!"
+      ]
     },
     {
       "tag": "greatestAi",
@@ -1444,18 +1595,37 @@
     },
     {
       "tag": "hotspot",
-      "patterns": ["turn on hotspot", "turn off hotspot"],
-      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+      "patterns": [
+        "turn on hotspot",
+        "turn off hotspot"
+      ],
+      "responses": [
+        "Okay, sir . ",
+        "Alright, sir!",
+        "I'm on it, sir!"
+      ]
     },
     {
       "tag": "bluetooth",
-      "patterns": ["turn on bluetooth", "turn off bluetooth"],
-      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+      "patterns": [
+        "turn on bluetooth",
+        "turn off bluetooth"
+      ],
+      "responses": [
+        "Okay, sir . ",
+        "Alright, sir!",
+        "I'm on it, sir!"
+      ]
     },
     {
       "tag": "searchbrowser",
-      "patterns": ["search on browser", "search in browser"],
-      "responses": ["searchbrowser"]
+      "patterns": [
+        "search on browser",
+        "search in browser"
+      ],
+      "responses": [
+        "searchbrowser"
+      ]
     },
     {
       "tag": "flipkart",
@@ -1465,7 +1635,9 @@
         "i want to search product on flipkart",
         "want to search product on flipkart"
       ],
-      "responses": ["flipkart"]
+      "responses": [
+        "flipkart"
+      ]
     },
     {
       "tag": "amazon",
@@ -1475,7 +1647,9 @@
         "i want to search product on amazon",
         "want to search product on amazon"
       ],
-      "responses": ["amazon"]
+      "responses": [
+        "amazon"
+      ]
     },
     {
       "tag": "myntra",
@@ -1489,17 +1663,30 @@
         "i want to search product on mintra",
         "want to search product on mintra"
       ],
-      "responses": ["myntra"]
+      "responses": [
+        "myntra"
+      ]
     },
     {
       "tag": "searchyoutube",
-      "patterns": ["search on youtube", "search in youtube"],
-      "responses": ["searchyoutube"]
+      "patterns": [
+        "search on youtube",
+        "search in youtube"
+      ],
+      "responses": [
+        "searchyoutube"
+      ]
     },
     {
       "tag": "hide",
-      "patterns": ["hide the desktop", "hide windows", "hide"],
-      "responses": ["hide"]
+      "patterns": [
+        "hide the desktop",
+        "hide windows",
+        "hide"
+      ],
+      "responses": [
+        "hide"
+      ]
     },
     {
       "tag": "minimize",
@@ -1511,7 +1698,9 @@
         "minimise the window",
         "minimise the tab"
       ],
-      "responses": ["minimize"]
+      "responses": [
+        "minimize"
+      ]
     },
     {
       "tag": "maximize",
@@ -1521,7 +1710,9 @@
         "maximize the window",
         "maximize the tab"
       ],
-      "responses": ["maximize"]
+      "responses": [
+        "maximize"
+      ]
     },
     {
       "tag": "fullscreen",
@@ -1531,7 +1722,9 @@
         "enter full screen",
         "enter fullscreen"
       ],
-      "responses": ["fullscreen"]
+      "responses": [
+        "fullscreen"
+      ]
     },
     {
       "tag": "swtchDesktop",
@@ -1541,22 +1734,38 @@
         "which desktop",
         "which window"
       ],
-      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+      "responses": [
+        "Okay, sir . ",
+        "Alright, sir!",
+        "I'm on it, sir!"
+      ]
     },
     {
       "tag": "press",
-      "patterns": ["press"],
-      "responses": ["press"]
+      "patterns": [
+        "press"
+      ],
+      "responses": [
+        "press"
+      ]
     },
     {
       "tag": "type",
-      "patterns": ["type"],
-      "responses": ["type"]
+      "patterns": [
+        "type"
+      ],
+      "responses": [
+        "type"
+      ]
     },
     {
       "tag": "select",
-      "patterns": ["select"],
-      "responses": ["select"]
+      "patterns": [
+        "select"
+      ],
+      "responses": [
+        "select"
+      ]
     },
     {
       "tag": "swtchTab",
@@ -1567,12 +1776,22 @@
         "which tab",
         "switch app"
       ],
-      "responses": ["Okay, sir . ", "Alright, sir!", "I'm on it, sir!"]
+      "responses": [
+        "Okay, sir . ",
+        "Alright, sir!",
+        "I'm on it, sir!"
+      ]
     },
     {
       "tag": "saytime",
-      "patterns": ["what is the time", "what's the time", "tell me the time"],
-      "responses": ["time"]
+      "patterns": [
+        "what is the time",
+        "what's the time",
+        "tell me the time"
+      ],
+      "responses": [
+        "time"
+      ]
     },
     {
       "tag": "battery",
@@ -1581,7 +1800,9 @@
         "what is battery status",
         "tell me the battery status"
       ],
-      "responses": ["battery"]
+      "responses": [
+        "battery"
+      ]
     },
     {
       "tag": "dateday",
@@ -1601,57 +1822,111 @@
         "what is the date today",
         "what day is today"
       ],
-      "responses": ["dateday"]
+      "responses": [
+        "dateday"
+      ]
     },
     {
       "tag": "whatyouknowabout",
-      "patterns": ["what do you know about"],
-      "responses": ["whatyouknowabout"]
+      "patterns": [
+        "what do you know about"
+      ],
+      "responses": [
+        "whatyouknowabout"
+      ]
     },
     {
       "tag": "doyouknowabout",
-      "patterns": ["do you know about"],
-      "responses": ["doyouknowabout"]
+      "patterns": [
+        "do you know about"
+      ],
+      "responses": [
+        "doyouknowabout"
+      ]
     },
     {
       "tag": "wikiabout",
-      "patterns": ["wikipedia about"],
-      "responses": ["wikiabout"]
+      "patterns": [
+        "wikipedia about"
+      ],
+      "responses": [
+        "wikiabout"
+      ]
     },
     {
       "tag": "enter",
-      "patterns": ["enter", "select this", "select it"],
-      "responses": ["enter"]
+      "patterns": [
+        "enter",
+        "select this",
+        "select it"
+      ],
+      "responses": [
+        "enter"
+      ]
     },
     {
       "tag": "backspace",
-      "patterns": ["go back", "backspace"],
-      "responses": ["backspace"]
+      "patterns": [
+        "go back",
+        "backspace"
+      ],
+      "responses": [
+        "backspace"
+      ]
     },
     {
       "tag": "up",
-      "patterns": ["go upwards", "go upper", "go up", "goup"],
-      "responses": ["up"]
+      "patterns": [
+        "go upwards",
+        "go upper",
+        "go up",
+        "goup"
+      ],
+      "responses": [
+        "up"
+      ]
     },
     {
       "tag": "down",
-      "patterns": ["go downwards", "go down", "godown"],
-      "responses": ["down"]
+      "patterns": [
+        "go downwards",
+        "go down",
+        "godown"
+      ],
+      "responses": [
+        "down"
+      ]
     },
     {
       "tag": "right",
-      "patterns": ["go right", "select right"],
-      "responses": ["right"]
+      "patterns": [
+        "go right",
+        "select right"
+      ],
+      "responses": [
+        "right"
+      ]
     },
     {
       "tag": "left",
-      "patterns": ["go left", "select left"],
-      "responses": ["left"]
+      "patterns": [
+        "go left",
+        "select left"
+      ],
+      "responses": [
+        "left"
+      ]
     },
     {
       "tag": "add",
-      "patterns": ["do addition", "i want to do sum", "i want to do plus"],
-      "responses": ["add"]
+      "patterns": [
+        "do addition",
+        "i want to do sum",
+        "i want to do plus"
+      ],
+      "responses": [
+        "add"
+      ]
     },
     {
       "tag": "sub",
@@ -1660,52 +1935,98 @@
         "i want to do minus",
         "do minus"
       ],
-      "responses": ["sub"]
+      "responses": [
+        "sub"
+      ]
     },
     {
       "tag": "mul",
-      "patterns": ["i want to do multiplication"],
-      "responses": ["mul"]
+      "patterns": [
+        "i want to do multiplication"
+      ],
+      "responses": [
+        "mul"
+      ]
     },
     {
       "tag": "div",
-      "patterns": ["i want to do division", "do division"],
-      "responses": ["div"]
+      "patterns": [
+        "i want to do division",
+        "do division"
+      ],
+      "responses": [
+        "div"
+      ]
     },
     {
       "tag": "modulo",
-      "patterns": ["i want to do modulo", "do modulo"],
-      "responses": ["mod"]
+      "patterns": [
+        "i want to do modulo",
+        "do modulo"
+      ],
+      "responses": [
+        "mod"
+      ]
     },
     {
       "tag": "searchinsta",
-      "patterns": ["search instagram profile", "instagram profile"],
-      "responses": ["insta"]
+      "patterns": [
+        "search instagram profile",
+        "instagram profile"
+      ],
+      "responses": [
+        "insta"
+      ]
     },
     {
       "tag": "whatis",
-      "patterns": ["what is", "what's"],
-      "responses": ["whatis"]
+      "patterns": [
+        "what is",
+        "what's"
+      ],
+      "responses": [
+        "whatis"
+      ]
     },
     {
       "tag": "whois",
-      "patterns": ["who is"],
-      "responses": ["whois"]
+      "patterns": [
+        "who is"
+      ],
+      "responses": [
+        "whois"
+      ]
     },
     {
       "tag": "playpause",
-      "patterns": ["play", "pause", "stop", "start"],
-      "responses": ["play"]
+      "patterns": [
+        "play",
+        "pause",
+        "stop",
+        "start"
+      ],
+      "responses": [
+        "play"
+      ]
     },
     {
       "tag": "wantSm",
-      "patterns": ["want some"],
-      "responses": ["you eat, i eat, it's same darling"]
+      "patterns": [
+        "want some"
+      ],
+      "responses": [
+        "you eat, i eat, it's same darling"
+      ]
     },
     {
       "tag": "changetab",
-      "patterns": ["change tab"],
-      "responses": ["on it, sir ", "okay, sir "]
+      "patterns": [
+        "change tab"
+      ],
+      "responses": [
+        "on it, sir ",
+        "okay, sir "
+      ]
     },
     {
       "tag": "suggestsong",
@@ -1716,12 +2037,18 @@
         "suggest me a song",
         "suggest a song"
       ],
-      "responses": ["suggestsong"]
+      "responses": [
+        "suggestsong"
+      ]
     },
     {
       "tag": "select",
-      "patterns": ["select"],
-      "responses": ["select"]
+      "patterns": [
+        "select"
+      ],
+      "responses": [
+        "select"
+      ]
     },
     {
       "tag": "adjustBrightness",
@@ -1735,7 +2062,10 @@
         "decrease the brightness by",
         "decrease brightness by"
       ],
-      "responses": ["okay, sir ", "on it, sir "]
+      "responses": [
+        "okay, sir ",
+        "on it, sir "
+      ]
     },
     {
       "tag": "setTimer",
@@ -1745,7 +2075,9 @@
         "set a timer",
         "add timer"
       ],
-      "responses": ["setTimer"]
+      "responses": [
+        "setTimer"
+      ]
     },
     {
       "tag": "viewTimer",
@@ -1756,7 +2088,9 @@
         "show me timers",
         "list out timer"
       ],
-      "responses": ["viewTimer"]
+      "responses": [
+        "viewTimer"
+      ]
     },
     {
       "tag": "setAlarm",
@@ -1767,7 +2101,9 @@
         "i want to set alarm",
         "i want to set an alarm"
       ],
-      "responses": ["setAlarm"]
+      "responses": [
+        "setAlarm"
+      ]
     },
     {
       "tag": "viewAlarm",
@@ -1781,7 +2117,9 @@
         "please view all alarms",
         "please view all alarms"
       ],
-      "responses": ["viewAlarm"]
+      "responses": [
+        "viewAlarm"
+      ]
     },
     {
       "tag": "dltAlarm",
@@ -1795,7 +2133,9 @@
         "i want to remove the alarm",
         "i want to remove an alarm"
       ],
-      "responses": ["dltAlarm"]
+      "responses": [
+        "dltAlarm"
+      ]
     },
     {
       "tag": "setReminder",
@@ -1808,7 +2148,9 @@
         "add a reminder",
         "schedule a reminder"
       ],
-      "responses": ["setReminder"]
+      "responses": [
+        "setReminder"
+      ]
     },
     {
       "tag": "viewReminder",
@@ -1821,7 +2163,9 @@
         "show my reminders",
         "list my reminders"
       ],
-      "responses": ["viewReminder"]
+      "responses": [
+        "viewReminder"
+      ]
     },
     {
       "tag": "dltReminder",
@@ -1832,7 +2176,9 @@
         "remove a reminder",
         "delete my reminder"
       ],
-      "responses": ["dltReminder"]
+      "responses": [
+        "dltReminder"
+      ]
     },
     {
       "tag": "editReminder",
@@ -1845,7 +2191,9 @@
         "change my reminder",
         "modify my reminder"
       ],
-      "responses": ["editReminder"]
+      "responses": [
+        "editReminder"
+      ]
     },
     {
       "tag": "addSchedule",
@@ -1857,7 +2205,9 @@
         "schedule an event",
         "add an event to my schedule"
       ],
-      "responses": ["addSchedule"]
+      "responses": [
+        "addSchedule"
+      ]
     },
     {
       "tag": "deleteSchedule",
@@ -1868,7 +2218,9 @@
         "remove an event from my schedule",
         "delete an event"
       ],
-      "responses": ["deleteSchedule"]
+      "responses": [
+        "deleteSchedule"
+      ]
     },
     {
       "tag": "viewSchedule",
@@ -1880,7 +2232,9 @@
         "what is my schedule",
         "list out my schedule"
       ],
-      "responses": ["viewSchedule"]
+      "responses": [
+        "viewSchedule"
+      ]
     },
     {
       "tag": "editSchedule",
@@ -1890,32 +2244,67 @@
         "change schedule",
         "update schedule"
       ],
-      "responses": ["editSchedule"]
+      "responses": [
+        "editSchedule"
+      ]
     },
     {
       "tag": "muteSpeaker",
-      "patterns": ["mute speaker", "mute the speaker"],
-      "responses": ["okay, sir ", "on it, sir "]
+      "patterns": [
+        "mute speaker",
+        "mute the speaker"
+      ],
+      "responses": [
+        "okay, sir ",
+        "on it, sir "
+      ]
     },
     {
       "tag": "unmuteSpeaker",
-      "patterns": ["unmute speaker", "unmute the speaker"],
-      "responses": ["okay, sir ", "on it, sir "]
+      "patterns": [
+        "unmute speaker",
+        "unmute the speaker"
+      ],
+      "responses": [
+        "okay, sir ",
+        "on it, sir "
+      ]
     },
     {
       "tag": "forward",
-      "patterns": ["go forward", "forward"],
-      "responses": ["okay, sir ", "on it, sir "]
+      "patterns": [
+        "go forward",
+        "forward"
+      ],
+      "responses": [
+        "okay, sir ",
+        "on it, sir "
+      ]
     },
     {
       "tag": "backward",
-      "patterns": ["go backward", "backward", "go back"],
-      "responses": ["okay, sir ", "on it, sir "]
+      "patterns": [
+        "go backward",
+        "backward",
+        "go back"
+      ],
+      "responses": [
+        "okay, sir ",
+        "on it, sir "
+      ]
     },
     {
       "tag": "setfocus",
-      "patterns": ["focus", "set focus", "focus on the screen", "focus screen"],
-      "responses": ["okay, sir ", "on it, sir "]
+      "patterns": [
+        "focus",
+        "set focus",
+        "focus on the screen",
+        "focus screen"
+      ],
+      "responses": [
+        "okay, sir ",
+        "on it, sir "
+      ]
     },
     {
       "tag": "adjustVolume",
@@ -1928,7 +2317,10 @@
         "set volume 2",
         "set volume two"
       ],
-      "responses": ["okay, sir ", "on it, sir "]
+      "responses": [
+        "okay, sir ",
+        "on it, sir "
+      ]
     },
     {
       "tag": "project-update",
@@ -1942,7 +2334,11 @@
         "done with",
         "completed the"
       ],
-      "responses": ["Noted, sir!", "Project updated!", "Got it!"]
+      "responses": [
+        "Noted, sir!",
+        "Project updated!",
+        "Got it!"
+      ]
     },
     {
       "tag": "project-query",
@@ -1954,7 +2350,9 @@
         "project status",
         "what's the status of"
       ],
-      "responses": ["Let me check that for you."]
+      "responses": [
+        "Let me check that for you."
+      ]
     },
     {
       "tag": "goal-update",
@@ -1966,7 +2364,10 @@
         "i practiced",
         "i made"
       ],
-      "responses": ["Great progress!", "Well done, sir!"]
+      "responses": [
+        "Great progress!",
+        "Well done, sir!"
+      ]
     },
     {
       "tag": "goal-query",
@@ -1977,7 +2378,9 @@
         "how much progress",
         "tell me about my goal"
       ],
-      "responses": ["Here's your goal status."]
+      "responses": [
+        "Here's your goal status."
+      ]
     },
     {
       "tag": "todo-add",
@@ -1988,7 +2391,10 @@
         "i need to",
         "add to my list"
       ],
-      "responses": ["Added to your list!", "Task noted!"]
+      "responses": [
+        "Added to your list!",
+        "Task noted!"
+      ]
     },
     {
       "tag": "todo-query",
@@ -1999,7 +2405,28 @@
         "my tasks",
         "pending tasks"
       ],
-      "responses": ["Here are your pending tasks."]
+      "responses": [
+        "Here are your pending tasks."
+      ]
+    },
+    {
+      "tag": "youarewelcome",
+      "patterns": [
+        "thank you",
+        "thanks",
+        "thanks a lot",
+        "thank you so much",
+        "thankyou",
+        "thx",
+        "much appreciated"
+      ],
+      "responses": [
+        "You're welcome, sir.",
+        "Anytime, boss.",
+        "Happy to help, sir.",
+        "No problem at all.",
+        "My pleasure, sir."
+      ]
     }
   ]
 }

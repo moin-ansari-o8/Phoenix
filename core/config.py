@@ -126,6 +126,9 @@ class AppConfig:
     }
     # TUI appearance. "dark" | "light" | "auto" (follows Windows). See core/theme.py.
     ui = {"theme": "auto"}
+    # Speak each sentence as the model writes it, instead of waiting for the
+    # whole answer. Measured: first word at ~0.8 s instead of ~4.9 s.
+    stream_answers = True
     stt = {
         "model": "base.en",
         "device": "auto",  # "auto" | "cpu" | "cuda"
@@ -177,6 +180,9 @@ class AppConfig:
             )
             cls.confirm_timeout_seconds = float(
                 data.get("confirm_timeout_seconds", cls.confirm_timeout_seconds)
+            )
+            cls.stream_answers = bool(
+                data.get("stream_answers", cls.stream_answers)
             )
 
             # An offline assistant must not be one config typo away from a

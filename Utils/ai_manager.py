@@ -342,15 +342,22 @@ class AIDecisionMaker:
 
     # ---- stage 2: answer composition ---------------------------------------
 
-    def compose_answer(
+    def _build_answer_messages(
         self,
         query: str,
         soul: str,
         context: str,
         memory: str,
         evidence: Optional[str] = None,
-    ) -> str:
-        """Compose the final spoken reply with the answer model."""
+    ) -> list:
+        """
+        Build the message list for the answer model.
+
+        Extracted so the blocking and streaming paths cannot drift apart: every
+        guard below (the UNKNOWN sentinel contract, the personal-details rule,
+        the repeat handling) is load-bearing, and two copies would eventually
+        disagree about one of them.
+        """
         system = f"{soul}\n\nWhat you already know about the user:\n{memory}"
 
         # Prompt length is the dominant latency cost here (~1.85ms/char measured
@@ -413,11 +420,22 @@ class AIDecisionMaker:
                 "Answer in 1-2 short spoken sentences."
             )
 
+        return [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+
+    def compose_answer(
+        self,
+        query: str,
+        soul: str,
+        context: str,
+        memory: str,
+        evidence: Optional[str] = None,
+    ) -> str:
+        """Compose the final spoken reply with the answer model."""
         msg = self._get_answer().chat(
-            [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
+            self._build_answer_messages(query, soul, context, memory, evidence),
             temperature=0.4,
             # 110 truncated "teach me ..." answers mid-sentence. Capping
             # generation barely affected latency anyway (that is prompt-bound),
@@ -428,6 +446,76 @@ class AIDecisionMaker:
         if isinstance(msg, dict) and "error" in msg:
             return f"Error: {msg['error']}"
         return strip_markdown((msg or {}).get("content", ""))
+
+    def compose_answer_streaming(
+        self,
+        query: str,
+        soul: str,
+        context: str,
+        memory: str,
+        evidence: Optional[str] = None,
+        on_sentence=None,
+    ) -> str:
+        """
+        Same answer, but hand each sentence to `on_sentence` as it is produced.
+
+        The model writes at ~170 char/s, so a three-sentence reply takes 2-3 s.
+        Speaking sentence one while sentence three is still being generated
+        removes most of that wait without making generation any faster.
+
+        Returns the full text, so the caller still has one string to log and to
+        add to the conversation context.
+
+        Falls back to the blocking path when streaming produces nothing - a
+        half-delivered answer is worse than a slightly slower whole one. Because
+        the fallback re-asks the model, `on_sentence` is only ever called for
+        one of the two paths, never both.
+        """
+        from Utils.limbs.sentence_stream import SentenceSplitter
+
+        prompt = self._build_answer_messages(query, soul, context, memory, evidence)
+        helper = self._get_answer()
+        splitter = SentenceSplitter()
+        spoken_any = False
+        parts = []
+
+        def emit(sentence):
+            nonlocal spoken_any
+            cleaned = strip_markdown(sentence)
+            if not cleaned:
+                return
+            # A model that declines mid-stream must not have its sentinel read
+            # out loud; the caller handles UNKNOWN, so stop feeding TTS.
+            if is_unknown(cleaned):
+                return
+            spoken_any = True
+            if on_sentence:
+                on_sentence(cleaned)
+
+        try:
+            for fragment in helper.chat_stream(
+                prompt, temperature=0.4, num_predict=220
+            ):
+                parts.append(fragment)
+                for sentence in splitter.feed(fragment):
+                    emit(sentence)
+            for sentence in splitter.flush():
+                emit(sentence)
+        except Exception as exc:
+            logging.warning(f"[ai_manager] streaming failed ({exc}); falling back")
+            parts = []
+
+        full = strip_markdown("".join(parts))
+
+        if not full:
+            # Nothing usable came back. Re-ask without streaming; on_sentence
+            # was never called, so the caller speaks the result itself.
+            msg = helper.chat(prompt, temperature=0.4, num_predict=220)
+            if isinstance(msg, dict) and "error" in msg:
+                return f"Error: {msg['error']}"
+            return strip_markdown((msg or {}).get("content", ""))
+
+        return full
 
     # ---- legacy surface (kept for backwards compatibility) -----------------
 

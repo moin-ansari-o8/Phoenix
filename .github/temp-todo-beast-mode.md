@@ -560,7 +560,35 @@ model was 4.4 GB. With `llama3.2:latest` at 2.0 GB there is now ~1.5 GB of headr
 `stt.device: "cuda"`, run a 20-command soak, and compare `ollama ps` CPU/GPU split before
 and after. If the LLM stays ≥90 % GPU, keep CUDA.
 
-### [todo-D2] Grow the zero-cost path
+### ~~[todo-D2]~~ Grow the zero-cost path — **DONE 2026-08-12**
+
+Built `scripts/utilities/mine_aliases.py`, which replays `data/ChatLog.json` through the
+same two deterministic stages the live router uses and reports what still reaches the
+model. It proposes; it never edits - an alias is a permanent claim that a phrase always
+means one thing.
+
+**The result contradicted the plan's own assumption.** `tests/test_routing.py` suggested
+~40% of utterances resolve without a model call; against the real log it was **3%**. The
+test file is device-command heavy while actual use is mostly conversational - greetings,
+acknowledgements, farewells - each costing a ~1.7 s model call to produce a canned reply
+the model added nothing to.
+
+Added `CONVERSATION_ALIASES` (48 entries) plus one new `youarewelcome` intent, since
+"thank you" had no correct target - the nearest existing tag replied *"Thank you, sir"*.
+
+```
+real chat log   zero-cost 3%  -> 19%
+test_routing    zero-cost 15/42 -> 17/42,  accuracy still 100% end-to-end
+```
+
+Kept narrow on purpose. `"it's amazing"` repeats in the log and is deliberately NOT
+aliased: it is a comment about something specific and deserves a real answer.
+
+Three regression tests now guard the table - every alias target must exist, must have a
+non-blank response, and must survive `normalize()` (a key that normalises differently is
+unreachable and would fail silently).
+
+### (original note) [todo-D2] Grow the zero-cost path
 `tests/test_routing.py` already reports "Resolved with no LLM call". Every utterance moved
 into Stage 0/0b saves **1.5–3 seconds**. Cheap additions:
 - alias-table entries for the top-N utterances observed in `data/ChatLog.json`
@@ -571,7 +599,36 @@ into Stage 0/0b saves **1.5–3 seconds**. Cheap additions:
 - a normalised-utterance → last-decision cache with a small TTL, so repeated commands
   skip the router entirely
 
-### [todo-D3] Stream the answer model into TTS (retargeted to SAPI5 per D-4)
+### ~~[todo-D3]~~ Stream the answer model into TTS — **DONE 2026-08-12**
+
+Measured, first word out loud:
+
+| query | blocking | streaming | saved |
+|---|---|---|---|
+| Who was Mahatma Gandhi? | 11.55 s | 0.93 s | 10.62 s |
+| Explain a transformer network | 2.23 s | 0.95 s | 1.28 s |
+| How far is the moon? | 0.77 s | 0.62 s | 0.14 s |
+| **mean** | **4.85 s** | **0.83 s** | **4.01 s** |
+
+`OllamaHelper.chat_stream` + `Utils/limbs/sentence_stream.py` +
+`AIDecisionMaker.compose_answer_streaming`, wired through `IntentRouter._answer`.
+Toggle with `stream_answers` in config.json.
+
+**The hard part was not splitting, it was not splitting in the wrong place.** A bad cut
+makes TTS stop dead with falling intonation mid-phrase, which sounds like a fault. The
+splitter holds back on abbreviations ("Dr.", "5 p.m."), decimals ("3.14", "Python 3.11"),
+and fragments too short to be worth their own round trip, and force-flushes on a word
+boundary if a model forgets punctuation entirely. 15 tests in
+`tests/test_sentence_stream.py`, most of them asserting that something does NOT split.
+
+**Streaming commits us**, and that needed a decision: `_handle_unknown` escalates a
+declined answer to a web search, but once sentence one has been spoken there is no taking
+it back. So escalation is only available while still silent - `emit` refuses to voice a
+sentinel or a hedge, so a declining model produces no speech, and the old escalation path
+runs untouched. A late hedge after two good sentences is simply not spoken, which is far
+better than answering twice.
+
+### (original note) [todo-D3] Stream the answer model into TTS
 Today: `compose_answer` waits for the full completion (`stream: False`), *then* TTS runs,
 *then* audio plays. Sentence-level streaming — take the first sentence off the token stream
 and **start speaking it while the rest is still generating** — cuts perceived latency
@@ -594,7 +651,32 @@ pipeline is `token → sentence → speak` with no startup cost between sentence
 - first-sentence latency becomes `time-to-first-sentence` (~300-500 ms) instead of
   `time-to-full-completion` (1-3 s).
 
-### [todo-D4] Cache TTS for canned responses
+### ~~[todo-D4]~~ Cache TTS for canned responses — **MEASURED 2026-08-12, REJECTED**
+
+```
+phrase                                   synth    audio produced
+Yes boss.                                0.133s   1.40s
+The battery is at eighty percent, sir.   0.159s   2.88s
+I have opened Chrome for you, boss.      0.147s   2.67s
+```
+
+SAPI5 synthesis is a flat **~0.15 s regardless of phrase length**, and MCI
+open/play/close adds ~0.09 s back. Net saving from a cache: **~0.05 s.**
+
+**The premise died with Piper.** D4 was written when TTS meant spawning
+`piper.exe` per utterance to write a .wav - genuinely expensive, and worth
+caching. SAPI5 is a local concatenative engine that is already resident, so
+there is essentially nothing to cache away.
+
+There is also a real hazard: calling `say()` and then `save_to_file()` on the
+same pyttsx3 engine **hangs the process** (hit while measuring this; the run had
+to be killed). A cache would need a second engine on its own thread, plus
+invalidation on voice/rate change and a growing directory of .wav files - real
+complexity and a deadlock risk, for 50 ms.
+
+Not building it. `data/intents.json`'s 435 canned responses stay live-synthesised.
+
+### (original note) [todo-D4] Cache TTS for canned responses
 `data/intents.json` has 144 intents with fixed `responses`, and `_apply_honorifics`
 substitutes from a fixed list. Pre-synthesise the common ones to `.wav` at first use and
 key a cache on `hash(text + voice)`. "Yes boss", "Done", "Noted." should be instant.
@@ -847,8 +929,8 @@ C1 (4 processes → 2) → C2 → **C6 + C7 together** (structured events + the 
 that consumes them — doing C7 before C6 means restyling a stdout regex parser you are
 about to delete) → C4 → C3
 
-**Phase 5 — speed**
-D3 (streaming into SAPI5, D-4) → D2 (grow zero-cost path) → D4 (TTS cache)
+**Phase 5 — speed** — ✅ **COMPLETE 2026-08-12**
+D3 done, D2 done, D4 measured and rejected (SAPI5 synthesis is ~0.15 s; nothing to cache).
 
 **Phase 6 — offline knowledge**
 B3 (Kiwix/ZIM Wikipedia)

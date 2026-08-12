@@ -13,6 +13,7 @@
   "offline_mode": "auto",
   "confirm_destructive": true,
   "confirm_timeout_seconds": 30,
+  "stream_answers": true,
   "show_routing": true,
   "ui": {
     "theme": "auto"
